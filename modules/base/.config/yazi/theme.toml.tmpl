@@ -20,3 +20,20 @@ count_selected = { fg = "${PHI_BG}", bg = "${PHI_ACCENT}" }
 rules = [
   { url = "*/", fg = "${PHI_ACCENT}", bold = true },
 ]
+
+[git]
+unknown_sign   = " "
+ignored_sign   = "I"
+untracked_sign = "+"
+unstaged_sign  = "M"
+staged_sign    = "S"
+added_sign     = "A"
+deleted_sign   = "D"
+updated_sign   = "U"
+# clean_sign     = "✔"
+
+unstaged = { fg = "${PHI_WARN}" }
+staged   = { fg = "${PHI_SUCCESS}" }
+added    = { fg = "${PHI_SUCCESS}", bold = true }
+deleted  = { fg = "${PHI_ERROR}", bold = true }
+untracked = { fg = "${PHI_INFO}" }

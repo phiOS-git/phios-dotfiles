@@ -10,3 +10,16 @@ yazi
 neovim
 nnn
 gettext
+bluez
+bluez-utils
+rsync
+7zip
+poppler
+imagemagick
+ffmpeg
+ripgrep
+jq
+resvg
+btop
+tesseract
+tesseract-data-eng

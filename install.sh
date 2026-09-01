@@ -7,7 +7,7 @@ MANIFEST="$REPO/hosts/$HOST.txt"
 
 [[ -f "$MANIFEST" ]] || { echo "Manca hosts/$HOST.txt" >&2; exit 1; }
 
-while read -r module; do
+while read -r module <&3; do
   [[ -z "$module" ]] && continue
   MOD="$REPO/modules/$module"
   [[ -d "$MOD" ]] || { echo "Modulo sconosciuto: $module" >&2; exit 1; }
@@ -30,4 +30,4 @@ while read -r module; do
     ( set -a; source "$REPO/theme.sh"; set +a
       envsubst < "$f" > "$target" )
   done
-done < "$MANIFEST"
+done 3< "$MANIFEST"

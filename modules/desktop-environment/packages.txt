@@ -10,3 +10,10 @@ pipewire-jack
 ttf-dejavu
 librewolf
 kitty
+solaar
+mpv
+zathura
+zathura-pdf-mupdf
+imv
+cliphist
+wl-clipboard

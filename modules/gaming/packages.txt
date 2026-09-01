@@ -1,0 +1,4 @@
+steam
+lib32-nvidia-utils
+lib32-vulkan-icd-loader
+vulkan-tools
