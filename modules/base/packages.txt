@@ -1,0 +1,11 @@
+zsh
+zsh-history-substring-search
+git
+zoxide
+fzf
+fd
+bat
+ttf-iosevkatermslab-nerd
+yazi
+neovim
+nnn

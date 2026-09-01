@@ -1,0 +1,5 @@
+nvidia-open-dkms
+nvidia-utils
+dkms
+linux-headers
+linux-lts-headers
