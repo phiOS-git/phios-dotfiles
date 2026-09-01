@@ -1,2 +1,22 @@
 [mgr]
-cwd = { fg = "${PHI_ACCENT}" }
+cwd     = { fg = "${PHI_ACCENT}" }
+hovered = { fg = "${PHI_BG}", bg = "${PHI_ACCENT}" }
+
+find_keyword  = { fg = "${PHI_WARN}", bold = true }
+find_position = { fg = "${PHI_INFO}", bg = "reset", bold = true }
+
+symlink_target = { italic = true, fg = "${PHI_FG_DIM}" }
+
+marker_selected = { fg = "${PHI_ACCENT}",  bg = "${PHI_ACCENT}" }
+marker_copied   = { fg = "${PHI_SUCCESS}", bg = "${PHI_SUCCESS}" }
+marker_cut      = { fg = "${PHI_ERROR}",   bg = "${PHI_ERROR}" }
+marker_marked   = { fg = "${PHI_INFO}",    bg = "${PHI_INFO}" }
+
+count_copied   = { fg = "${PHI_BG}", bg = "${PHI_SUCCESS}" }
+count_cut      = { fg = "${PHI_BG}", bg = "${PHI_ERROR}" }
+count_selected = { fg = "${PHI_BG}", bg = "${PHI_ACCENT}" }
+
+[filetype]
+rules = [
+  { url = "*/", fg = "${PHI_ACCENT}", bold = true },
+]
