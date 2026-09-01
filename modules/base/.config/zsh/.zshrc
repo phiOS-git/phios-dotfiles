@@ -38,3 +38,4 @@ function y() {
 
 # nnn - bookmarks
 export NNN_BMS="d:$HOME;D:$HOME/.config"
+source "$ZDOTDIR/theme.zsh"

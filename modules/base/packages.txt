@@ -9,3 +9,4 @@ ttf-iosevkatermslab-nerd
 yazi
 neovim
 nnn
+gettext

@@ -16,10 +16,18 @@ while read -r module; do
     sudo pacman -S --needed $(cat "$MOD/packages.txt")
   fi
 
-  find "$MOD" -type f ! -name packages.txt | while read -r f; do
+  find "$MOD" -type f ! -name packages.txt ! -name '*.tmpl' | while read -r f; do
     rel="${f#$MOD/}"
     target="$HOME/$rel"
     mkdir -p "$(dirname "$target")"
-    ln -sf "$f" "$target"
+    ln -sfr "$f" "$target"
+  done
+
+  find "$MOD" -type f -name '*.tmpl' | while read -r f; do
+    rel="${f#$MOD/}"; rel="${rel%.tmpl}"
+    target="$HOME/$rel"
+    mkdir -p "$(dirname "$target")"
+    ( set -a; source "$REPO/theme.sh"; set +a
+      envsubst < "$f" > "$target" )
   done
 done < "$MANIFEST"
