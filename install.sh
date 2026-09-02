@@ -16,7 +16,7 @@ while read -r module <&3; do
     sudo pacman -S --needed $(cat "$MOD/packages.txt")
   fi
 
-  find "$MOD" -type f ! -name packages.txt ! -name '*.tmpl' | while read -r f; do
+  find "$MOD" -type f ! -name packages.txt ! -name '*.tmpl' ! -name 'README.md' | while read -r f; do
     rel="${f#$MOD/}"
     target="$HOME/$rel"
     mkdir -p "$(dirname "$target")"
@@ -31,3 +31,9 @@ while read -r module <&3; do
       envsubst < "$f" > "$target" )
   done
 done 3< "$MANIFEST"
+
+# TODO : ora escludo file come README.md e *.tmpl ma vorrei qualcosa di più sicuro. Verificare se mi porto dietro i file git...
+# TODO : fallback --needed in caso di packages.txt vuoto
+# TODO : aggiungere log di stato
+# TODO : aggiungere yazi pkg (`ya pkg add yazi-rs/plugins:git`)
+# BUG : se manca \n nel host.txt alla fine l'ultimo modulo non viene installato

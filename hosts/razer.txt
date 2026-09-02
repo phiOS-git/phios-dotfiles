@@ -1,0 +1,4 @@
+base
+desktop-environment
+gaming
+razer
