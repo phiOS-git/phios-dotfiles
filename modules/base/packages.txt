@@ -10,8 +10,6 @@ yazi
 neovim
 nnn
 gettext
-bluez
-bluez-utils
 rsync
 7zip
 poppler
