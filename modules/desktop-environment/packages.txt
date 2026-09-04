@@ -17,4 +17,4 @@ imv
 cliphist
 wl-clipboard
 bluez
-bluez-utils
+bluez-utilssof-firmware
