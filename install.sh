@@ -39,4 +39,6 @@ done 3< "$MANIFEST"
 # TODO : aggiungere yazi pkg (`ya pkg add yazi-rs/plugins:git`)
 # BUG : se manca \n nel host.txt alla fine l'ultimo modulo non viene installato -> risolto con `|| [[ -n "$module" ]]` nel while: da verificare
 # TODO : potrebbe essere necessario lavorare in /etc/. DA valutare quando succede
-# 
+# missing packages - tailscale, snapper (forse anche altri)
+# required for laptop / razer : `sudo sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf`
+# TODO : `sudo pacman -S` mancante
