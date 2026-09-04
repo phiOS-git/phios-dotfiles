@@ -12,6 +12,7 @@ nnn
 gettext
 rsync
 7zip
+unrars
 poppler
 imagemagick
 pipewire-jack
