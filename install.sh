@@ -7,7 +7,8 @@ MANIFEST="$REPO/hosts/$HOST.txt"
 
 [[ -f "$MANIFEST" ]] || { echo "Manca hosts/$HOST.txt" >&2; exit 1; }
 
-while read -r module <&3; do
+# while read -r module <&3; do
+while read -r module <&3 || [[ -n "$module" ]]; do
   [[ -z "$module" ]] && continue
   MOD="$REPO/modules/$module"
   [[ -d "$MOD" ]] || { echo "Modulo sconosciuto: $module" >&2; exit 1; }
@@ -33,9 +34,9 @@ while read -r module <&3; do
 done 3< "$MANIFEST"
 
 # TODO : ora escludo file come README.md e *.tmpl ma vorrei qualcosa di più sicuro. Verificare se mi porto dietro i file git...
-# TODO : fallback --needed in caso di packages.txt vuoto
+# TODO : fallback --needed in caso di packages.txt vuoto  -> risolto con "-s": verificare
 # TODO : aggiungere log di stato
 # TODO : aggiungere yazi pkg (`ya pkg add yazi-rs/plugins:git`)
-# BUG : se manca \n nel host.txt alla fine l'ultimo modulo non viene installato -> risolto con "-s": verificare
+# BUG : se manca \n nel host.txt alla fine l'ultimo modulo non viene installato -> risolto con `|| [[ -n "$module" ]]` nel while: da verificare
 # TODO : potrebbe essere necessario lavorare in /etc/. DA valutare quando succede
 # 
