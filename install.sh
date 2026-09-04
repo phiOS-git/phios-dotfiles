@@ -12,7 +12,7 @@ while read -r module <&3; do
   MOD="$REPO/modules/$module"
   [[ -d "$MOD" ]] || { echo "Modulo sconosciuto: $module" >&2; exit 1; }
 
-  if [[ -f "$MOD/packages.txt" ]]; then
+  if [[ -s "$MOD/packages.txt" ]]; then
     sudo pacman -S --needed $(cat "$MOD/packages.txt")
   fi
 
