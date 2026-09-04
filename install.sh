@@ -36,4 +36,6 @@ done 3< "$MANIFEST"
 # TODO : fallback --needed in caso di packages.txt vuoto
 # TODO : aggiungere log di stato
 # TODO : aggiungere yazi pkg (`ya pkg add yazi-rs/plugins:git`)
-# BUG : se manca \n nel host.txt alla fine l'ultimo modulo non viene installato
+# BUG : se manca \n nel host.txt alla fine l'ultimo modulo non viene installato -> risolto con "-s": verificare
+# TODO : potrebbe essere necessario lavorare in /etc/. DA valutare quando succede
+# 
