@@ -19,3 +19,4 @@ wl-clipboard
 bluez
 bluez-utils
 sof-firmware
+rtkit
