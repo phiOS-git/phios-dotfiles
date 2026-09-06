@@ -1,5 +1,5 @@
 base
 desktop-environment
 laptop
-gaming
 razer
+gaming
