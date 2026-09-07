@@ -1,0 +1,14 @@
+# Server list for the [phi] own-package repository (master plan §3.1),
+# served by mini's darkhttpd over the overlay network. Included from
+# /etc/pacman.conf by the [phi] section profiles/base/manual.txt documents —
+# pacman.conf itself has no drop-in mechanism for a repository section, so
+# that stanza is applied by hand, but this file is a real absolute path and
+# is shown by phios-install --system-diff like any other /etc material.
+#
+# <mini-overlay-address> and <port> are machine data (CLAUDE.md rule 5: no
+# IP address or overlay hostname in any repository) and are never filled in
+# here. <port> is whatever the darkhttpd unit on mini ends up bound to —
+# there is no default without a real hostname-only URL silently falling
+# back to :80, which nothing on mini serves. Replace both by hand before
+# this file resolves to anything.
+Server = http://<mini-overlay-address>:<port>/

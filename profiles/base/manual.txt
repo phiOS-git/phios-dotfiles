@@ -8,3 +8,15 @@
 # $XDG_CONFIG_HOME/yazi/plugins/, which is why it is not in this repository and
 # why install.sh never handled it (master plan C-10).
 ya pkg add yazi-rs/plugins:git
+
+# Registering the [phi] own-package repository (S-11, master plan §3.1:
+# "registrato in /etc/pacman.conf di ogni macchina"). pacman.conf has no
+# drop-in mechanism for a repository section itself — the same limitation
+# profiles/gaming/manual.txt already documents for multilib — so the two
+# lines below are appended by hand; only the Server line they Include is a
+# real, diffable file (system/etc/pacman.d/phi-mirrorlist in this profile).
+# Fill in that file's <mini-overlay-address> placeholder first.
+sudo sh -c 'printf "\n[phi]\nSigLevel = Required\nInclude = /etc/pacman.d/phi-mirrorlist\n" >> /etc/pacman.conf'
+# Import and locally trust the phi packaging public key (generated once on
+# zotac by hand; the private key never leaves zotac, per phi-packages/CLAUDE.md).
+sudo pacman-key --add <path-to-phi-packaging-key.asc> && sudo pacman-key --lsign-key <key-id>
