@@ -1,0 +1,301 @@
+#!/usr/bin/env bash
+#
+# phios-install — the single entry point for applying this repository to a
+# machine (master plan §5.1–§5.5).
+#
+# The machines are already configured, so the first run of this installer is an
+# update, not an installation. That shapes everything: it must be idempotent
+# (R1), previewable before it touches anything (R2), able to remove what it
+# once created and no longer declares (R3), and able to report drift between
+# repository and machine (R10).
+#
+# What it never does: touch /etc, run systemctl, or install anything that is
+# not a T0 pacman package.
+#
+# Exit codes
+#   0  success, or --check / --system-diff found nothing
+#   1  --check found drift, or --system-diff found differences
+#   2  error
+
+set -euo pipefail
+
+PHIOS_SELF=$(realpath -- "${BASH_SOURCE[0]}")
+PHIOS_BIN=$(dirname -- "$PHIOS_SELF")
+PHIOS_ROOT=$(dirname -- "$PHIOS_BIN")
+
+# shellcheck source=lib/common.sh
+. "$PHIOS_BIN/lib/common.sh"
+# shellcheck source=lib/profiles.sh
+. "$PHIOS_BIN/lib/profiles.sh"
+# shellcheck source=lib/manifest.sh
+. "$PHIOS_BIN/lib/manifest.sh"
+# shellcheck source=lib/tokens.sh
+. "$PHIOS_BIN/lib/tokens.sh"
+# shellcheck source=lib/plan.sh
+. "$PHIOS_BIN/lib/plan.sh"
+# shellcheck source=lib/packages.sh
+. "$PHIOS_BIN/lib/packages.sh"
+# shellcheck source=lib/system.sh
+. "$PHIOS_BIN/lib/system.sh"
+
+usage() {
+	cat <<'USAGE'
+usage: phios-install [MODE] [OPTIONS]
+
+Applies this repository to the current host: the packages, symlinks and
+rendered files declared by the profiles listed in hosts/<host>.txt.
+
+modes (mutually exclusive; the default is to apply)
+  --dry-run       list every file that would change and every package that
+                  would be installed, and change nothing
+  --check         report drift between repository and machine; exit 1 if any
+  --system-diff   show profiles/*/system/ against the machine, read-only and
+                  unprivileged; nothing is ever applied
+
+options
+  --host NAME     use hosts/NAME.txt instead of this machine's name
+  --variant NAME  render templates for this theme variant (default: the active
+                  runtime variant, or dark)
+  -h, --help      this text
+
+exit codes
+  0  success, or --check / --system-diff found nothing
+  1  --check found drift, or --system-diff found differences
+  2  error
+
+This script never edits /etc, never runs systemctl, and never installs a
+package that is not in a T0 pacman repository.
+USAGE
+}
+
+phios_parse_args() {
+	PHIOS_MODE=apply
+	PHIOS_HOST=${PHIOS_HOST:-}
+	PHIOS_VARIANT=${PHIOS_VARIANT:-}
+
+	local mode_set=''
+	while (( $# > 0 )); do
+		case $1 in
+			--dry-run|--check|--system-diff)
+				[[ -z $mode_set ]] || phios_die "only one mode at a time: $mode_set and $1"
+				mode_set=$1
+				PHIOS_MODE=${1#--}
+				;;
+			--host)
+				[[ $# -ge 2 ]] || phios_die '--host needs a name'
+				PHIOS_HOST=$2
+				shift
+				;;
+			--host=*) PHIOS_HOST=${1#--host=} ;;
+			--variant)
+				[[ $# -ge 2 ]] || phios_die '--variant needs a name'
+				PHIOS_VARIANT=$2
+				shift
+				;;
+			--variant=*) PHIOS_VARIANT=${1#--variant=} ;;
+			-h|--help) usage; exit 0 ;;
+			*) phios_die "unknown argument: $1 (try --help)" ;;
+		esac
+		shift
+	done
+}
+
+phios_setup() {
+	phios_require_cmd realpath 'coreutils'
+	phios_require_cmd sha256sum 'coreutils'
+	phios_require_cmd envsubst 'gettext'
+	phios_require_cmd git 'git'
+
+	PHIOS_RUN_ID=$(date +%Y%m%dT%H%M%S)
+	PHIOS_TMPDIR=$(mktemp -d)
+	# shellcheck disable=SC2064
+	trap "rm -rf -- '$PHIOS_TMPDIR'" EXIT
+
+	PHIOS_HOSTNAME=$(phios_resolve_host)
+	PHIOS_VARIANT=${PHIOS_VARIANT:-$(phios_variant)}
+	phios_resolve_profiles
+}
+
+phios_header() {
+	phios_out "phios-install — $1"
+	phios_out "  repository  $PHIOS_ROOT"
+	phios_out "  host        $PHIOS_HOSTNAME"
+	phios_out "  variant     $PHIOS_VARIANT"
+	if (( ${#PHIOS_PROFILES[@]} > 0 )); then
+		phios_out "  profiles    ${PHIOS_PROFILES[*]}"
+	else
+		phios_out '  profiles    no profiles declared'
+		if (( ${#PHIOS_PROFILES_PENDING[@]} > 0 )); then
+			phios_out "              hosts/$PHIOS_HOSTNAME.txt still names the pre-M0 modules"
+			phios_out "              (${PHIOS_PROFILES_PENDING[*]}); profiles/ is filled at S-03"
+		fi
+	fi
+}
+
+# One report for --dry-run and --check: the same plan, framed as "would do" or
+# as drift. PHIOS_DRIFT counts everything that is not already satisfied.
+phios_report() {
+	local i state target profile orphans=0 changed=0 line
+
+	PHIOS_DRIFT=0
+
+	phios_out ''
+	phios_out 'packages'
+	if (( ${#PHIOS_PACKAGES[@]} == 0 )); then
+		phios_out '  none declared'
+	elif ! phios_pacman_available; then
+		phios_out "  ${#PHIOS_PACKAGES[@]} declared; pacman is not available here, so their state is unknown"
+	elif (( ${#PHIOS_PACKAGES_MISSING[@]} == 0 )); then
+		phios_out "  ${#PHIOS_PACKAGES[@]} declared, all satisfied"
+	else
+		phios_out "  install  ${PHIOS_PACKAGES_MISSING[*]}"
+		PHIOS_DRIFT=$((PHIOS_DRIFT + ${#PHIOS_PACKAGES_MISSING[@]}))
+	fi
+
+	phios_out ''
+	phios_out 'files'
+	if (( ${#PHIOS_PLAN_TARGET[@]} == 0 )); then
+		phios_out '  none declared'
+	else
+		for i in "${!PHIOS_PLAN_TARGET[@]}"; do
+			state=${PHIOS_PLAN_STATE[i]}
+			target=${PHIOS_PLAN_TARGET[i]}
+			profile=${PHIOS_PLAN_PROFILE[i]}
+			if [[ $state == ok ]]; then continue; fi
+			printf '  %-7s %s  <- %s  (%s)\n' \
+				"$state" "$target" "${PHIOS_PLAN_SOURCE[i]}" "$profile"
+			changed=$((changed + 1))
+		done
+		if (( changed == 0 )); then
+			phios_out "  ${#PHIOS_PLAN_TARGET[@]} declared, all in place"
+		fi
+		PHIOS_DRIFT=$((PHIOS_DRIFT + changed))
+	fi
+
+	if (( ${#PHIOS_PLAN_OVERRIDES[@]} > 0 )); then
+		phios_out ''
+		phios_out 'overrides'
+		for line in "${PHIOS_PLAN_OVERRIDES[@]}"; do
+			phios_out "  $line"
+		done
+	fi
+
+	phios_out ''
+	phios_out 'no longer declared'
+	while IFS=$'\t' read -r _ target _ profile _; do
+		[[ -n $target ]] || continue
+		printf '  %-7s %s  (%s)\n' remove "$target" "$profile"
+		orphans=$((orphans + 1))
+	done < <(phios_manifest_orphans)
+	if (( orphans == 0 )); then
+		phios_out '  nothing'
+	else
+		PHIOS_DRIFT=$((PHIOS_DRIFT + orphans))
+	fi
+
+	phios_out ''
+	phios_out 'services'
+	phios_services_report
+}
+
+phios_mode_dry_run() {
+	phios_header 'dry run'
+	phios_packages_collect
+	phios_packages_missing
+	phios_manifest_load
+	phios_plan_build
+	phios_plan_state
+	phios_report
+	phios_out ''
+	phios_out "dry run: nothing was changed ($PHIOS_DRIFT item(s) would be)"
+}
+
+phios_mode_check() {
+	phios_header 'check'
+	phios_packages_collect
+	phios_packages_missing
+	phios_manifest_load
+	phios_plan_build
+	phios_plan_state
+	phios_report
+	phios_out ''
+	if (( PHIOS_DRIFT == 0 )); then
+		phios_out 'no drift'
+		return 0
+	fi
+	phios_out "drift: $PHIOS_DRIFT item(s)"
+	return 1
+}
+
+phios_mode_system_diff() {
+	phios_header 'system diff'
+	phios_out ''
+	phios_system_diff
+}
+
+phios_mode_apply() {
+	local i
+
+	phios_header 'apply'
+	phios_packages_collect
+	phios_packages_missing
+	phios_manifest_load
+	phios_plan_build
+	phios_plan_state
+
+	phios_out ''
+	phios_out 'packages'
+	if (( ${#PHIOS_PACKAGES[@]} == 0 )); then
+		phios_out '  none declared'
+	else
+		phios_require_cmd pacman 'this is an Arch system installer'
+		if (( ${#PHIOS_PACKAGES_MISSING[@]} == 0 )); then
+			phios_out "  ${#PHIOS_PACKAGES[@]} declared, all satisfied"
+		else
+			phios_packages_install
+		fi
+	fi
+
+	phios_out ''
+	phios_out 'files'
+	if (( ${#PHIOS_PLAN_TARGET[@]} == 0 )); then
+		phios_out '  none declared'
+	else
+		local applied=0
+		for i in "${!PHIOS_PLAN_TARGET[@]}"; do
+			if [[ ${PHIOS_PLAN_STATE[i]} != ok ]]; then applied=$((applied + 1)); fi
+			phios_plan_apply_one "$i"
+		done
+		if (( applied == 0 )); then
+			phios_out "  ${#PHIOS_PLAN_TARGET[@]} declared, all in place"
+		fi
+	fi
+
+	phios_out ''
+	phios_out 'no longer declared'
+	phios_plan_reconcile
+
+	phios_manifest_write
+
+	phios_out ''
+	phios_out 'services'
+	phios_services_report
+
+	phios_out ''
+	phios_out "manifest  $(phios_manifest_path)"
+	phios_out 'run --system-diff to see the /etc material this repository carries but never applies'
+}
+
+main() {
+	phios_parse_args "$@"
+	phios_setup
+	case $PHIOS_MODE in
+		dry-run)     phios_mode_dry_run ;;
+		check)       phios_mode_check ;;
+		system-diff) phios_mode_system_diff ;;
+		apply)       phios_mode_apply ;;
+		*)           phios_die "unknown mode: $PHIOS_MODE" ;;
+	esac
+}
+
+main "$@"

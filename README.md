@@ -12,17 +12,29 @@ backlog). `PROGRESS.md` tracks which step is done, in flight, or blocked.
 
 ## Current state
 
-This is the **pre-M0** layout: a minimal installer that already works on
-`zotac` and `razer`, and that M0 (`phios-agent-brief.md`, steps S-01 through
-S-06) will rebuild into a structured, idempotent, previewable one — without
-changing what lands on either machine. Nothing here should be read as final.
+M0 is in progress, and two installers deliberately live side by side until it
+finishes. Nothing here should be read as final.
 
 ```
-hosts/<name>.txt     ordered list of modules to install for that host
-modules/<name>/      packages.txt, plain files to symlink, *.tmpl files to render
-install.sh           reads hosts/$(hostname).txt, applies each module in order
+install.sh           pre-M0 installer: reads hosts/$(hostname).txt, applies each
+                     module in order. This is the one that has actually been run
+                     on zotac and razer, and it stays the live one until S-03
+modules/<name>/      pre-M0 content: packages.txt, files to symlink, *.tmpl
 theme.sh             the nine colour values every *.tmpl currently renders against
+
+bin/phios-install    v2 installer (S-01): idempotent, previewable, reversible,
+                     and aware of what it created on this machine
+bin/lib/             shared bash functions
+design/              every colour, font, size, radius and motion value (S-02)
+hosts/<name>.txt     ordered list of profiles for that host
+profiles/<name>/     packages, home tree, templates, /etc material, services (S-03)
+docs/adr/            decisions local to this repository, if any
 ```
+
+`bin/phios-install` is **inert** as it stands: `profiles/` is empty, so it
+reports "no profiles declared" and exits without touching anything. The host
+files still name the pre-M0 modules. S-03 migrates them, and only then does
+the v2 installer replace `install.sh`.
 
 ## What `install.sh` does today
 
@@ -38,6 +50,36 @@ For each module listed in `hosts/<host>.txt`, in order:
 Module order in each host file is significant: a profile that provides a
 concrete driver must precede one that requires it.
 
+## What `bin/phios-install` will do
+
+The machines are already configured, so the first real run of the v2 installer
+is an update, not an installation. That shapes all four of its modes:
+
+```
+--dry-run       lists every file that would change and every package that would
+                be installed, and changes nothing
+--check         reports drift between repository and machine; exits 1 if any
+--system-diff   shows profiles/*/system/ against the machine, read-only and
+                unprivileged; nothing is ever applied
+(default)       applies packages, symlinks and rendered templates, reconciles
+                against the state manifest, and prints the systemd units to
+                enable — without enabling them
+```
+
+Two behaviours are worth stating explicitly:
+
+- **It removes what it no longer declares.** Every path it creates is recorded
+  in `$XDG_STATE_HOME/phios/manifest`, with the source that produced it. On the
+  next run, a path that has left the repository is removed from `$HOME` — unless
+  it has been edited by hand since, in which case it is left alone and reported.
+- **It moves aside anything it is about to overwrite** that it did not itself
+  write, into `$XDG_STATE_HOME/phios/backup/<timestamp>/`, so a run can be
+  undone.
+
+Templates are rendered with `envsubst` restricted to the `PHI_*` names the
+design tokens export, so a `$PATH` or `$HOME` written inside a configuration
+file survives untouched.
+
 ## What this repository deliberately does not do
 
 - **No `/etc` material, applied or otherwise, yet.** `/etc` changes are a
@@ -51,12 +93,14 @@ concrete driver must precede one that requires it.
   and every other in-house package are distributed through the `[phi]` pacman
   repository built in `M1` (`phi-packages`), not through this repository, and
   not before `M1` exists.
-- **No drift detection or safe removal.** The current installer only adds; it
-  has no state manifest and cannot tell you what it created versus what
-  changed underneath it, and it cannot remove a file whose source disappeared
-  from the repo. Closing this is `S-01` (`C-10` in the master plan).
-- **No dry run.** Every current invocation is destructive-by-default in the
-  sense that it applies immediately; there is no `--dry-run` or `--check` yet.
+- **No service drift detection.** Profiles declare their systemd units and the
+  installer prints them, but it never queries systemd and never enables
+  anything, so `--check` says nothing about whether a unit is actually enabled.
+  Enabling is a user action, and closing the reporting gap belongs with the
+  `/etc` work at `S-05`.
+- **No `theme.sh` fallback in the v2 installer.** Rendering a template without
+  `design/` present is a hard error, not a half-render against the old nine
+  values. That is deliberate: it keeps `I-05` enforceable.
 
 ## Documentation
 
