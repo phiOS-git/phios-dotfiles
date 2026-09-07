@@ -32,6 +32,9 @@
 #                              required by §6.3.
 #   PHI_RADIUS_BASE            2px, from §6.3, where it is itself marked
 #                              [PLACEHOLDER] pending a look at fractional HiDPI.
+#   PHI_BORDER_WIDTH           1px, added at S-21 (not in §6.3 at all — a real
+#                              gap, not a deferred decision). Same fractional-
+#                              HiDPI caveat as PHI_RADIUS_BASE.
 #   PHI_Z_*                    invented; only the ordering is specified.
 #   PHI_MOTION_*               all durations invented. §6.5 fixes the four
 #                              categories and their character, not any number.
@@ -87,6 +90,14 @@ PHI_SPACE_6='8ch'
 # looked at on fractional HiDPI before it is real.
 PHI_RADIUS_BASE='2px'
 PHI_RADIUS_PILL='9999px'
+
+# border-width has no home in §6.3's own token table — added at S-21, where
+# the widget library found the gap: a separator, a panel border and a focus
+# ring all need a stroke width, and DONE WHEN forbids a literal size in any
+# widget. A hairline is a universal UI constant, not a design decision, so
+# one token rather than a per-widget guess. [PLACEHOLDER] the same way
+# radius-base is: unverified on real HiDPI/fractional-scaling output.
+PHI_BORDER_WIDTH='1px'
 
 # --- Layering (§6.3) --------------------------------------------------------
 # Only the order is specified. The gaps of 100 exist so a surface can be
