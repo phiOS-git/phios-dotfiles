@@ -1,0 +1,124 @@
+pragma Singleton
+import Quickshell
+
+// phiOS — design tokens, rendered by `phi theme set` (S-12) from
+// design/tokens.common.sh + design/tokens.<variant>.sh via
+// design/adapters.txt (S-20). GENERATED. Never edit by hand — edit the
+// token files in this repository and re-run `phi theme set`; the next
+// render overwrites this file. A checked-in worked example lives at
+// Config/Tokens.example.qml in phi-shell for anyone who has not run
+// `phi theme set` yet.
+//
+// Every value is a string, units included ("14px", "120ms", "1ch"), exactly
+// as design/tokens.common.sh's own contract requires: a consumer that needs
+// a bare number strips the unit itself. phi-shell's Config/Appearance.qml is
+// the only file allowed to read these — everything else reads Appearance.
+
+Singleton {
+    id: root
+
+    readonly property string variant: "${PHI_VARIANT}"
+
+    // --- Tier 0: structure ---------------------------------------------
+    readonly property string bg0: "${PHI_BG_0}"
+    readonly property string bg1: "${PHI_BG_1}"
+    readonly property string bg2: "${PHI_BG_2}"
+    readonly property string bg3: "${PHI_BG_3}"
+    readonly property string fg0: "${PHI_FG_0}"
+    readonly property string fg1: "${PHI_FG_1}"
+    readonly property string fg2: "${PHI_FG_2}"
+    readonly property string fg3: "${PHI_FG_3}"
+    readonly property string border: "${PHI_BORDER}"
+    readonly property string borderStrong: "${PHI_BORDER_STRONG}"
+    readonly property string overlayScrim: "${PHI_OVERLAY_SCRIM}"
+
+    // --- Tier 1: accent --------------------------------------------------
+    readonly property string accent: "${PHI_ACCENT}"
+    readonly property string accentFg: "${PHI_ACCENT_FG}"
+
+    // --- Tier 2: semantic --------------------------------------------------
+    readonly property string error: "${PHI_ERROR}"
+    readonly property string errorFg: "${PHI_ERROR_FG}"
+    readonly property string warn: "${PHI_WARN}"
+    readonly property string warnFg: "${PHI_WARN_FG}"
+    readonly property string success: "${PHI_SUCCESS}"
+    readonly property string successFg: "${PHI_SUCCESS_FG}"
+    readonly property string info: "${PHI_INFO}"
+    readonly property string infoFg: "${PHI_INFO_FG}"
+
+    // --- Tier 3: syntax --------------------------------------------------
+    readonly property string syntax1: "${PHI_SYNTAX_1}"
+    readonly property string syntax2: "${PHI_SYNTAX_2}"
+    readonly property string syntax3: "${PHI_SYNTAX_3}"
+    readonly property string syntax4: "${PHI_SYNTAX_4}"
+    readonly property string syntax5: "${PHI_SYNTAX_5}"
+    readonly property string syntax6: "${PHI_SYNTAX_6}"
+
+    // --- Selection, terminal cursor ---------------------------------------
+    readonly property string selectionBg: "${PHI_SELECTION_BG}"
+    readonly property string selectionFg: "${PHI_SELECTION_FG}"
+    readonly property string cursorTerm: "${PHI_CURSOR_TERM}"
+
+    // --- ANSI 16 -----------------------------------------------------------
+    readonly property string ansi0: "${PHI_ANSI_0}"
+    readonly property string ansi1: "${PHI_ANSI_1}"
+    readonly property string ansi2: "${PHI_ANSI_2}"
+    readonly property string ansi3: "${PHI_ANSI_3}"
+    readonly property string ansi4: "${PHI_ANSI_4}"
+    readonly property string ansi5: "${PHI_ANSI_5}"
+    readonly property string ansi6: "${PHI_ANSI_6}"
+    readonly property string ansi7: "${PHI_ANSI_7}"
+    readonly property string ansi8: "${PHI_ANSI_8}"
+    readonly property string ansi9: "${PHI_ANSI_9}"
+    readonly property string ansi10: "${PHI_ANSI_10}"
+    readonly property string ansi11: "${PHI_ANSI_11}"
+    readonly property string ansi12: "${PHI_ANSI_12}"
+    readonly property string ansi13: "${PHI_ANSI_13}"
+    readonly property string ansi14: "${PHI_ANSI_14}"
+    readonly property string ansi15: "${PHI_ANSI_15}"
+
+    // --- Typography --------------------------------------------------------
+    readonly property string fontMono: "${PHI_FONT_MONO}"
+    readonly property string fontReading: "${PHI_FONT_READING}"
+    readonly property string fontUi: "${PHI_FONT_UI}"
+    readonly property string fontSymbol: "${PHI_FONT_SYMBOL}"
+
+    // --- Size scale --------------------------------------------------------
+    readonly property string fontSize0: "${PHI_FONT_SIZE_0}"
+    readonly property string fontSize1: "${PHI_FONT_SIZE_1}"
+    readonly property string fontSize2: "${PHI_FONT_SIZE_2}"
+    readonly property string fontSize3: "${PHI_FONT_SIZE_3}"
+    readonly property string fontSize4: "${PHI_FONT_SIZE_4}"
+    readonly property string fontSize5: "${PHI_FONT_SIZE_5}"
+    readonly property string fontSize6: "${PHI_FONT_SIZE_6}"
+
+    // --- Spacing -------------------------------------------------------
+    readonly property string space1: "${PHI_SPACE_1}"
+    readonly property string space2: "${PHI_SPACE_2}"
+    readonly property string space3: "${PHI_SPACE_3}"
+    readonly property string space4: "${PHI_SPACE_4}"
+    readonly property string space5: "${PHI_SPACE_5}"
+    readonly property string space6: "${PHI_SPACE_6}"
+
+    // --- Shape -------------------------------------------------------
+    readonly property string radiusBase: "${PHI_RADIUS_BASE}"
+    readonly property string radiusPill: "${PHI_RADIUS_PILL}"
+
+    // --- Layering -------------------------------------------------------
+    readonly property string zBase: "${PHI_Z_BASE}"
+    readonly property string zBar: "${PHI_Z_BAR}"
+    readonly property string zPopover: "${PHI_Z_POPOVER}"
+    readonly property string zModal: "${PHI_Z_MODAL}"
+    readonly property string zTooltip: "${PHI_Z_TOOLTIP}"
+    readonly property string zNotification: "${PHI_Z_NOTIFICATION}"
+
+    // --- Motion -------------------------------------------------------
+    readonly property string motionAPeriod: "${PHI_MOTION_A_PERIOD}"
+    readonly property string motionAEasing: "${PHI_MOTION_A_EASING}"
+    readonly property string motionBDuration: "${PHI_MOTION_B_DURATION}"
+    readonly property string motionBEasing: "${PHI_MOTION_B_EASING}"
+    readonly property string motionCTypeStep: "${PHI_MOTION_C_TYPE_STEP}"
+    readonly property string motionCScramble: "${PHI_MOTION_C_SCRAMBLE}"
+    readonly property string motionCEasing: "${PHI_MOTION_C_EASING}"
+    readonly property string motionDDuration: "${PHI_MOTION_D_DURATION}"
+}

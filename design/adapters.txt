@@ -17,14 +17,14 @@
 # list and check all resolve tokens through it — and it owns the reload
 # mechanics: a `[unknown]` row is rendered and reported as not yet wired,
 # never guessed at or silently skipped. Every row below points at a template
-# that exists as of S-03.
+# that exists.
 #
 # `[unknown]` in the reload column is deliberate and is not a placeholder to
 # be guessed at. A wrong reload command fails silently — the file is written,
 # the application keeps its old colours, and nothing reports it. Each one is
 # filled in by the step that implements that target's reload.
 #
-# The perimeter of §6.7 is wider than this file: phi-shell, the GTK/Qt themes,
+# The perimeter of §6.7 is wider than this file: the GTK/Qt themes,
 # Librewolf's userChrome.css, the XCursor theme and the Plymouth theme are all
 # themed targets. They get their row from the step that creates their
 # template. A row here without a template is a row that cannot be rendered.
@@ -41,3 +41,12 @@ profiles/base/templates/.config/nvim/lua/theme.lua.tmpl         | .config/nvim/l
 # --- profile: desktop -------------------------------------------------------
 profiles/desktop/templates/.config/kitty/theme.conf.tmpl        | .config/kitty/theme.conf           | [unknown] | B
 profiles/desktop/templates/.config/mpv/script-opts/osc.conf.tmpl| .config/mpv/script-opts/osc.conf   | [unknown] | A
+
+# phi-shell (S-20). Not `[unknown]`: Quickshell watches every QML file it
+# has loaded and hot-reloads on change by itself (master plan §8.1, "hot
+# reload al salvataggio") — there is no separate command to run, and no gap
+# to fill in later the way the `[unknown]` rows above still need. The
+# destination assumes phi-shell is checked out at exactly
+# ~/.config/quickshell/phi (phi-shell/README.md), the one path `qs -p`
+# and Quickshell's own named-config lookup both resolve without an override.
+profiles/desktop/templates/.config/quickshell/phi/Config/Tokens.qml.tmpl | .config/quickshell/phi/Config/Tokens.qml | -         | A
