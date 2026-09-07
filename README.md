@@ -20,10 +20,12 @@ install.sh           pre-M0 installer: reads hosts/$(hostname).txt, applies each
                      module in order. This is the one that has actually been run
                      on zotac and razer, and it stays the live one until S-03
 modules/<name>/      pre-M0 content: packages.txt, files to symlink, *.tmpl
-theme.sh             the nine colour values every *.tmpl currently renders against
+theme.sh             compatibility shim (S-02): the nine pre-M0 names, read out
+                     of design/. No colour of its own. Removed at S-03
 
 bin/phios-install    v2 installer (S-01): idempotent, previewable, reversible,
                      and aware of what it created on this machine
+bin/phios-render     renders one template against the tokens (S-02)
 bin/lib/             shared bash functions
 design/              every colour, font, size, radius and motion value (S-02)
 hosts/<name>.txt     ordered list of profiles for that host
@@ -46,6 +48,11 @@ For each module listed in `hosts/<host>.txt`, in order:
    `$HOME`.
 3. Renders every `*.tmpl` file with `envsubst`, sourcing `theme.sh` for the
    substitution values, and writes the result into `$HOME`.
+
+Since S-02 those substitution values come from `design/`: `theme.sh` no longer
+holds a colour, it translates the four pre-M0 names that §6.2 renamed and
+sources the rest. The bytes it produces are unchanged, which is what makes
+S-03's output-identical migration checkable rather than merely claimed.
 
 Module order in each host file is significant: a profile that provides a
 concrete driver must precede one that requires it.

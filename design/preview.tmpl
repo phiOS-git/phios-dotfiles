@@ -1,0 +1,124 @@
+phiOS design tokens — variant ${PHI_VARIANT}
+
+  Rendered from design/preview.tmpl. Nothing installs this file and no
+  application reads it: it exists so that every token has one consumer
+  that is guaranteed to exercise it, and so that the two variants can be
+  diffed against each other with a command rather than by eye.
+
+  A token that is missing from a variant renders as an empty value here,
+  which is the cheapest way to catch a palette that has drifted out of
+  parity with the other one.
+
+
+common — shared by every variant (design/tokens.common.sh)
+----------------------------------------------------------------------------
+
+  typography
+    font-mono              ${PHI_FONT_MONO}
+    font-reading           ${PHI_FONT_READING}
+    font-ui                ${PHI_FONT_UI}
+    font-symbol            ${PHI_FONT_SYMBOL}
+
+  size scale
+    font-size-0            ${PHI_FONT_SIZE_0}
+    font-size-1            ${PHI_FONT_SIZE_1}
+    font-size-2            ${PHI_FONT_SIZE_2}
+    font-size-3            ${PHI_FONT_SIZE_3}
+    font-size-4            ${PHI_FONT_SIZE_4}
+    font-size-5            ${PHI_FONT_SIZE_5}
+    font-size-6            ${PHI_FONT_SIZE_6}
+
+  spacing
+    space-1                ${PHI_SPACE_1}
+    space-2                ${PHI_SPACE_2}
+    space-3                ${PHI_SPACE_3}
+    space-4                ${PHI_SPACE_4}
+    space-5                ${PHI_SPACE_5}
+    space-6                ${PHI_SPACE_6}
+
+  shape
+    radius-base            ${PHI_RADIUS_BASE}
+    radius-pill            ${PHI_RADIUS_PILL}
+
+  layering
+    z-base                 ${PHI_Z_BASE}
+    z-bar                  ${PHI_Z_BAR}
+    z-popover              ${PHI_Z_POPOVER}
+    z-modal                ${PHI_Z_MODAL}
+    z-tooltip              ${PHI_Z_TOOLTIP}
+    z-notification         ${PHI_Z_NOTIFICATION}
+
+  motion
+    motion-a-period        ${PHI_MOTION_A_PERIOD}
+    motion-a-easing        ${PHI_MOTION_A_EASING}
+    motion-b-duration      ${PHI_MOTION_B_DURATION}
+    motion-b-easing        ${PHI_MOTION_B_EASING}
+    motion-c-type-step     ${PHI_MOTION_C_TYPE_STEP}
+    motion-c-scramble      ${PHI_MOTION_C_SCRAMBLE}
+    motion-c-easing        ${PHI_MOTION_C_EASING}
+    motion-d-duration      ${PHI_MOTION_D_DURATION}
+
+
+palette — one file per variant (design/tokens.<variant>.sh)
+----------------------------------------------------------------------------
+
+  variant
+    variant                ${PHI_VARIANT}
+
+  tier 0 — structure
+    bg-0                   ${PHI_BG_0}
+    bg-1                   ${PHI_BG_1}
+    bg-2                   ${PHI_BG_2}
+    bg-3                   ${PHI_BG_3}
+    fg-0                   ${PHI_FG_0}
+    fg-1                   ${PHI_FG_1}
+    fg-2                   ${PHI_FG_2}
+    fg-3                   ${PHI_FG_3}
+    border                 ${PHI_BORDER}
+    border-strong          ${PHI_BORDER_STRONG}
+    overlay-scrim          ${PHI_OVERLAY_SCRIM}
+
+  tier 1 — accent
+    accent                 ${PHI_ACCENT}
+    accent-fg              ${PHI_ACCENT_FG}
+
+  tier 2 — semantic
+    error                  ${PHI_ERROR}
+    error-fg               ${PHI_ERROR_FG}
+    warn                   ${PHI_WARN}
+    warn-fg                ${PHI_WARN_FG}
+    success                ${PHI_SUCCESS}
+    success-fg             ${PHI_SUCCESS_FG}
+    info                   ${PHI_INFO}
+    info-fg                ${PHI_INFO_FG}
+
+  tier 3 — syntax
+    syntax-1               ${PHI_SYNTAX_1}
+    syntax-2               ${PHI_SYNTAX_2}
+    syntax-3               ${PHI_SYNTAX_3}
+    syntax-4               ${PHI_SYNTAX_4}
+    syntax-5               ${PHI_SYNTAX_5}
+    syntax-6               ${PHI_SYNTAX_6}
+
+  selection, cursor
+    selection-bg           ${PHI_SELECTION_BG}
+    selection-fg           ${PHI_SELECTION_FG}
+    cursor-term            ${PHI_CURSOR_TERM}
+
+  ansi 16
+    ansi-0                 ${PHI_ANSI_0}
+    ansi-1                 ${PHI_ANSI_1}
+    ansi-2                 ${PHI_ANSI_2}
+    ansi-3                 ${PHI_ANSI_3}
+    ansi-4                 ${PHI_ANSI_4}
+    ansi-5                 ${PHI_ANSI_5}
+    ansi-6                 ${PHI_ANSI_6}
+    ansi-7                 ${PHI_ANSI_7}
+    ansi-8                 ${PHI_ANSI_8}
+    ansi-9                 ${PHI_ANSI_9}
+    ansi-10                ${PHI_ANSI_10}
+    ansi-11                ${PHI_ANSI_11}
+    ansi-12                ${PHI_ANSI_12}
+    ansi-13                ${PHI_ANSI_13}
+    ansi-14                ${PHI_ANSI_14}
+    ansi-15                ${PHI_ANSI_15}

@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+#
+# phios-render — render one template against the design tokens.
+#
+# This is the bootstrap half of the generation contract (master plan §6.7).
+# It renders; it does not decide where the output goes and it does not reload
+# anything. design/adapters.txt owns destinations and reload commands, and
+# `phi theme set` (S-12) is what reads it — at which point this script becomes
+# redundant and goes away. Until `phi` exists, this is how a template is
+# turned into a configuration file by hand.
+#
+# It deliberately takes an explicit template path rather than driving off
+# adapters.txt: every row there points into profiles/, which S-03 fills.
+#
+# Exit codes
+#   0  rendered
+#   2  error
+#
+# Dependency budget (R9): bash, coreutils, gettext.
+
+set -euo pipefail
+
+PHIOS_SELF=$(realpath -- "${BASH_SOURCE[0]}")
+PHIOS_BIN=$(dirname -- "$PHIOS_SELF")
+PHIOS_ROOT=$(dirname -- "$PHIOS_BIN")
+
+# shellcheck source=lib/common.sh
+. "$PHIOS_BIN/lib/common.sh"
+# shellcheck source=lib/tokens.sh
+. "$PHIOS_BIN/lib/tokens.sh"
+
+usage() {
+	cat <<'USAGE'
+usage: phios-render [--variant NAME] TEMPLATE [DESTINATION]
+
+Renders TEMPLATE against design/tokens.common.sh and design/tokens.<variant>.sh,
+substituting the PHI_* names they define and nothing else. Writes to
+DESTINATION, or to standard output when DESTINATION is omitted.
+
+options
+  --variant NAME  dark or light. Defaults to the active runtime variant, and
+                  to dark when none is set
+  -h, --help      this text
+
+A $NAME in a template that is not a design token is left alone, so a $PATH or
+a $HOME inside a configuration file survives untouched.
+
+examples
+  phios-render --variant dark  design/preview.tmpl
+  phios-render --variant light design/preview.tmpl /tmp/light.txt
+USAGE
+}
+
+main() {
+	local variant=${PHIOS_VARIANT:-} src='' dest=''
+
+	while (( $# > 0 )); do
+		case $1 in
+			--variant)
+				[[ $# -ge 2 ]] || phios_die '--variant needs a name'
+				variant=$2
+				shift
+				;;
+			--variant=*) variant=${1#--variant=} ;;
+			-h|--help) usage; exit 0 ;;
+			--) shift; break ;;
+			-*) phios_die "unknown option: $1 (try --help)" ;;
+			*)
+				if [[ -z $src ]]; then src=$1
+				elif [[ -z $dest ]]; then dest=$1
+				else phios_die "unexpected argument: $1"
+				fi
+				;;
+		esac
+		shift
+	done
+	while (( $# > 0 )); do
+		if [[ -z $src ]]; then src=$1
+		elif [[ -z $dest ]]; then dest=$1
+		else phios_die "unexpected argument: $1"
+		fi
+		shift
+	done
+
+	[[ -n $src ]] || { usage >&2; exit 2; }
+	[[ -f $src ]] || phios_die "no such template: $src"
+
+	phios_require_cmd realpath 'coreutils'
+	phios_require_cmd envsubst 'gettext'
+
+	PHIOS_VARIANT=$variant
+	variant=$(phios_variant)
+
+	# Writing to a temporary file first, then moving it into place, so a
+	# failed render cannot leave a half-written configuration behind.
+	if [[ -z $dest ]]; then
+		phios_render_template "$variant" "$src" /dev/stdout
+		return 0
+	fi
+
+	local tmp
+	tmp=$(mktemp)
+	# shellcheck disable=SC2064
+	trap "rm -f -- '$tmp'" EXIT
+	phios_render_template "$variant" "$src" "$tmp"
+	mkdir -p -- "$(dirname -- "$dest")"
+	cat -- "$tmp" > "$dest"
+	return 0
+}
+
+main "$@"

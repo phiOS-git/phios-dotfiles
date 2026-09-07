@@ -1,0 +1,40 @@
+# phiOS — the generation contract (master plan §6.7).
+#
+# One row per themed target. Four fields separated by `|`, whitespace around
+# each field is trimmed, `#` starts a comment, blank lines are ignored.
+#
+#   template  | destination | reload | class
+#
+#   template     path from the repository root
+#   destination  path relative to $HOME, matching the installer's convention
+#   reload       command that makes a running instance pick the file up, or
+#                `-` when the class has no reload path at all
+#   class        A hot reload  |  B runtime reconfiguration  |  C restart
+#
+# This file is data. Nothing reads it yet: `phios-render` takes an explicit
+# template path, because at S-02 `profiles/` is still empty and every row
+# below points at a file S-03 has not created. `phi theme set` (S-12) is what
+# consumes it, and it owns the reload mechanics.
+#
+# `[unknown]` in the reload column is deliberate and is not a placeholder to
+# be guessed at. A wrong reload command fails silently — the file is written,
+# the application keeps its old colours, and nothing reports it. Each one is
+# filled in by the step that implements that target's reload.
+#
+# The perimeter of §6.7 is wider than this file: phi-shell, the GTK/Qt themes,
+# Librewolf's userChrome.css, the XCursor theme and the Plymouth theme are all
+# themed targets. They get their row from the step that creates their
+# template. A row here without a template is a row that cannot be rendered.
+
+# --- profile: base ----------------------------------------------------------
+# zsh has no reload path: a running shell keeps the prompt it started with,
+# and there is no supported way to push a new one into it. New shells pick it
+# up, which makes it class C with a restart that costs nothing.
+profiles/base/templates/.config/zsh/theme.zsh.tmpl              | .config/zsh/theme.zsh              | -         | C
+profiles/base/templates/.config/yazi/theme.toml.tmpl            | .config/yazi/theme.toml            | [unknown] | A
+profiles/base/templates/.config/btop/themes/phi.theme.tmpl      | .config/btop/themes/phi.theme      | [unknown] | A
+profiles/base/templates/.config/nvim/lua/theme.lua.tmpl         | .config/nvim/lua/theme.lua         | [unknown] | B
+
+# --- profile: desktop -------------------------------------------------------
+profiles/desktop/templates/.config/kitty/theme.conf.tmpl        | .config/kitty/theme.conf           | [unknown] | B
+profiles/desktop/templates/.config/mpv/script-opts/osc.conf.tmpl| .config/mpv/script-opts/osc.conf   | [unknown] | A

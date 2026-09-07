@@ -19,8 +19,8 @@ changes a row's status — never in a separate commit.
 | Step | Title | Status | Commit | Date | Note |
 |---|---|---|---|---|---|
 | S-00 | Repository scaffolding and PROGRESS.md | verified | 1e35eb6 | 2026-09-07 | |
-| S-01 | [BLOCKING] Dotfiles v2 structure and installer | awaiting-verification | | 2026-09-07 | Machinery only; `profiles/` stays empty until S-03, so `--dry-run` reports no profiles declared |
-| S-02 | [BLOCKING] Design token source, two variants | todo | | | |
+| S-01 | [BLOCKING] Dotfiles v2 structure and installer | verified | 6712fdb | 2026-09-07 | Machinery only; `profiles/` stays empty until S-03, so `--dry-run` reports no profiles declared |
+| S-02 | [BLOCKING] Design token source, two variants | awaiting-verification | | 2026-09-07 | `Q-N01` (`font-mono`) still open, provisional value written, closes at S-51. Light variant has never rendered on a machine. `theme.sh` is now a shim over `design/` so `install.sh` keeps working until S-03 |
 | S-03 | [BLOCKING] Migrate existing targets, output-identical | todo | | | |
 | S-04 | Capability detection | todo | | | |
 | S-05 | /etc boundary | todo | | | |
