@@ -15,8 +15,11 @@ ya pkg add yazi-rs/plugins:git
 # profiles/gaming/manual.txt already documents for multilib — so the two
 # lines below are appended by hand; only the Server line they Include is a
 # real, diffable file (system/etc/pacman.d/phi-mirrorlist in this profile).
-# Fill in that file's <mini-overlay-address> placeholder first.
-sudo sh -c 'printf "\n[phi]\nSigLevel = Required\nInclude = /etc/pacman.d/phi-mirrorlist\n" >> /etc/pacman.conf'
+# Fill in that file's <mini-overlay-address> and <port> placeholders first.
+# Guarded with grep so running this twice doesn't duplicate the section —
+# unlike the multilib sed in profiles/gaming/manual.txt, a plain append is
+# not naturally idempotent.
+grep -q '^\[phi\]' /etc/pacman.conf || sudo sh -c 'printf "\n[phi]\nSigLevel = Required\nInclude = /etc/pacman.d/phi-mirrorlist\n" >> /etc/pacman.conf'
 # Import and locally trust the phi packaging public key (generated once on
 # zotac by hand; the private key never leaves zotac, per phi-packages/CLAUDE.md).
 sudo pacman-key --add <path-to-phi-packaging-key.asc> && sudo pacman-key --lsign-key <key-id>
