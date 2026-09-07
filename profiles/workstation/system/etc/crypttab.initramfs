@@ -1,0 +1,1 @@
+system  UUID=<system-partition-uuid>  none  password-echo=no,discard

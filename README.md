@@ -69,8 +69,12 @@ concrete driver must precede one that requires it.
 - **No `/etc` material, applied or otherwise.** `/etc` changes are a strictly
   `[USER]` action, made with `sudo`, file by file — never something this
   installer runs. `profiles/*/system/` is where that material is kept versioned
-  and diffable; it stays unapplied by design (`I-09`). It is populated at S-05
-  and is empty until then.
+  and diffable; it stays unapplied by design (`I-09`). Populated at S-05 with
+  what is currently applied by hand and known: NVIDIA modprobe options, the
+  `zram` generator and its `sysctl` companion, `crypttab` shape, `smartd`
+  config, the unit-failure notification drop-in, and razer's suspend/hibernate
+  drop-ins. `--system-diff` shows the result against each machine, unprivileged
+  and read-only; applying a file stays a manual, `sudo`, file-by-file action.
 - **No `systemctl`.** This installer places files; it never enables, starts,
   or restarts a service. Which units to enable is left as output for the user
   to act on.
@@ -82,8 +86,9 @@ concrete driver must precede one that requires it.
   in `services-*.txt` and one-off commands in `manual.txt`; the installer prints
   both and never queries systemd, never runs the commands, and never checks
   whether either has been done. So `--check` says nothing about them, and a
-  clean `--check` is not evidence that the session is complete. Closing that
-  reporting gap belongs with the `/etc` work at `S-05`.
+  clean `--check` is not evidence that the session is complete. This gap does
+  not close: querying systemd state is exactly the boundary this installer
+  does not cross, `/etc` work included.
 - **No fallback palette.** Rendering a template when `design/` is missing or
   the variant is unknown is a hard error, not a half-render against defaults.
   That is deliberate: it keeps `I-05` enforceable.

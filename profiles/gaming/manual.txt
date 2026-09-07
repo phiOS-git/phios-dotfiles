@@ -1,0 +1,13 @@
+# Enabling the multilib repository. This profile's lib32-* packages (and the
+# GPU profile that precedes it — nvidia on zotac, intel-gpu on razer) cannot
+# resolve without it, and pacman.conf has no drop-in mechanism for repository
+# sections, so it cannot be declared as a mirrored file under system/ the way
+# modprobe.d or sysctl.d entries are: the installer would have nowhere real to
+# diff a fragment against. Already applied by hand on both zotac and razer.
+#
+# phios_read_list (bin/lib/common.sh) truncates every line of this file at its
+# first literal "#", with no notion of quoting, so the sed script below spells
+# its "#" as $'\x23' — ANSI-C quoting bash expands back to a literal "#" when
+# this line is run, giving the identical command already verified on both
+# machines, without putting the character that breaks the parser into the file.
+sudo sed -i '/\[multilib\]/,/Include/s/^'$'\x23''//' /etc/pacman.conf

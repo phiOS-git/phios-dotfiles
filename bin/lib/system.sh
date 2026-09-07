@@ -70,8 +70,8 @@ phios_system_diff() {
 
 # Declared systemd units. The installer prints them and stops: enabling a unit
 # is a user action (R8). It deliberately does not query systemd either, so
-# --check reports no service drift; that gap is closed with the /etc boundary
-# work at S-05.
+# --check reports no service drift; that gap does not close, at S-05 or ever —
+# querying systemd state is exactly the boundary this installer does not cross.
 phios_services_report() {
 	local profile scope file unit any=0
 	for scope in user system; do
