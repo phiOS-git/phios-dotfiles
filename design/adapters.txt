@@ -11,10 +11,12 @@
 #                `-` when the class has no reload path at all
 #   class        A hot reload  |  B runtime reconfiguration  |  C restart
 #
-# This file is data. Nothing reads it yet: `phios-render` takes an explicit
-# template path and `phios-install` walks `profiles/*/templates/` directly, so
-# neither needs the destination column. `phi theme set` (S-12) is what consumes
-# it, and it owns the reload mechanics. Every row below points at a template
+# `phios-render` takes an explicit template path and `phios-install` walks
+# `profiles/*/templates/` directly, so neither needs the destination column.
+# `phi theme set` (S-12) is what consumes this file — render, set, preview,
+# list and check all resolve tokens through it — and it owns the reload
+# mechanics: a `[unknown]` row is rendered and reported as not yet wired,
+# never guessed at or silently skipped. Every row below points at a template
 # that exists as of S-03.
 #
 # `[unknown]` in the reload column is deliberate and is not a placeholder to
