@@ -48,8 +48,9 @@ Everything, and each file says which of its values is which.
 `tokens.dark.sh` is the palette that runs on `zotac` and `razer` today,
 extended to the full §6.2 set. Values marked `[carried]` are the ones that
 render right now — nine from the old `theme.sh` plus the fixed pairings inside
-the current templates — and must not change before S-03, whose migration has
-to be output-identical. Values marked `[filled]` are slots §6.2 requires that
+the templates. S-03 moved those templates onto the token names and confirmed
+that all six render byte-identically against the pre-S-03 output, which is what
+those values are for. Values marked `[filled]` are slots §6.2 requires that
 today's palette had no value for.
 
 `tokens.light.sh` has never rendered on a machine. All of it was constructed

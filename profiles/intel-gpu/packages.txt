@@ -1,0 +1,6 @@
+# Intel graphics: Mesa Vulkan plus the 32-bit library the gaming profile needs.
+#
+# This profile is what makes vulkan-driver a resolved dependency rather than an
+# interactive prompt, so it MUST precede gaming in hosts/razer.txt (§5.3).
+vulkan-intel
+lib32-vulkan-intel

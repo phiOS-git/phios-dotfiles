@@ -22,46 +22,26 @@ phios_host_file() {
 	printf '%s\n' "$PHIOS_ROOT/hosts/$1.txt"
 }
 
-# Directories under profiles/ that look like a profile. Used only to tell the
-# transitional empty state apart from a genuine typo in a host file.
-phios_profiles_available() {
-	local dir
-	[[ -d $PHIOS_ROOT/profiles ]] || return 0
-	for dir in "$PHIOS_ROOT"/profiles/*/; do
-		[[ -d $dir ]] || continue
-		dir=${dir%/}
-		printf '%s\n' "${dir##*/}"
-	done
-	return 0
-}
-
 # Fills PHIOS_PROFILES with the profiles declared for $PHIOS_HOSTNAME.
 #
-# S-01 builds the machinery; S-03 moves modules/ into profiles/. While
-# profiles/ is still empty there is nothing to plan, and that is a clean run
-# rather than an error — the host files still name the old modules. As soon as
-# a single profile directory exists, a declared name without a directory is a
-# hard error again, so a typo can never be silently skipped.
+# A declared name without a directory under profiles/ is a hard error, so a
+# typo in a host file can never be silently skipped. S-01 and S-02 tolerated an
+# empty profiles/ as the transitional state while modules/ was still the live
+# tree; S-03 filled it, and that tolerance is gone with it.
 phios_resolve_profiles() {
-	local host_file declared available name
+	local host_file declared name
 	host_file=$(phios_host_file "$PHIOS_HOSTNAME")
 	[[ -f $host_file ]] || phios_die "no profile list for this host: hosts/$PHIOS_HOSTNAME.txt"
 
 	mapfile -t declared < <(phios_read_list "$host_file")
-	mapfile -t available < <(phios_profiles_available)
 
 	PHIOS_PROFILES=()
-	PHIOS_PROFILES_PENDING=()
-
-	if (( ${#available[@]} == 0 )); then
-		PHIOS_PROFILES_PENDING=("${declared[@]+"${declared[@]}"}")
-		return 0
-	fi
-
 	for name in "${declared[@]+"${declared[@]}"}"; do
 		[[ -d $PHIOS_ROOT/profiles/$name ]] ||
 			phios_die "hosts/$PHIOS_HOSTNAME.txt declares an unknown profile: $name"
 		PHIOS_PROFILES+=("$name")
 	done
+	(( ${#PHIOS_PROFILES[@]} > 0 )) ||
+		phios_die "hosts/$PHIOS_HOSTNAME.txt declares no profiles"
 	return 0
 }

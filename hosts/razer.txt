@@ -1,5 +1,13 @@
+# razer — laptop, Intel Iris Xe, primary machine.
+#
+# Order is significant: intel-gpu provides the concrete vulkan-driver that
+# gaming requires, so it must stay above gaming. This is the regression that
+# actually happened here — gaming ran before the Intel profile and pacman
+# asked which of thirteen vulkan-driver providers to use (master plan §5.3).
 base
-desktop-environment
+desktop
 laptop
-razer
+intel-gpu
+razer-hw
 gaming
+study

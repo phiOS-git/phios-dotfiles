@@ -7,6 +7,10 @@
 #
 # The diff is produced with `git diff --no-index`, which is already in the
 # dependency budget and gives the same output the user reads everywhere else.
+#
+# The two reporters at the end of this file are here for the same reason: a
+# systemd unit and a manual step are declared by a profile and performed by the
+# user, never by the installer. Same boundary, different material.
 
 # Fills PHIOS_SYSTEM_FILES with "profile<TAB>source<TAB>destination" records.
 phios_system_collect() {
@@ -83,6 +87,31 @@ phios_services_report() {
 		phios_out '  none declared'
 	else
 		phios_out '  enable these yourself; this script never runs systemctl'
+	fi
+	return 0
+}
+
+# Declared manual steps (profiles/<name>/manual.txt). Same contract as the
+# services above and the reason they share this file: the installer states what
+# has to happen and performs none of it. These are the one-off actions that are
+# neither a package, nor a file, nor a systemd unit — the yazi git plugin is the
+# first, and the reason install.sh silently left a known gap (C-10).
+#
+# Like services, they are printed and never checked, so --check says nothing
+# about whether they have been done.
+phios_manual_report() {
+	local profile file step any=0
+	for profile in "${PHIOS_PROFILES[@]+"${PHIOS_PROFILES[@]}"}"; do
+		file=$PHIOS_ROOT/profiles/$profile/manual.txt
+		while IFS= read -r step; do
+			printf '  %s  (%s)\n' "$step" "$profile"
+			any=1
+		done < <(phios_read_list "$file")
+	done
+	if (( any == 0 )); then
+		phios_out '  none declared'
+	else
+		phios_out '  run these yourself; this script never runs them'
 	fi
 	return 0
 }

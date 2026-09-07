@@ -1,5 +1,0 @@
-linux-headers
-linux-lts-headers
-openrazer-daemon
-vulkan-intel
-lib32-vulkan-intel

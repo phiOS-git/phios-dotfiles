@@ -1,0 +1,5 @@
+# Arch does not auto-enable user units when a package is installed, so these
+# three stay off until they are enabled once, by hand.
+pipewire.service
+pipewire-pulse.service
+wireplumber.service

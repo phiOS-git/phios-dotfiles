@@ -1,4 +1,10 @@
+# zotac — desktop, NVIDIA.
+#
+# Order is significant: nvidia provides the concrete vulkan-driver that gaming
+# requires, so it must stay above gaming. Reordering these two brings back the
+# interactive provider prompt (master plan §5.3).
 base
-desktop-environment
+desktop
+workstation
 nvidia
 gaming

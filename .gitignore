@@ -1,0 +1,3 @@
+# home/ is symlinked into $HOME wholesale, so anything that lands in a profile
+# tree by accident lands in the home directory too.
+.DS_Store

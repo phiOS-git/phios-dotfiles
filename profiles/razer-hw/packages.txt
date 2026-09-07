@@ -1,0 +1,10 @@
+# Razer Book 13 hardware. The GPU stack is not here: it is generic Intel and
+# lives in the intel-gpu profile, so a non-Razer Intel laptop can take one
+# without the other (master plan §5.3).
+#
+# openrazer-daemon is in extra, not the AUR (verified on razer), and pulls
+# openrazer-driver-dkms and python-openrazer. The two header packages are what
+# that DKMS module builds against, on both kernels.
+linux-headers
+linux-lts-headers
+openrazer-daemon

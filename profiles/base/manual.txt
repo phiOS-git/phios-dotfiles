@@ -1,0 +1,10 @@
+# Steps that have to be run by hand once, because the installer cannot perform
+# them: they are not pacman packages, not files, and not systemd units.
+# phios-install prints this list and never runs anything in it.
+#
+# The yazi git plugin. home/.config/yazi/init.lua does require("git") and
+# yazi.toml registers it as a fetcher, so without the plugin yazi starts with
+# an error and the file list shows no git signs. It is fetched from GitHub into
+# $XDG_CONFIG_HOME/yazi/plugins/, which is why it is not in this repository and
+# why install.sh never handled it (master plan C-10).
+ya pkg add yazi-rs/plugins:git

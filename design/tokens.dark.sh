@@ -14,9 +14,10 @@
 #   [carried]     the value that renders on zotac and razer today. Nine came
 #                 from theme.sh, the rest from the fixed pairings inside the
 #                 current templates (kitty's cursor_text_color, btop's
-#                 selected_fg, yazi's count_* foregrounds). Do not change one
-#                 of these before S-03: the migration there has to be
-#                 output-identical, and these are what makes that checkable.
+#                 selected_fg, yazi's count_* foregrounds). S-03 rewrote the
+#                 templates onto the token names and checked that all six
+#                 render byte-identically; changing one of these now changes
+#                 what the machines display.
 #   [filled]      a slot §6.2 requires that today's palette has no value for.
 #                 Interpolated in OKLab lightness along the ramp its neighbours
 #                 already define. This is gap-filling, not derivation.

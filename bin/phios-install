@@ -121,15 +121,7 @@ phios_header() {
 	phios_out "  repository  $PHIOS_ROOT"
 	phios_out "  host        $PHIOS_HOSTNAME"
 	phios_out "  variant     $PHIOS_VARIANT"
-	if (( ${#PHIOS_PROFILES[@]} > 0 )); then
-		phios_out "  profiles    ${PHIOS_PROFILES[*]}"
-	else
-		phios_out '  profiles    no profiles declared'
-		if (( ${#PHIOS_PROFILES_PENDING[@]} > 0 )); then
-			phios_out "              hosts/$PHIOS_HOSTNAME.txt still names the pre-M0 modules"
-			phios_out "              (${PHIOS_PROFILES_PENDING[*]}); profiles/ is filled at S-03"
-		fi
-	fi
+	phios_out "  profiles    ${PHIOS_PROFILES[*]}"
 }
 
 # One report for --dry-run and --check: the same plan, framed as "would do" or
@@ -196,6 +188,10 @@ phios_report() {
 	phios_out ''
 	phios_out 'services'
 	phios_services_report
+
+	phios_out ''
+	phios_out 'manual steps'
+	phios_manual_report
 }
 
 phios_mode_dry_run() {
@@ -280,6 +276,10 @@ phios_mode_apply() {
 	phios_out ''
 	phios_out 'services'
 	phios_services_report
+
+	phios_out ''
+	phios_out 'manual steps'
+	phios_manual_report
 
 	phios_out ''
 	phios_out "manifest  $(phios_manifest_path)"

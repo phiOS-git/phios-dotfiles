@@ -12,9 +12,10 @@
 #   class        A hot reload  |  B runtime reconfiguration  |  C restart
 #
 # This file is data. Nothing reads it yet: `phios-render` takes an explicit
-# template path, because at S-02 `profiles/` is still empty and every row
-# below points at a file S-03 has not created. `phi theme set` (S-12) is what
-# consumes it, and it owns the reload mechanics.
+# template path and `phios-install` walks `profiles/*/templates/` directly, so
+# neither needs the destination column. `phi theme set` (S-12) is what consumes
+# it, and it owns the reload mechanics. Every row below points at a template
+# that exists as of S-03.
 #
 # `[unknown]` in the reload column is deliberate and is not a placeholder to
 # be guessed at. A wrong reload command fails silently — the file is written,

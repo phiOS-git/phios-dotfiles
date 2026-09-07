@@ -10,57 +10,31 @@ The full plan this repository executes is in `docs/phios-master-plan.md`
 (the single source of truth) and `docs/phios-agent-brief.md` (the step-by-step
 backlog). `PROGRESS.md` tracks which step is done, in flight, or blocked.
 
-## Current state
-
-M0 is in progress, and two installers deliberately live side by side until it
-finishes. Nothing here should be read as final.
+## Layout
 
 ```
-install.sh           pre-M0 installer: reads hosts/$(hostname).txt, applies each
-                     module in order. This is the one that has actually been run
-                     on zotac and razer, and it stays the live one until S-03
-modules/<name>/      pre-M0 content: packages.txt, files to symlink, *.tmpl
-theme.sh             compatibility shim (S-02): the nine pre-M0 names, read out
-                     of design/. No colour of its own. Removed at S-03
-
-bin/phios-install    v2 installer (S-01): idempotent, previewable, reversible,
+bin/phios-install    the one entry point: idempotent, previewable, reversible,
                      and aware of what it created on this machine
-bin/phios-render     renders one template against the tokens (S-02)
+bin/phios-render     renders one template against the tokens
 bin/lib/             shared bash functions
-design/              every colour, font, size, radius and motion value (S-02)
+design/              every colour, font, size, radius and motion value
 hosts/<name>.txt     ordered list of profiles for that host
-profiles/<name>/     packages, home tree, templates, /etc material, services (S-03)
+profiles/<name>/     packages, home tree, templates, /etc material, services
 docs/adr/            decisions local to this repository, if any
 ```
 
-`bin/phios-install` is **inert** as it stands: `profiles/` is empty, so it
-reports "no profiles declared" and exits without touching anything. The host
-files still name the pre-M0 modules. S-03 migrates them, and only then does
-the v2 installer replace `install.sh`.
+M0 is still in progress and nothing here should be read as final. The pre-M0
+`install.sh`, `theme.sh` and `modules/` tree were removed at S-03, which moved
+their content into `profiles/` without changing a byte of what is rendered onto
+either machine; they are in the git history if a comparison is ever needed.
 
-## What `install.sh` does today
+## What `bin/phios-install` does
 
-For each module listed in `hosts/<host>.txt`, in order:
-
-1. Installs `modules/<name>/packages.txt` with `pacman -S --needed`, if the
-   file is non-empty.
-2. Symlinks every plain file in the module into the matching path under
-   `$HOME`.
-3. Renders every `*.tmpl` file with `envsubst`, sourcing `theme.sh` for the
-   substitution values, and writes the result into `$HOME`.
-
-Since S-02 those substitution values come from `design/`: `theme.sh` no longer
-holds a colour, it translates the four pre-M0 names that §6.2 renamed and
-sources the rest. The bytes it produces are unchanged, which is what makes
-S-03's output-identical migration checkable rather than merely claimed.
-
-Module order in each host file is significant: a profile that provides a
-concrete driver must precede one that requires it.
-
-## What `bin/phios-install` will do
-
-The machines are already configured, so the first real run of the v2 installer
-is an update, not an installation. That shapes all four of its modes:
+For the profiles listed in `hosts/<host>.txt`, in order: installs their
+packages, links their `home/` trees into `$HOME`, renders their `templates/`
+against `design/`, and reconciles the result against a state manifest. The
+machines are already configured, so the first real run is an update, not an
+installation. That shapes all four modes:
 
 ```
 --dry-run       lists every file that would change and every package that would
@@ -69,8 +43,8 @@ is an update, not an installation. That shapes all four of its modes:
 --system-diff   shows profiles/*/system/ against the machine, read-only and
                 unprivileged; nothing is ever applied
 (default)       applies packages, symlinks and rendered templates, reconciles
-                against the state manifest, and prints the systemd units to
-                enable — without enabling them
+                against the state manifest, and prints the systemd units and
+                manual steps to perform — without performing them
 ```
 
 Two behaviours are worth stating explicitly:
@@ -87,12 +61,16 @@ Templates are rendered with `envsubst` restricted to the `PHI_*` names the
 design tokens export, so a `$PATH` or `$HOME` written inside a configuration
 file survives untouched.
 
+Profile order in each host file is significant: a profile that provides a
+concrete driver must precede one that requires it.
+
 ## What this repository deliberately does not do
 
-- **No `/etc` material, applied or otherwise, yet.** `/etc` changes are a
-  strictly `[USER]` action, made with `sudo`, file by file — never something
-  this installer runs. `M0` will add `profiles/*/system/` as a place to keep
-  that material versioned and diffable; it stays unapplied by design (`I-09`).
+- **No `/etc` material, applied or otherwise.** `/etc` changes are a strictly
+  `[USER]` action, made with `sudo`, file by file — never something this
+  installer runs. `profiles/*/system/` is where that material is kept versioned
+  and diffable; it stays unapplied by design (`I-09`). It is populated at S-05
+  and is empty until then.
 - **No `systemctl`.** This installer places files; it never enables, starts,
   or restarts a service. Which units to enable is left as output for the user
   to act on.
@@ -100,14 +78,15 @@ file survives untouched.
   and every other in-house package are distributed through the `[phi]` pacman
   repository built in `M1` (`phi-packages`), not through this repository, and
   not before `M1` exists.
-- **No service drift detection.** Profiles declare their systemd units and the
-  installer prints them, but it never queries systemd and never enables
-  anything, so `--check` says nothing about whether a unit is actually enabled.
-  Enabling is a user action, and closing the reporting gap belongs with the
-  `/etc` work at `S-05`.
-- **No `theme.sh` fallback in the v2 installer.** Rendering a template without
-  `design/` present is a hard error, not a half-render against the old nine
-  values. That is deliberate: it keeps `I-05` enforceable.
+- **No verification of what it only declares.** Profiles declare systemd units
+  in `services-*.txt` and one-off commands in `manual.txt`; the installer prints
+  both and never queries systemd, never runs the commands, and never checks
+  whether either has been done. So `--check` says nothing about them, and a
+  clean `--check` is not evidence that the session is complete. Closing that
+  reporting gap belongs with the `/etc` work at `S-05`.
+- **No fallback palette.** Rendering a template when `design/` is missing or
+  the variant is unknown is a hard error, not a half-render against defaults.
+  That is deliberate: it keeps `I-05` enforceable.
 
 ## Documentation
 

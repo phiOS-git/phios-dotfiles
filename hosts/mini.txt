@@ -1,2 +1,3 @@
+# mini — headless server, 4 GB RAM. Nothing graphical.
 base
 server
