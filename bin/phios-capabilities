@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+#
+# phios-capabilities — detect what this machine can do, not what it is called
+# (master plan §5.2.4, ADR 074).
+#
+# Profiles decide what gets installed; this script decides what the shell may
+# show at runtime. It answers "does a battery device exist", never "is this
+# razer" — the same phi-shell configuration runs on every host, and a module
+# appears only where the capability it needs is actually present. Detection is
+# always by probing /sys and /proc for a device node, never by hostname or
+# profile membership.
+#
+# Output: one KEY=VALUE per line, PHI_CAP_ prefix, sourceable by bash and
+# parsed by anything else with a line splitter — same contract as the design
+# tokens (§6.1).
+#
+# Dependency budget (R9): bash and coreutils only. No lspci, no libinput, no
+# udevadm: everything here reads /sys or /proc directly.
+#
+# Exit codes
+#   0  always; a capability that cannot be detected is reported false/none,
+#      never treated as an error
+
+set -euo pipefail
+shopt -s nullglob
+
+PHIOS_SELF=$(realpath -- "${BASH_SOURCE[0]}")
+PHIOS_BIN=$(dirname -- "$PHIOS_SELF")
+
+# shellcheck source=lib/common.sh
+. "$PHIOS_BIN/lib/common.sh"
+
+usage() {
+	cat <<'USAGE'
+usage: phios-capabilities
+
+Probes /sys and /proc for device presence and prints one PHI_CAP_* KEY=VALUE
+line per capability. Never consults the hostname or the assigned profiles.
+
+capabilities reported
+  PHI_CAP_BATTERY       a battery power_supply device is present
+  PHI_CAP_BACKLIGHT     a backlight device is present
+  PHI_CAP_ALS           an ambient light sensor is present on the iio bus
+  PHI_CAP_GPU_VENDOR    comma-separated DRM GPU vendors (nvidia, amd, intel),
+                        or "none"
+  PHI_CAP_CHROMA        a USB device with the Razer vendor ID is present
+  PHI_CAP_TOUCHSCREEN   an input device named as a touchscreen is present
+  PHI_CAP_TOUCHPAD      an input device named as a touchpad is present
+  PHI_CAP_WIFI          a wireless network interface is present
+  PHI_CAP_BLUETOOTH     a Bluetooth HCI device is present
+  PHI_CAP_MULTI_MONITOR more than one DRM connector reports "connected"
+
+  -h, --help  this text
+USAGE
+}
+
+phios_cap_battery() {
+	local dir type
+	for dir in /sys/class/power_supply/*/; do
+		[[ -r $dir/type ]] || continue
+		type=$(< "$dir/type")
+		[[ $type == Battery ]] || continue
+		if [[ -r $dir/present ]]; then
+			[[ $(< "$dir/present") == 1 ]] || continue
+		fi
+		printf 'true\n'
+		return
+	done
+	printf 'false\n'
+}
+
+phios_cap_backlight() {
+	local dir
+	for dir in /sys/class/backlight/*/; do
+		printf 'true\n'
+		return
+	done
+	printf 'false\n'
+}
+
+# There is no fixed driver name yet (S-06 is still open on razer). Matched
+# broadly against the iio device name, which is the field S-06 will confirm.
+phios_cap_als() {
+	local dir name
+	for dir in /sys/bus/iio/devices/iio:device*/; do
+		[[ -r $dir/name ]] || continue
+		name=$(< "$dir/name")
+		if [[ $name == *[Ll]ight* || $name == *[Aa][Ll][Ss]* ]]; then
+			printf 'true\n'
+			return
+		fi
+	done
+	printf 'false\n'
+}
+
+phios_cap_gpu_vendor() {
+	local dir id vendors=() v seen existing
+	for dir in /sys/class/drm/card[0-9]*/device/; do
+		[[ -r $dir/vendor ]] || continue
+		id=$(< "$dir/vendor")
+		case $id in
+			0x10de) v=nvidia ;;
+			0x1002|0x1022) v=amd ;;
+			0x8086) v=intel ;;
+			*) v=$id ;;
+		esac
+		seen=''
+		for existing in "${vendors[@]+"${vendors[@]}"}"; do
+			[[ $existing == "$v" ]] && { seen=1; break; }
+		done
+		[[ -n $seen ]] || vendors+=("$v")
+	done
+	if (( ${#vendors[@]} == 0 )); then
+		printf 'none\n'
+	else
+		local IFS=,
+		printf '%s\n' "${vendors[*]}"
+	fi
+}
+
+# Matches any Razer USB device, not only the keyboard: on razer this is the
+# built-in Chroma keyboard controller, which S-46 addresses over org.razer.
+phios_cap_chroma() {
+	local dir
+	for dir in /sys/bus/usb/devices/*/; do
+		[[ -r $dir/idVendor ]] || continue
+		if [[ $(< "$dir/idVendor") == 1532 ]]; then
+			printf 'true\n'
+			return
+		fi
+	done
+	printf 'false\n'
+}
+
+# /proc/bus/input/devices has no dedicated touchscreen/touchpad class; the
+# device's own reported name is the only presence signal available within the
+# coreutils-only dependency budget (R9). S-06 diagnoses the razer keys with
+# evtest, which is a heavier tool this script deliberately does not require.
+phios_cap_input_named() {
+	local pattern=$1
+	[[ -r /proc/bus/input/devices ]] || { printf 'false\n'; return; }
+	if grep -qi "^N: Name=.*$pattern" /proc/bus/input/devices; then
+		printf 'true\n'
+	else
+		printf 'false\n'
+	fi
+}
+
+phios_cap_wifi() {
+	local dir
+	for dir in /sys/class/net/*/; do
+		[[ -d $dir/wireless || -d $dir/phy80211 ]] || continue
+		printf 'true\n'
+		return
+	done
+	printf 'false\n'
+}
+
+phios_cap_bluetooth() {
+	local dir
+	for dir in /sys/class/bluetooth/*/; do
+		printf 'true\n'
+		return
+	done
+	printf 'false\n'
+}
+
+phios_cap_multi_monitor() {
+	local dir status count=0
+	for dir in /sys/class/drm/card*/status; do
+		[[ -r $dir ]] || continue
+		status=$(< "$dir")
+		[[ $status == connected ]] || continue
+		count=$((count + 1))
+	done
+	if (( count > 1 )); then printf 'true\n'; else printf 'false\n'; fi
+}
+
+main() {
+	case ${1:-} in
+		-h|--help) usage; exit 0 ;;
+		'') ;;
+		*) phios_die "unknown argument: $1 (try --help)" ;;
+	esac
+
+	phios_out "PHI_CAP_BATTERY=$(phios_cap_battery)"
+	phios_out "PHI_CAP_BACKLIGHT=$(phios_cap_backlight)"
+	phios_out "PHI_CAP_ALS=$(phios_cap_als)"
+	phios_out "PHI_CAP_GPU_VENDOR=$(phios_cap_gpu_vendor)"
+	phios_out "PHI_CAP_CHROMA=$(phios_cap_chroma)"
+	phios_out "PHI_CAP_TOUCHSCREEN=$(phios_cap_input_named Touchscreen)"
+	phios_out "PHI_CAP_TOUCHPAD=$(phios_cap_input_named Touchpad)"
+	phios_out "PHI_CAP_WIFI=$(phios_cap_wifi)"
+	phios_out "PHI_CAP_BLUETOOTH=$(phios_cap_bluetooth)"
+	phios_out "PHI_CAP_MULTI_MONITOR=$(phios_cap_multi_monitor)"
+}
+
+main "$@"
