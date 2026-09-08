@@ -23,11 +23,15 @@ local fileManager  = "kitty -e yazi"
 -------------------
 
 -- phi-shell starts with the session (S-24, ADR 072: one shell, not
--- independent components). `hyprland.start` is understood to fire once per
--- session, not on every `hyprctl reload` — unconfirmed against the real
--- installed version (that check is S-25's job), so the `pgrep` guard stays
--- as cheap, idempotent insurance either way: at worst a no-op string
--- compare, never a second `qs` racing the first for the same bar surface.
+-- independent components). Confirmed at S-25 against the real upstream
+-- event reference (hyprwm/hyprland-wiki, advanced-configuration/events):
+-- `hyprland.start` is documented as "Emitted once on start", i.e. it does
+-- not refire on a plain `hyprctl reload` — a reload tears down and
+-- reconstructs the Lua state (`config.unload`, then the script runs again
+-- top to bottom), but that is a different thing from `hyprland.start`
+-- itself firing twice. The `pgrep` guard was never actually defending
+-- against a refire that could happen; it stays anyway as free, harmless
+-- insurance against any other path that might run this same script twice.
 -- Quickshell must stay checked out at exactly `~/.config/quickshell/phi`
 -- (phi-shell/README.md). Editing QML afterward never needs this to run
 -- again: Quickshell hot-reloads its own files on save (master plan §8.1).
