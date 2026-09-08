@@ -1,0 +1,32 @@
+/* phiOS — GTK4/libadwaita named-colour override (S-41, master plan §6.7
+ * target group 2). GTK4 dropped most of GTK3's @define-color names but
+ * libadwaita's own stylesheet still defines and reads a documented public
+ * set (accent_color, accent_bg_color, accent_fg_color, window_bg_color,
+ * window_fg_color, view_bg_color, view_fg_color, headerbar_bg_color,
+ * headerbar_fg_color) — this repaints Adwaita itself, not a replacement
+ * theme (I-01). $XDG_CONFIG_HOME/gtk-4.0/gtk.css is loaded the same way
+ * GTK3's own personal-override file is.
+ *
+ * Unverified against a real render (no GTK4 app available off-machine) —
+ * flagged for cheap veto if a screenshot shows a name libadwaita ignores.
+ *
+ * Class C, same reasoning as the GTK3 file in the sibling directory.
+ */
+
+@define-color accent_color ${PHI_ACCENT};
+@define-color accent_bg_color ${PHI_ACCENT};
+@define-color accent_fg_color ${PHI_ACCENT_FG};
+@define-color window_bg_color ${PHI_BG_0};
+@define-color window_fg_color ${PHI_FG_0};
+@define-color view_bg_color ${PHI_BG_0};
+@define-color view_fg_color ${PHI_FG_0};
+@define-color headerbar_bg_color ${PHI_BG_1};
+@define-color headerbar_fg_color ${PHI_FG_0};
+@define-color card_bg_color ${PHI_BG_1};
+@define-color card_fg_color ${PHI_FG_0};
+@define-color popover_bg_color ${PHI_BG_2};
+@define-color popover_fg_color ${PHI_FG_0};
+@define-color error_color ${PHI_ERROR};
+@define-color warning_color ${PHI_WARN};
+@define-color success_color ${PHI_SUCCESS};
+@define-color borders ${PHI_BORDER};

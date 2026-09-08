@@ -50,3 +50,34 @@ profiles/desktop/templates/.config/mpv/script-opts/osc.conf.tmpl| .config/mpv/sc
 # ~/.config/quickshell/phi (phi-shell/README.md), the one path `qs -p`
 # and Quickshell's own named-config lookup both resolve without an override.
 profiles/desktop/templates/.config/quickshell/phi/Config/Tokens.qml.tmpl | .config/quickshell/phi/Config/Tokens.qml | -         | A
+
+# GTK3/GTK4 and Qt (qt5ct/qt6ct) native-app theming (S-41, master plan §6.7
+# target group 2). Class C: none of these four toolkits watches its own
+# theme/palette files for a live change, only reads them at startup — the
+# LIVE half of this target group is the portal colour-scheme preference,
+# written directly by `phi theme set` (internal/theme/set.go's
+# setPortalPreference, not a row here: it has no template/destination, it
+# is a `gsettings set` side effect on org.gnome.desktop.interface).
+#
+# Kvantum was master plan §6.7's named Qt mechanism; substituted with
+# qt5ct/qt6ct's own [ColorScheme] palette instead — see the two qt*ct
+# template files' own headers for why (Kvantum's non-SVG palette-override
+# format could not be verified from here; qt5ct/qt6ct's real, documented
+# [ColorScheme] format could).
+profiles/desktop/templates/.config/gtk-3.0/gtk.css.tmpl         | .config/gtk-3.0/gtk.css         | -         | C
+profiles/desktop/templates/.config/gtk-3.0/settings.ini.tmpl    | .config/gtk-3.0/settings.ini    | -         | C
+profiles/desktop/templates/.config/gtk-4.0/gtk.css.tmpl         | .config/gtk-4.0/gtk.css         | -         | C
+profiles/desktop/templates/.config/gtk-4.0/settings.ini.tmpl    | .config/gtk-4.0/settings.ini    | -         | C
+profiles/desktop/templates/.config/qt6ct/colors/phi.conf.tmpl   | .config/qt6ct/colors/phi.conf   | -         | C
+profiles/desktop/templates/.config/qt5ct/colors/phi.conf.tmpl   | .config/qt5ct/colors/phi.conf   | -         | C
+
+# Librewolf userChrome.css (master plan §6.7 target group 4) has real
+# content at profiles/desktop/templates/.config/librewolf/userChrome.css.tmpl
+# but NO row here: Librewolf/Firefox profile directories carry a random
+# 8-character prefix generated at first launch
+# (~/.librewolf/<random>.default-release/chrome/userChrome.css), not a
+# fixed path this file's plain template→destination mechanism can express.
+# See that template's own header for the resolution this needs (reading
+# ~/.librewolf/profiles.ini's Path= key, deterministic per machine only
+# after first launch) and note it in PROGRESS.md as open, not silently
+# dropped.

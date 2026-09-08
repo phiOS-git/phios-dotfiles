@@ -1,0 +1,29 @@
+/* phiOS — GTK3 named-colour override (S-41, master plan §6.7 target group 2:
+ * "Tema GTK3/GTK4... generati dai token"). @define-color is GTK3's own
+ * documented mechanism for a user stylesheet to override the semantic
+ * colour names a theme (Adwaita or otherwise) is built from — this repaints
+ * whichever GTK theme is installed rather than shipping a second full
+ * theme, so I-01 (no imported prebuilt theme as a base) never comes into
+ * it. $XDG_CONFIG_HOME/gtk-3.0/gtk.css is GTK3's own well-known personal-
+ * override path, loaded automatically on top of the active theme — no
+ * gtk-theme-name setting needed for this file to take effect.
+ *
+ * Class C (master plan §6.7's own class table: "tema GTK/Qt per app
+ * native" is listed there explicitly) — GTK3 reads this file at startup,
+ * not on SIGHUP or file-watch, so a running app needs a restart to pick up
+ * a change.
+ */
+
+@define-color theme_bg_color ${PHI_BG_0};
+@define-color theme_fg_color ${PHI_FG_0};
+@define-color theme_base_color ${PHI_BG_0};
+@define-color theme_text_color ${PHI_FG_0};
+@define-color theme_selected_bg_color ${PHI_ACCENT};
+@define-color theme_selected_fg_color ${PHI_ACCENT_FG};
+@define-color insensitive_bg_color ${PHI_BG_1};
+@define-color insensitive_fg_color ${PHI_FG_2};
+@define-color borders ${PHI_BORDER};
+@define-color unfocused_borders ${PHI_BORDER};
+@define-color warning_color ${PHI_WARN};
+@define-color error_color ${PHI_ERROR};
+@define-color success_color ${PHI_SUCCESS};

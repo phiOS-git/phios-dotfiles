@@ -1,0 +1,31 @@
+# phiOS — Qt palette for qt6ct (S-41, master plan §6.7 target group 2:
+# "Kvantum per Qt" — SUBSTITUTED with qt5ct/qt6ct's own palette mechanism
+# instead, see this step's PROGRESS.md note for why). Format confirmed
+# against a real qt6ct colour-scheme file (github.com/trialuser02/qt6ct,
+# colors/*.conf — a bundled sample, read only to learn the [ColorScheme]
+# key/value SHAPE, no content copied, consistent with I-01's "read as
+# reference, do not import" for third-party tool config formats in
+# general, not only Hyprland/Quickshell bundles).
+#
+# Each line is 21 comma-separated #RRGGBB values (Qt's QColor accepts the
+# 6-digit form same as the 8-digit #AARRGGBB one; this project's tokens are
+# already 6-digit, so no alpha-channel string surgery is needed), in
+# QPalette::ColorRole declaration order (confirmed against Qt 6 docs,
+# doc.qt.io/qt-6/qpalette.html): WindowText, Button, Light, Midlight, Dark,
+# Mid, Text, BrightText, ButtonText, Base, Window, Shadow, Highlight,
+# HighlightedText, Link, LinkVisited, AlternateBase, NoRole, ToolTipBase,
+# ToolTipText, PlaceholderText. Light/Midlight/Dark/Mid are 3D-bevel roles
+# this flat design system has no real use for — filled with the nearest
+# surface token rather than left unstyled. NoRole is unused by Qt itself —
+# filled with bg-1 as a harmless default, not a meaningful choice.
+#
+# Class C (design/adapters.txt does not carry this row — see this file's
+# own note there): Qt apps read qt6ct's palette at startup only.
+#
+# Unverified end-to-end: no Qt6 app available off-machine to confirm Qt
+# actually renders every one of these roles the way this file assumes.
+
+[ColorScheme]
+active_colors=${PHI_FG_0}, ${PHI_BG_2}, ${PHI_BG_3}, ${PHI_BG_2}, ${PHI_BG_0}, ${PHI_BG_1}, ${PHI_FG_0}, ${PHI_FG_0}, ${PHI_FG_0}, ${PHI_BG_0}, ${PHI_BG_1}, ${PHI_BG_0}, ${PHI_ACCENT}, ${PHI_ACCENT_FG}, ${PHI_ACCENT}, ${PHI_ACCENT}, ${PHI_BG_2}, ${PHI_BG_1}, ${PHI_BG_2}, ${PHI_FG_0}, ${PHI_FG_2}
+inactive_colors=${PHI_FG_0}, ${PHI_BG_2}, ${PHI_BG_3}, ${PHI_BG_2}, ${PHI_BG_0}, ${PHI_BG_1}, ${PHI_FG_0}, ${PHI_FG_0}, ${PHI_FG_0}, ${PHI_BG_0}, ${PHI_BG_1}, ${PHI_BG_0}, ${PHI_ACCENT}, ${PHI_ACCENT_FG}, ${PHI_ACCENT}, ${PHI_ACCENT}, ${PHI_BG_2}, ${PHI_BG_1}, ${PHI_BG_2}, ${PHI_FG_0}, ${PHI_FG_2}
+disabled_colors=${PHI_FG_3}, ${PHI_BG_2}, ${PHI_BG_3}, ${PHI_BG_2}, ${PHI_BG_0}, ${PHI_BG_1}, ${PHI_FG_3}, ${PHI_FG_3}, ${PHI_FG_3}, ${PHI_BG_0}, ${PHI_BG_1}, ${PHI_BG_0}, ${PHI_BORDER}, ${PHI_FG_3}, ${PHI_FG_3}, ${PHI_FG_3}, ${PHI_BG_2}, ${PHI_BG_1}, ${PHI_BG_2}, ${PHI_FG_3}, ${PHI_FG_3}

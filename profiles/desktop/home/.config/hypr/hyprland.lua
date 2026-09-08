@@ -1,3 +1,30 @@
+---------------------
+---- ENVIRONMENT ----
+---------------------
+
+-- S-41 (theme, Q-N05 "suppress CSD" decision this session) and the GTK/Qt
+-- native-app theming target group (master plan §6.7). `hl.env()` sets a
+-- variable before the display server initializes — confirmed against the
+-- real Hyprland wiki source (hyprwm/hyprland-wiki, configuring/core/
+-- environment-variables.md), which documents QT_QPA_PLATFORMTHEME=qt6ct as
+-- its own worked example for exactly this purpose, not guessed.
+--
+-- QT_WAYLAND_DISABLE_WINDOWDECORATION disables Qt's OWN window chrome under
+-- Wayland outright — the same wiki page's own documented variable, and a
+-- more direct CSD fix for Qt than GTK_CSD is for GTK (Qt does not have
+-- libadwaita's "hardcodes its own HeaderBar" problem: this one variable is
+-- unconditional, not "wherever the toolkit exposes a setting").
+--
+-- GTK_CSD=0 is real and documented (GNOME/gtk#760, PCMan/gtk3-nocsd) but
+-- KNOWN INCOMPLETE for GTK4/libadwaita apps, which need either GTK_THEME
+-- forced or an LD_PRELOAD shim (GTK-NoCSD) neither of which phiOS can add
+-- under Q-01 (AUR/manual-build excluded) — accepted and documented, not
+-- silently narrowed: GTK3 apps and non-libadwaita GTK4 apps suppress
+-- cleanly, libadwaita apps (most modern GNOME apps) keep their header bar.
+hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
+hl.env("GTK_CSD", "0")
+
 ------------------
 ---- MONITORS ----
 ------------------

@@ -25,3 +25,13 @@ grim
 slurp
 wf-recorder
 zbar
+
+# S-41: GTK/Qt native-app theming (master plan §6.7 target group 2). Added
+# by explicit user approval this step — not in master plan §15's registry.
+# qt5ct/qt6ct substitute for §6.7's named "Kvantum": their real
+# [ColorScheme] palette format was confirmed against real upstream source
+# (github.com/trialuser02/qt6ct), Kvantum's non-SVG palette-override format
+# could not be from here.
+qt5ct
+qt6ct
+gsettings-desktop-schemas

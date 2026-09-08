@@ -1,0 +1,29 @@
+/* phiOS — Librewolf accent injection (S-41, master plan §6.7 target group
+ * 4: "Librewolf: userChrome.css + preferenza chiaro/scuro. Iniezione
+ * accento, classe C"). NOT WIRED into design/adapters.txt yet — see that
+ * file's own comment on why: Librewolf/Firefox profile directories are
+ * named with a random 8-character prefix generated at first launch
+ * (<random>.default-release), not a fixed path phi theme set's plain
+ * template-to-destination mechanism can target. This file is real content,
+ * ready to be copied once a destination-resolution step exists (reading
+ * ~/.librewolf/profiles.ini's own Path= key after first launch, which IS
+ * deterministic on a given machine from then on) — that step is not built.
+ *
+ * Scope kept deliberately narrow ("iniezione accento", not a full re-skin):
+ * the accent colour on the two chrome surfaces every session actually
+ * looks at — the selected tab and the URL bar's focus ring. Custom
+ * property names below (--tab-selected-bgcolor, --toolbar-field-focus-
+ * border-color) are Firefox's own documented chrome theming hooks, but
+ * this has never rendered in a real browser from this session — flagged
+ * for cheap veto against a real Librewolf window.
+ *
+ * The light/dark preference itself does not need a line here: Librewolf,
+ * like any GTK app, follows the portal preference phi theme set already
+ * writes (internal/theme/set.go's setPortalPreference) — this file is only
+ * the accent on top of whichever base Librewolf already picked.
+ */
+
+:root {
+  --tab-selected-bgcolor: ${PHI_ACCENT} !important;
+  --toolbar-field-focus-border-color: ${PHI_ACCENT} !important;
+}
