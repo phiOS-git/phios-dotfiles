@@ -140,3 +140,31 @@ hl.window_rule({
 --     match = { class = "^steam$", title = "<secondary-title-regex>" },
 --     float = true,
 -- })
+
+-----------------
+---- GESTURES ----
+-----------------
+
+-- Window overview recall gesture (S-35, master plan shell doc §13): three-
+-- finger swipe on razer's touchpad, mirroring the "opposite axis to the
+-- L/R workspace switch, so no conflict" requirement — Hyprland's own
+-- built-in workspace-swipe gesture already owns left/right, so up opens
+-- and down closes, matching a common show/dismiss convention rather than
+-- both directions doing the same toggle. Syntax confirmed against the
+-- real Hyprland wiki source (hyprwm/hyprland-wiki, configuring/core/
+-- binds/gestures.md) rather than assumed — this project's own risk C-06
+-- flag on a fast-moving Lua config API applies here as much as anywhere
+-- else in this file. Inert on zotac: gestures need touchpad hardware
+-- that machine does not have, so no host-specific guard is needed, the
+-- same capability-driven default this project already uses everywhere
+-- else (ADR 074).
+hl.gesture({
+    fingers = 3,
+    direction = "up",
+    action = function() hl.exec_cmd("qs ipc call overview open") end,
+})
+hl.gesture({
+    fingers = 3,
+    direction = "down",
+    action = function() hl.exec_cmd("qs ipc call overview close") end,
+})
