@@ -139,6 +139,40 @@ end
 hl.bind("ALT + Tab", enterAltTab("next"), { description = "Cycle to the next window" })
 hl.bind("ALT + SHIFT + Tab", enterAltTab("prev"), { description = "Cycle to the previous window" })
 
+-- Releasing Alt confirms and exits — the actual mechanism S-37's own card
+-- names ("release Alt exits the mode and confirms"). This used to be bound
+-- INSIDE hl.define_submap("alttab", ...) on ALT_L/ALT_R with { release =
+-- true } — confirmed on real hardware to never fire on the first release,
+-- root-caused (not guessed) against Hyprland's own issue tracker
+-- (hyprwm/Hyprland#15785, closed without a fix by policy, not because it
+-- was resolved): a modifier held continuously from BEFORE a submap is
+-- entered does not fire its own release bind on its first release inside
+-- that submap, only on a subsequent full press-and-release cycle already
+-- inside it. Alt+Tab enters "alttab" with Alt already held, which is
+-- exactly that case.
+--
+-- Moved here instead, to the GLOBAL keymap, with `submap_universal = true`
+-- (confirmed real flag, hyprwm/hyprland-wiki content/configuring/core/
+-- binds/flags.md: "Will be active no matter the submap") — this is a
+-- materially different case from the one #15785 describes: the bind is
+-- registered once, before Alt+Tab is ever pressed, not declared inside the
+-- submap's own scope, so there is no "held from before entering THIS
+-- bind's scope" to trip over. Safe to leave active outside Alt+Tab too
+-- (e.g. AltGr on some keyboard layouts is physically the right Alt key):
+-- AltTab.qml's own confirm() ignores the IPC call unless the overlay is
+-- actually shown, so an unrelated Alt release elsewhere is a harmless
+-- no-op, not a stray confirm. Return (inside the submap, below) stays as
+-- the always-reliable path regardless of whether this one turns out to
+-- fire — it is a fresh key press while already inside the submap, not a
+-- modifier held from before entering it, so it never hits #15785 either
+-- way.
+local function confirmAndReset()
+    hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "confirm")))
+    hl.dispatch(hl.dsp.submap("reset"))
+end
+hl.bind("ALT_L", confirmAndReset, { release = true, submap_universal = true })
+hl.bind("ALT_R", confirmAndReset, { release = true, submap_universal = true })
+
 hl.define_submap("alttab", function()
     -- Binding "ALT + Tab" again inside the submap, not a bare "Tab": Alt
     -- is still physically held from entering the submap, and this
@@ -150,32 +184,6 @@ hl.define_submap("alttab", function()
     hl.bind("ALT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "next")))
     hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "prev")))
 
-    -- Releasing Alt confirms and exits — the actual mechanism S-37's own
-    -- card names ("release Alt exits the mode and confirms"). Bound on
-    -- BOTH ALT_L and ALT_R (the all-caps "_L"/"_R" keysym spelling is
-    -- confirmed correct against the real documentation's own SUPER_L
-    -- example, flags.md — that part was never the bug), but this is now
-    -- confirmed NOT to be a bug in this file at all: Hyprland's own real
-    -- issue tracker (hyprwm/Hyprland#15785, closed without a fix by
-    -- policy, not because it was resolved) describes this exact
-    -- scenario — a modifier held continuously from BEFORE a submap is
-    -- entered does not fire its own release bind on its first release,
-    -- only on a subsequent full press-and-release cycle while already
-    -- inside the submap. Alt+Tab enters this submap with Alt already
-    -- held, which is precisely that case, on every real Hyprland version
-    -- this could be tested against, not just this one machine's — kept
-    -- here anyway since it may fire on some interaction patterns
-    -- (release, re-press, release again, per the same issue's own
-    -- report), but it cannot be the ONLY way to confirm. Return is the
-    -- reliable path: it is a fresh key press while already inside the
-    -- submap, not a modifier held from before entering it, so it does
-    -- not hit this limitation.
-    local function confirmAndReset()
-        hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "confirm")))
-        hl.dispatch(hl.dsp.submap("reset"))
-    end
-    hl.bind("ALT_L", confirmAndReset, { release = true })
-    hl.bind("ALT_R", confirmAndReset, { release = true })
     hl.bind("Return", confirmAndReset)
 
     hl.bind("Escape", function()
