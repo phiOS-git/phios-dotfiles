@@ -35,3 +35,14 @@ zbar
 qt5ct
 qt6ct
 gsettings-desktop-schemas
+
+# S-42: night shift daemon, pre-approved master plan §15.3 for M4.
+hyprsunset
+
+# Pre-approved master plan §15.3 for M4 ("idle, illuminazione statica
+# Chroma"). Added now since it is already registered; NOT configured yet —
+# no S-4x AGENT bullet names an idle-timeout policy (auto-lock, DPMS) to
+# write into hypridle.conf. S-46's Chroma "static colour on idle
+# (hypridle)" behaviour is the first place this step's own backlog actually
+# calls for hypridle to run something; its config is deferred there.
+hypridle

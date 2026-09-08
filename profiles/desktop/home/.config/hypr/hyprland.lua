@@ -75,6 +75,18 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("pgrep -x qs >/dev/null || qs -p " .. qsConfigPath)
 end)
 
+-- S-42: hyprsunset with NO config file and NO CLI profile args — started
+-- bare, at a neutral default (identity, no colour shift) and left entirely
+-- to `hyprctl hyprsunset` IPC calls from Services/NightShift.qml (phi-shell)
+-- from then on. A ~/.config/hypr/hyprsunset.conf profile schedule would
+-- fight with that: the wiki's own doc says a new profile activation "resets
+-- all options set by other profiles", so a clock-based profile would
+-- silently overwrite whatever NightShift.qml's own toggle/temperature state
+-- had just set. No profile file is written on purpose.
+hl.on("hyprland.start", function ()
+    hl.exec_cmd("pgrep -x hyprsunset >/dev/null || hyprsunset")
+end)
+
 ---------------------
 ---- KEYBINDINGS ----
 ---------------------
