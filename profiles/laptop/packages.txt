@@ -1,3 +1,5 @@
 tlp
 powertop
 brightnessctl
+upower
+networkmanager

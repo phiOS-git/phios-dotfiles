@@ -1,1 +1,3 @@
 tlp.service
+upower.service
+NetworkManager.service
