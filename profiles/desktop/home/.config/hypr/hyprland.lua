@@ -22,6 +22,15 @@ local fileManager  = "kitty -e yazi"
 ---- AUTOSTART ----
 -------------------
 
+-- Quickshell must stay checked out at exactly this path (phi-shell/README.md).
+-- Named once here and reused by every `qs ipc call` below (PHI-SHELL
+-- KEYBINDINGS section) via qsIpc(), rather than repeating the literal:
+-- `qs ipc call` with no `-p`/`-c` targets Quickshell's "default" config
+-- (`<xdg dir>/quickshell/shell.qml`, confirmed by reading Quickshell's own
+-- src/launch/parsecommand.cpp), and phi-shell is launched below as a named
+-- path, not that default, so every call must repeat this same `-p`.
+local qsConfigPath = "~/.config/quickshell/phi"
+
 -- phi-shell starts with the session (S-24, ADR 072: one shell, not
 -- independent components). Confirmed at S-25 against the real upstream
 -- event reference (hyprwm/hyprland-wiki, advanced-configuration/events):
@@ -32,13 +41,11 @@ local fileManager  = "kitty -e yazi"
 -- itself firing twice. The `pgrep` guard was never actually defending
 -- against a refire that could happen; it stays anyway as free, harmless
 -- insurance against any other path that might run this same script twice.
--- Quickshell must stay checked out at exactly `~/.config/quickshell/phi`
--- (phi-shell/README.md). Editing QML afterward never needs this to run
--- again: Quickshell hot-reloads its own files on save (master plan §8.1).
--- See phi-shell/README.md for restarting `qs` itself without a session
--- reload.
+-- Editing QML afterward never needs this to run again: Quickshell
+-- hot-reloads its own files on save (master plan §8.1). See
+-- phi-shell/README.md for restarting `qs` itself without a session reload.
 hl.on("hyprland.start", function ()
-    hl.exec_cmd("pgrep -x qs >/dev/null || qs -p ~/.config/quickshell/phi")
+    hl.exec_cmd("pgrep -x qs >/dev/null || qs -p " .. qsConfigPath)
 end)
 
 ---------------------
@@ -69,9 +76,9 @@ hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
 -- for applications, modes for rare actions" (master plan). Every M2/M3
 -- shell surface reaches this way, all through the same `qs ipc call
 -- <target> <fn>` mechanism S-31 established and every surface since has
--- followed — confirmed against the real Quickshell documentation's own
--- worked example (io/ipchandler.hpp): no `-p <path>` flag, it auto-
--- targets the one running instance.
+-- followed — via qsIpc() below, which prepends the `-p` targeting
+-- phi-shell's own instance (see qsConfigPath's own note under AUTOSTART
+-- above for why that flag is required, not optional).
 --
 -- The pre-existing Super+Return/B/E/Q/arrows/M binds above (S-24) are
 -- deliberately left untouched, even though app-launching sits oddly
@@ -83,14 +90,18 @@ hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
 -- Alt-Tab sense is this agent's own reading, not a document's — flagged
 -- for the user's own amend, exactly as this step's DONE WHEN asks for
 -- ("the user confirms the scheme is the one they want to learn").
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("qs ipc call launcher toggle"))    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
-hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd("qs ipc call sidebar toggle"))     -- N for the sidebar's own default tab, Notifications
-hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd("qs ipc call lock lock"))          -- universal desktop-environment convention
-hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd("qs ipc call overview toggle"))    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
+local function qsIpc(target, fn)
+    return "qs -p " .. qsConfigPath .. " ipc call " .. target .. " " .. fn
+end
+
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")))    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
+hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("sidebar", "toggle")))     -- N for the sidebar's own default tab, Notifications
+hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")))          -- universal desktop-environment convention
+hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(qsIpc("overview", "toggle")))    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
 -- "slash" (lowercase), not "Slash": X11/XKB keysym names for punctuation
 -- are lowercase words (matching "left"/"right"/"up"/"down" above), unlike
 -- named keys like "Return"/"Tab"/"Escape", which are capitalized.
-hl.bind(mainMod .. " + SHIFT + slash", hl.dsp.exec_cmd("qs ipc call cheatsheet toggle")) -- Super+? — common "show shortcuts" convention
+hl.bind(mainMod .. " + SHIFT + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle"))) -- Super+? — common "show shortcuts" convention
 
 -- Alt+Tab (S-37, architettura §8.2.2 S10): the one binding that genuinely
 -- fits "Alt for applications" — cycling BETWEEN running applications is
@@ -109,22 +120,22 @@ hl.define_submap("alttab", function()
     -- global bind does — repeating the held modifier is the safer
     -- reading, not a confirmed one; flagged for cheap veto if cycling
     -- does not respond to a second Tab press on real hardware.
-    hl.bind("ALT + Tab", hl.dsp.exec_cmd("qs ipc call alttab next"))
-    hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd("qs ipc call alttab prev"))
+    hl.bind("ALT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "next")))
+    hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "prev")))
 
     -- Releasing Alt confirms and exits — the actual mechanism S-37's own
     -- card names ("release Alt exits the mode and confirms").
     hl.bind("ALT_L", function()
-        hl.dispatch(hl.dsp.exec_cmd("qs ipc call alttab confirm"))
+        hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "confirm")))
         hl.dispatch(hl.dsp.submap("reset"))
     end, { release = true })
 
     hl.bind("Escape", function()
-        hl.dispatch(hl.dsp.exec_cmd("qs ipc call alttab cancel"))
+        hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "cancel")))
         hl.dispatch(hl.dsp.submap("reset"))
     end)
     hl.bind("catchall", function()
-        hl.dispatch(hl.dsp.exec_cmd("qs ipc call alttab cancel"))
+        hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "cancel")))
         hl.dispatch(hl.dsp.submap("reset"))
     end)
 end)
@@ -145,13 +156,13 @@ hl.define_submap("screenshot", function()
         end
     end
 
-    hl.bind("a", fireAndReset("qs ipc call screenshot area"))
-    hl.bind("w", fireAndReset("qs ipc call screenshot window"))
-    hl.bind("f", fireAndReset("qs ipc call screenshot fullscreen"))
-    hl.bind("o", fireAndReset("qs ipc call screenshot ocr"))
-    hl.bind("q", fireAndReset("qs ipc call screenshot qr"))
-    hl.bind("r", fireAndReset("qs ipc call record start"))
-    hl.bind("SHIFT + r", fireAndReset("qs ipc call record stop"))
+    hl.bind("a", fireAndReset(qsIpc("screenshot", "area")))
+    hl.bind("w", fireAndReset(qsIpc("screenshot", "window")))
+    hl.bind("f", fireAndReset(qsIpc("screenshot", "fullscreen")))
+    hl.bind("o", fireAndReset(qsIpc("screenshot", "ocr")))
+    hl.bind("q", fireAndReset(qsIpc("screenshot", "qr")))
+    hl.bind("r", fireAndReset(qsIpc("record", "start")))
+    hl.bind("SHIFT + r", fireAndReset(qsIpc("record", "stop")))
     hl.bind("Escape", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
 end)
@@ -261,10 +272,10 @@ hl.window_rule({
 hl.gesture({
     fingers = 3,
     direction = "up",
-    action = function() hl.exec_cmd("qs ipc call overview open") end,
+    action = function() hl.exec_cmd(qsIpc("overview", "open")) end,
 })
 hl.gesture({
     fingers = 3,
     direction = "down",
-    action = function() hl.exec_cmd("qs ipc call overview close") end,
+    action = function() hl.exec_cmd(qsIpc("overview", "close")) end,
 })
