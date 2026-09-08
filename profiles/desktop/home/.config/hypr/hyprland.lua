@@ -153,22 +153,37 @@ hl.bind(mainMod .. " + S",     hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { d
 -- BROKEN on real hardware — releasing G before Super left the overlay
 -- stuck on, the exact class of quirk this file's own Alt+Tab binds
 -- already ran into and solved the same way: bind the release on the BARE
--- key ("g" alone, no modifier prefix), not the full combo, so it fires
--- regardless of whether Super is still held at the moment G comes up —
--- exactly what ALT_L/ALT_R already do below for Alt+Tab's own confirm.
--- `non_consuming = true` on the bare-key release bind is not optional:
--- ALT_L/ALT_R's own release binds (below) get away without it because a
--- bare modifier key has no text meaning to a focused app, but "g" is a
--- real printable character typed constantly everywhere in the session —
--- an unmodified bind on it would otherwise very plausibly swallow every
--- press of the letter "g" system-wide. `non_consuming` (hyprwm/
--- hyprland-wiki, configuring/core/binds/flags.md: "Key/mouse events will
--- be passed to the active window in addition to triggering the
--- dispatcher") is the documented flag for exactly this case, applied
--- before this bind was ever shipped, not discovered after breaking
--- typing.
-hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")), { description = "Show the cursor spotlight (hold)" }) -- "G" for "glow" -- no closer mnemonic was free ("F"/"L" already used)
-hl.bind("g", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true })
+-- key, not the full combo, so it fires regardless of what else is held
+-- at the moment it comes up — exactly what ALT_L/ALT_R already do below
+-- for Alt+Tab's own confirm.
+--
+-- FOURTH round, by the user's own decision (round 3 left the gesture
+-- question open, refusing to guess again): SUPER+G held is replaced by
+-- double-click-and-hold on bare Super. Bound here as the bare SUPER_L
+-- keysym itself, press and release, no modifier prefix and no combo —
+-- the same bare-key shape the second round above already established,
+-- now applied to the modifier key directly instead of to "g". Both calls
+-- still target the same "spotlight" ipc verbs; the double-click timing
+-- (is this the second tap within the threshold, or a first tap / an
+-- ordinary Super+<key> combo's own press) is decided in
+-- Services/Spotlight.qml, not here — this file stays a thin dispatcher,
+-- same as every other bind in it.
+--
+-- `non_consuming = true` on BOTH, unlike ALT_L/ALT_R's own release-only
+-- binds below: those are release-only and scoped to the alttab submap
+-- (`submap_universal`), a shape already proven not to interfere with
+-- ALT+<key> combos at the top level. This is a top-level PRESS bind on
+-- the primary window-management modifier itself — no existing bind in
+-- this file does that, and if the press consumed the keydown instead of
+-- passing it through, every `SUPER + <key>` bind below (Return, B, E, Q,
+-- the arrows, Space, N, S, L, Tab, Shift+slash, the workspace binds) could
+-- plausibly stop seeing the modifier held. `non_consuming` costs nothing
+-- if that fear turns out to be unfounded; the alternative, an unbindable
+-- Super key on the user's primary machine, is not a recoverable mistake
+-- from here. VERIFY must confirm the SUPER + <key> binds still work
+-- BEFORE testing the spotlight itself.
+hl.bind("SUPER_L", hl.dsp.exec_cmd(qsIpc("spotlight", "press")), { description = "Cursor spotlight (double-click and hold Super)", non_consuming = true })
+hl.bind("SUPER_L", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true })
 hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")), { description = "Lock the screen" })          -- universal desktop-environment convention
 hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(qsIpc("overview", "toggle")), { description = "Toggle the window overview" })    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
 -- "slash" (lowercase), not "Slash": X11/XKB keysym names for punctuation

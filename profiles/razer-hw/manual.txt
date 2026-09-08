@@ -1,0 +1,11 @@
+# openrazer-daemon (services-user.txt) refuses to start unless the
+# invoking user is a member of the openrazer group. Confirmed on real
+# hardware from the daemon's own CRITICAL log line:
+#   "User is not a member of the openrazer group"
+#   "Please run the command 'sudo gpasswd -a $USER openrazer' and then reboot!"
+# This is a supplementary-group change to /etc/group — the same /etc
+# boundary every entry in this file already respects: the installer states
+# it, never applies it. A reboot (or at minimum a fresh login) is required
+# afterward for the new group membership to reach the session that starts
+# the daemon; gpasswd alone does not change an already-running session.
+sudo gpasswd -a $USER openrazer
