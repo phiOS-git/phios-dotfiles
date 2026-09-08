@@ -1,0 +1,21 @@
+#%PAM-1.0
+# phiOS — PAM service for phi-shell's own lock screen (S-34,
+# phi-shell/Lock/Lock.qml's PamContext.config: "phi-shell-lock").
+#
+# NOT applied by this repository (I-09, master plan §5.5): shown by
+# `phios-install --system-diff`, installed by the user with sudo, one file
+# at a time, after reading the diff.
+#
+# Deliberately NOT PamContext's own default ("login"): that service is
+# configured on Arch for the text-console `login` program and may carry
+# modules (pam_securetty and similar) that assume a real controlling tty —
+# a graphical lock screen invoked with no tty at all is exactly the case
+# those modules exist to reject, which would fail every login attempt for
+# a reason that has nothing to do with the password being correct. This
+# mirrors the same minimal service every other Wayland lock screen on Arch
+# ships for itself (swaylock, hyprlock): include the system's own
+# already-correct authentication stack, nothing more.
+auth            include         system-auth
+account         include         system-auth
+password        include         system-auth
+session         include         system-auth
