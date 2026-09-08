@@ -20,3 +20,7 @@ bluez-utils
 sof-firmware
 rtkit
 quickshell
+grim
+slurp
+wf-recorder
+zbar
