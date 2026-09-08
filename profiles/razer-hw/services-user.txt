@@ -1,0 +1,11 @@
+# openrazer-daemon claims org.razer on the SESSION bus (dbus.SessionBus() in
+# its own daemon/openrazer_daemon/dbus_services/service.py) and needs to be
+# enabled once, by hand, same as every other user unit in this repo — Arch
+# does not auto-enable a package's user units on install.
+#
+# Declared here, likely never done: Services/Chroma.qml's busctl calls (S-46)
+# have no way to work if this unit was never started, and there is currently
+# no declaration anywhere in this repo asking the user to enable it. Found
+# during S-46's first real-hardware verification round, not at S-46 itself —
+# razer-hw's own profile predates this session.
+openrazer-daemon.service

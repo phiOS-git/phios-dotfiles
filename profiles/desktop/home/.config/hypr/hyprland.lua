@@ -144,7 +144,17 @@ end
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")), { description = "Toggle the launcher" })    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
 hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("sidebar", "toggle")), { description = "Toggle the sidebar" })     -- N for the sidebar's own default tab, Notifications
 hl.bind(mainMod .. " + S",     hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })      -- S-40: no prior bind claimed S, obvious mnemonic
-hl.bind(mainMod .. " + G",     hl.dsp.exec_cmd(qsIpc("spotlight", "toggle")), { description = "Toggle the cursor spotlight" }) -- S-43: "G" for "glow" -- no closer mnemonic was free ("F"/"L" already used)
+-- S-43, revised after real-hardware feedback ("it shouldn't be a toggle,
+-- while pressed it shows, when released it fades out"): press/release
+-- pair on the same combo, not a single toggle bind. `release = true` is a
+-- documented, general flag (hyprwm/hyprland-wiki, configuring/core/binds/
+-- flags.md: "Will trigger on release of a key" — no special-casing for
+-- bare modifiers only, unlike the Alt+Tab submap quirk this file already
+-- documents elsewhere) — confirmed before writing this, not guessed.
+-- Unverified on real hardware: flag for cheap veto if release doesn't
+-- fire reliably while SUPER is still physically held.
+hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")), { description = "Show the cursor spotlight (hold)" }) -- "G" for "glow" -- no closer mnemonic was free ("F"/"L" already used)
+hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true })
 hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")), { description = "Lock the screen" })          -- universal desktop-environment convention
 hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(qsIpc("overview", "toggle")), { description = "Toggle the window overview" })    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
 -- "slash" (lowercase), not "Slash": X11/XKB keysym names for punctuation
