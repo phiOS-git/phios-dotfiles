@@ -94,14 +94,22 @@ local function qsIpc(target, fn)
     return "qs -p " .. qsConfigPath .. " ipc call " .. target .. " " .. fn
 end
 
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")))    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
-hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("sidebar", "toggle")))     -- N for the sidebar's own default tab, Notifications
-hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")))          -- universal desktop-environment convention
-hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(qsIpc("overview", "toggle")))    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
+-- `{ description = ... }` on every phi-shell bind below is a real,
+-- documented `hl.bind()` flag (hyprwm/hyprland-wiki,
+-- configuring/core/binds/flags.md: "You can describe your keybind with
+-- the description flag... use hyprctl binds" to read it back) — found
+-- needed on real hardware: without it, every Lua-callback bind shows up
+-- in `hyprctl binds -j` as an opaque internal dispatcher/arg pair (seen
+-- literally as "_lua 16"), which is what Cheatsheet.qml was rendering
+-- verbatim for lack of anything better to show.
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")), { description = "Toggle the launcher" })    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
+hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("sidebar", "toggle")), { description = "Toggle the sidebar" })     -- N for the sidebar's own default tab, Notifications
+hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")), { description = "Lock the screen" })          -- universal desktop-environment convention
+hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(qsIpc("overview", "toggle")), { description = "Toggle the window overview" })    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
 -- "slash" (lowercase), not "Slash": X11/XKB keysym names for punctuation
 -- are lowercase words (matching "left"/"right"/"up"/"down" above), unlike
 -- named keys like "Return"/"Tab"/"Escape", which are capitalized.
-hl.bind(mainMod .. " + SHIFT + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle"))) -- Super+? — common "show shortcuts" convention
+hl.bind(mainMod .. " + SHIFT + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle")), { description = "Toggle the cheat sheet" }) -- Super+? — common "show shortcuts" convention
 
 -- Alt+Tab (S-37, architettura §8.2.2 S10): the one binding that genuinely
 -- fits "Alt for applications" — cycling BETWEEN running applications is
@@ -110,7 +118,26 @@ hl.bind(mainMod .. " + SHIFT + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "togg
 -- stray keypress can never leave the session stuck inside it (the real
 -- documentation's own explicit warning: "Do not forget a keybind to
 -- reset the keymap while inside it!").
-hl.bind("ALT + Tab", hl.dsp.submap("alttab"))
+--
+-- Found on real hardware: the FIRST Alt+Tab press only entered the
+-- submap — it did not also show the overlay or select a window, which
+-- needed a second, separate Tab press to reach the submap's own "ALT +
+-- Tab" bind below. Fixed the same documented way the release/confirm
+-- binds already use ("You can also set the same keybind to perform
+-- multiple actions... the binds are executed in the order they appear",
+-- submaps.md): entering the submap and calling next()/prev() now happen
+-- together on the very first press. A new Alt+Shift+Tab entry point is
+-- added for the same reason — found on real hardware to only work once
+-- the submap was already open, since only the submap-local "ALT + SHIFT
+-- + Tab" bind existed before.
+local function enterAltTab(step)
+    return function()
+        hl.dispatch(hl.dsp.submap("alttab"))
+        hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", step)))
+    end
+end
+hl.bind("ALT + Tab", enterAltTab("next"), { description = "Cycle to the next window" })
+hl.bind("ALT + SHIFT + Tab", enterAltTab("prev"), { description = "Cycle to the previous window" })
 
 hl.define_submap("alttab", function()
     -- Binding "ALT + Tab" again inside the submap, not a bare "Tab": Alt
@@ -124,11 +151,21 @@ hl.define_submap("alttab", function()
     hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "prev")))
 
     -- Releasing Alt confirms and exits — the actual mechanism S-37's own
-    -- card names ("release Alt exits the mode and confirms").
-    hl.bind("ALT_L", function()
+    -- card names ("release Alt exits the mode and confirms"). Bound on
+    -- BOTH ALT_L and ALT_R: the all-caps "_L"/"_R" keysym spelling is
+    -- confirmed correct against the real documentation's own SUPER_L
+    -- example (flags.md) — that part was never the bug. Found on real
+    -- hardware that releasing Alt did not confirm or close the overlay
+    -- at all, and this project has no way to confirm off-machine which
+    -- physical Alt key was actually held while testing — binding both is
+    -- the safe fix either way, not a guess at which one was the cause;
+    -- flagged for cheap veto if it still does not fire on real hardware.
+    local function confirmAndReset()
         hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "confirm")))
         hl.dispatch(hl.dsp.submap("reset"))
-    end, { release = true })
+    end
+    hl.bind("ALT_L", confirmAndReset, { release = true })
+    hl.bind("ALT_R", confirmAndReset, { release = true })
 
     hl.bind("Escape", function()
         hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "cancel")))
@@ -146,7 +183,7 @@ end)
 -- action exits back to the global keymap on its own (the documented
 -- "same keybind performs multiple actions" pattern, factored through one
 -- local helper rather than repeated seven times).
-hl.bind("Print", hl.dsp.submap("screenshot"))
+hl.bind("Print", hl.dsp.submap("screenshot"), { description = "Enter the screenshot/recording mode" })
 
 hl.define_submap("screenshot", function()
     local function fireAndReset(cmd)
@@ -156,13 +193,13 @@ hl.define_submap("screenshot", function()
         end
     end
 
-    hl.bind("a", fireAndReset(qsIpc("screenshot", "area")))
-    hl.bind("w", fireAndReset(qsIpc("screenshot", "window")))
-    hl.bind("f", fireAndReset(qsIpc("screenshot", "fullscreen")))
-    hl.bind("o", fireAndReset(qsIpc("screenshot", "ocr")))
-    hl.bind("q", fireAndReset(qsIpc("screenshot", "qr")))
-    hl.bind("r", fireAndReset(qsIpc("record", "start")))
-    hl.bind("SHIFT + r", fireAndReset(qsIpc("record", "stop")))
+    hl.bind("a", fireAndReset(qsIpc("screenshot", "area")), { description = "Screenshot: select an area" })
+    hl.bind("w", fireAndReset(qsIpc("screenshot", "window")), { description = "Screenshot: active window" })
+    hl.bind("f", fireAndReset(qsIpc("screenshot", "fullscreen")), { description = "Screenshot: full screen" })
+    hl.bind("o", fireAndReset(qsIpc("screenshot", "ocr")), { description = "Screenshot: OCR a selected area" })
+    hl.bind("q", fireAndReset(qsIpc("screenshot", "qr")), { description = "Screenshot: decode a QR code in a selected area" })
+    hl.bind("r", fireAndReset(qsIpc("record", "start")), { description = "Start screen recording" })
+    hl.bind("SHIFT + r", fireAndReset(qsIpc("record", "stop")), { description = "Stop screen recording" })
     hl.bind("Escape", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
 end)
