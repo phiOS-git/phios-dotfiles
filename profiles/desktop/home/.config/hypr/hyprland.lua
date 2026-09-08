@@ -159,31 +159,34 @@ hl.bind(mainMod .. " + S",     hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { d
 --
 -- FOURTH round, by the user's own decision (round 3 left the gesture
 -- question open, refusing to guess again): SUPER+G held is replaced by
--- double-click-and-hold on bare Super. Bound here as the bare SUPER_L
+-- multi-tap-and-hold on bare Super. Bound here as the bare SUPER_L
 -- keysym itself, press and release, no modifier prefix and no combo —
 -- the same bare-key shape the second round above already established,
 -- now applied to the modifier key directly instead of to "g". Both calls
--- still target the same "spotlight" ipc verbs; the double-click timing
--- (is this the second tap within the threshold, or a first tap / an
--- ordinary Super+<key> combo's own press) is decided in
--- Services/Spotlight.qml, not here — this file stays a thin dispatcher,
--- same as every other bind in it.
+-- still target the same "spotlight" ipc verbs; the tap-count timing (is
+-- this the qualifying press, or an earlier tap / an ordinary
+-- Super+<key> combo's own press) is decided in Services/Spotlight.qml,
+-- not here — this file stays a thin dispatcher, same as every other
+-- bind in it. Round 5 generalised the count to 3 (triple-click), by the
+-- user's own decision, in that file alone — nothing here changes for it.
 --
--- `non_consuming = true` on BOTH, unlike ALT_L/ALT_R's own release-only
--- binds below: those are release-only and scoped to the alttab submap
--- (`submap_universal`), a shape already proven not to interfere with
--- ALT+<key> combos at the top level. This is a top-level PRESS bind on
--- the primary window-management modifier itself — no existing bind in
--- this file does that, and if the press consumed the keydown instead of
--- passing it through, every `SUPER + <key>` bind below (Return, B, E, Q,
--- the arrows, Space, N, S, L, Tab, Shift+slash, the workspace binds) could
--- plausibly stop seeing the modifier held. `non_consuming` costs nothing
--- if that fear turns out to be unfounded; the alternative, an unbindable
--- Super key on the user's primary machine, is not a recoverable mistake
--- from here. VERIFY must confirm the SUPER + <key> binds still work
--- BEFORE testing the spotlight itself.
-hl.bind("SUPER_L", hl.dsp.exec_cmd(qsIpc("spotlight", "press")), { description = "Cursor spotlight (double-click and hold Super)", non_consuming = true })
-hl.bind("SUPER_L", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true })
+-- FIFTH round: round 4 shipped this bind with `non_consuming = true` on
+-- both lines, reasoned from a worry that a top-level press bind on a
+-- bare modifier might swallow the keydown and break every SUPER+<key>
+-- combo below. On real hardware the bind did not fire at all — neither
+-- direction — and the user got stuck with the overlay latched on. The
+-- real hyprland-wiki docs (`configuring/core/binds/flags.md`) carry a
+-- dedicated worked example for this exact case,
+-- `hl.bind("SUPER_L", hl.dsp.exec_cmd("pkill wofi || wofi"))`, with NO
+-- flags at all — `non_consuming` was the one documented difference from
+-- that example, so it is removed here. This is NOT confirmed as the
+-- actual cause; it is the one concrete, checkable difference found by
+-- comparing against the real doc rather than another guess. The real
+-- discriminator is whether Hyprland's own bind registry even carries
+-- this bind at all on this machine (`hyprctl binds -j`), which VERIFY
+-- below checks before assuming this change fixed anything.
+hl.bind("SUPER_L", hl.dsp.exec_cmd(qsIpc("spotlight", "press")), { description = "Cursor spotlight (triple-click and hold Super)" })
+hl.bind("SUPER_L", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true })
 hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")), { description = "Lock the screen" })          -- universal desktop-environment convention
 hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(qsIpc("overview", "toggle")), { description = "Toggle the window overview" })    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
 -- "slash" (lowercase), not "Slash": X11/XKB keysym names for punctuation
