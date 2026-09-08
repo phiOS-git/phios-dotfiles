@@ -152,20 +152,31 @@ hl.define_submap("alttab", function()
 
     -- Releasing Alt confirms and exits — the actual mechanism S-37's own
     -- card names ("release Alt exits the mode and confirms"). Bound on
-    -- BOTH ALT_L and ALT_R: the all-caps "_L"/"_R" keysym spelling is
+    -- BOTH ALT_L and ALT_R (the all-caps "_L"/"_R" keysym spelling is
     -- confirmed correct against the real documentation's own SUPER_L
-    -- example (flags.md) — that part was never the bug. Found on real
-    -- hardware that releasing Alt did not confirm or close the overlay
-    -- at all, and this project has no way to confirm off-machine which
-    -- physical Alt key was actually held while testing — binding both is
-    -- the safe fix either way, not a guess at which one was the cause;
-    -- flagged for cheap veto if it still does not fire on real hardware.
+    -- example, flags.md — that part was never the bug), but this is now
+    -- confirmed NOT to be a bug in this file at all: Hyprland's own real
+    -- issue tracker (hyprwm/Hyprland#15785, closed without a fix by
+    -- policy, not because it was resolved) describes this exact
+    -- scenario — a modifier held continuously from BEFORE a submap is
+    -- entered does not fire its own release bind on its first release,
+    -- only on a subsequent full press-and-release cycle while already
+    -- inside the submap. Alt+Tab enters this submap with Alt already
+    -- held, which is precisely that case, on every real Hyprland version
+    -- this could be tested against, not just this one machine's — kept
+    -- here anyway since it may fire on some interaction patterns
+    -- (release, re-press, release again, per the same issue's own
+    -- report), but it cannot be the ONLY way to confirm. Return is the
+    -- reliable path: it is a fresh key press while already inside the
+    -- submap, not a modifier held from before entering it, so it does
+    -- not hit this limitation.
     local function confirmAndReset()
         hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "confirm")))
         hl.dispatch(hl.dsp.submap("reset"))
     end
     hl.bind("ALT_L", confirmAndReset, { release = true })
     hl.bind("ALT_R", confirmAndReset, { release = true })
+    hl.bind("Return", confirmAndReset)
 
     hl.bind("Escape", function()
         hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "cancel")))
@@ -198,7 +209,17 @@ hl.define_submap("screenshot", function()
     hl.bind("f", fireAndReset(qsIpc("screenshot", "fullscreen")), { description = "Screenshot: full screen" })
     hl.bind("o", fireAndReset(qsIpc("screenshot", "ocr")), { description = "Screenshot: OCR a selected area" })
     hl.bind("q", fireAndReset(qsIpc("screenshot", "qr")), { description = "Screenshot: decode a QR code in a selected area" })
-    hl.bind("r", fireAndReset(qsIpc("record", "start")), { description = "Start screen recording" })
+    -- Found on real hardware: `r` used fireAndReset like every other
+    -- action here, which exits this submap immediately after starting a
+    -- recording -- but recording is the one action here that spans time
+    -- rather than firing once, so that left `SHIFT + r` (stop) bound
+    -- only inside a submap the user had already been kicked out of.
+    -- Confirmed by the user's own test: `qs ipc call record stop`
+    -- directly worked, Shift+R did not -- the handler was always fine,
+    -- the submap just was not active when Shift+R was pressed. `r`
+    -- fires without resetting, staying in this submap so Shift+R stays
+    -- reachable; only the stop action resets back to the global keymap.
+    hl.bind("r", hl.dsp.exec_cmd(qsIpc("record", "start")), { description = "Start screen recording" })
     hl.bind("SHIFT + r", fireAndReset(qsIpc("record", "stop")), { description = "Stop screen recording" })
     hl.bind("Escape", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
