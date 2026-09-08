@@ -1171,12 +1171,12 @@ Le verifiche `V-01`…`V-18` di `phios-agente.md` restano vincolanti e non si du
 | ID | Domanda | Impatta | Quando |
 |---|---|---|---|
 | `Q-N01` | `font-mono`: Iosevka o Source Code Pro? | §6.4, S-51 | M5 |
-| `Q-N02` | Elenco workspace in barra: per-monitor o condiviso? | §8.4, S-22 | M2, col compositore davanti |
-| `Q-N03` | btop: workspace normale a ID alto e persistente, o special workspace a comparsa? Sono due modelli di interazione diversi. Ripiego: toggle nelle impostazioni | shell §2 | M2 |
+| `Q-N02` | **Chiusa (ADR 121, S-22, 2026-09-08)**: ~~Elenco workspace in barra: per-monitor o condiviso?~~ Per-monitor, confermato dall'utente col compositore davanti | §8.4, S-22 | M2 |
+| `Q-N03` | **Chiusa (ADR 122, S-22, 2026-09-08)**: ~~btop: workspace normale a ID alto e persistente, o special workspace a comparsa?~~ Special workspace dedicato a btop, con un toggle visivo in barra trattato come i pulsanti workspace — non ancora costruito da nessuno step | shell §2 | M2 |
 | `Q-N04` | Tematizzare `systemd-boot`? | §6.7 classe 5 | M5 |
 | `Q-N05` | Decorazioni CSD: attivate o soppresse? | §6.7, S-41 | M4 |
 | `Q-N06` | Le foto restano sull'esterno da 1 TB (ADR 042) o passano sull'interno, data la classe irrecuperabile e il rischio noto dei dischi USB? | §10.3 | M6 |
-| `Q-N07` | Contenuto dello schema di keybinding: quale tasto fa cosa. È un lavoro a sé, non risolto da nessuna valutazione tecnica | shell §14 | M3 |
+| `Q-N07` | Contenuto dello schema di keybinding: quale tasto fa cosa. È un lavoro a sé, non risolto da nessuna valutazione tecnica. **Nota da S-22 (2026-09-08):** a questa data nessuna keybinding Hyprland è ancora configurata sulle macchine reali — nessuna funzione della shell guidata da tastiera è verificabile prima che questo step la chiuda; ogni step precedente a `S-38` che vuole un test da tastiera deve prima chiedere se il bind esiste già | shell §14 | M3 |
 | `Q-N08` | Nome del vault universitario dentro `~/cloud` (non può chiamarsi `documents`) | ADR 045, `Q-76` | M6 |
 | `Q-N09` | Le voci del vault password entrano fra i risultati del launcher? **Decisione di sicurezza, non di comodità** | `Q-73`, S-33 | M3 |
 | `Q-N10` | `phi-shell` fa da agente Polkit via `Quickshell.Services.Polkit`, eliminando un componente? | §8.1 | M3 |
@@ -1243,6 +1243,8 @@ Continuazione di `phios-architettura.md` §19 e `phios-agente.md` §16.
 | 118 | 2026-09-06 | §9.12, C-08 | Il pannello impostazioni ha **nove** sezioni: aggiunte Security e Notifications | Sette sezioni | Sì |
 | 119 | 2026-09-06 | §14 | Confine di responsabilità agent/utente: l'agent produce file nei repository, l'utente cambia lo stato delle macchine. Nessuna eccezione | Agent con accesso alle macchine | No |
 | 120 | 2026-09-06 | §16 | Ciclo a uno step in volo, con `PROGRESS.md` come memoria durevole e un commit per step | Più step in parallelo; nessun tracciamento persistente | Sì |
+| 121 | 2026-09-08 | §8.4, `Q-N02` | Elenco workspace in barra: **per-monitor**, non condiviso — ogni barra mostra solo i workspace del proprio monitor (`Bar/modules/Workspaces.qml`, S-22). Confermato dall'utente col compositore davanti, come richiesto dal `DONE WHEN` di S-22 | Elenco condiviso su ogni monitor, con indicazione di quale monitor possiede ciascun workspace | Sì, un solo filtro da rimuovere |
+| 122 | 2026-09-08 | shell §2, `Q-N03` | btop vive su uno **special workspace dedicato**, con un **toggle visivo in barra** trattato come i pulsanti dei workspace — non un workspace normale a ID alto e persistente. Decisione presa, implementazione non ancora assegnata a nessuno step | Workspace normale a ID alto e persistente; toggle solo nelle impostazioni (il ripiego originale di `Q-N03`) | Sì |
  
 ---
  
