@@ -75,6 +75,23 @@ hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
 -- btop` specifically so this rule can match the terminal's own Wayland app
 -- id — set once at launch and never touched again — rather than its
 -- window title, which btop's own TUI can rewrite at runtime.
+--
+-- REAL-HARDWARE FIX (razer, first verification round): the first version
+-- of this rule assigned the window with a bare `workspace = "special:btop"`
+-- — no `silent` suffix — which switches the monitor's active workspace to
+-- it the moment the window opens, exactly like a normal (non-special)
+-- workspace assignment does. Evidence: a `hyprctl clients` capture taken
+-- right after testing this showed the user's own terminal AND Steam itself
+-- both sitting on `special:btop`, because nothing (no keybinding exists
+-- yet, S-38) could switch back out of it once btop's launch silently
+-- dragged the whole session in. `silent` is exactly what suppresses that
+-- forced switch (confirmed against real Hyprland source: the window-rule
+-- `workspace` field "can be `unset` or suffixed with ` silent`") — the
+-- window still lands on the special workspace, nothing else moves there
+-- with it, and it is only actually seen once something calls
+-- `togglespecialworkspace btop` (still no bar toggle wired for that,
+-- flagged in S-22's own PROGRESS row and left alone here per the user's
+-- own instruction not to build it as a side effect of this fix).
 hl.workspace_rule({
     workspace  = "special:btop",
     persistent = true,
@@ -84,26 +101,38 @@ hl.window_rule({
     name  = "btop-workspace",
     match = { class = "^phios-btop$" },
 
-    workspace = "special:btop",
+    workspace = "special:btop silent",
 })
 
 -- Steam (master plan §2.3: dedicated workspace, secondary windows
--- floating) is deliberately NOT written here. The S-24 step card is
--- explicit: "Steam window rules need real class and title values. Ask the
--- user for hyprctl clients output rather than guessing" — and this agent
--- has no path to either machine to run that command (CLAUDE.md rule 4).
--- Add real rules once `hyprctl clients` output comes back from the
--- USER/VERIFY round-trip below (Steam's main window plus one secondary
--- window, e.g. the friends list), shaped like:
+-- floating). The main-window rule below is real, not guessed: `hyprctl
+-- clients` on razer (this step's VERIFY round-trip) showed Steam's actual
+-- window as `class: steam, title: Steam, initialClass: steam` — used
+-- directly, no placeholder. Given its own dedicated, always-visible
+-- workspace (unlike btop's hidden special one) makes sense for something
+-- you deliberately switch to, this is a plain named workspace, not special,
+-- and not `silent` — opening Steam is meant to take you there.
+hl.window_rule({
+    name  = "steam-workspace",
+    match = { class = "^steam$" },
+
+    workspace = "name:steam",
+})
+
+-- "Secondary windows floating" is still NOT written: the one real Steam
+-- window captured so far is the main library window itself (title
+-- "Steam"). Distinguishing a secondary window (Friends List, a chat, a
+-- game's own popup) needs either that window's own title from a real
+-- `hyprctl clients` capture, or confirmation of how to negate a match in
+-- this Hyprland version — real sources disagree on whether its regex
+-- engine even supports a negative-lookahead title match at all (some
+-- describe ECMA-262 semantics, others RE2 with a separate `negative:`
+-- prefix instead), so guessing the mechanism is exactly the same mistake
+-- as guessing a class name. Add once a secondary window's real title is
+-- captured:
 --
--- hl.workspace_rule({ workspace = "<steam-workspace>", persistent = true })
--- hl.window_rule({
---     name  = "steam-workspace",
---     match = { class = "<steam-main-class>" },
---     workspace = "<steam-workspace>",
--- })
 -- hl.window_rule({
 --     name  = "steam-secondary-float",
---     match = { class = "<steam-class>", title = "<secondary-title-regex>" },
+--     match = { class = "^steam$", title = "<secondary-title-regex>" },
 --     float = true,
 -- })
