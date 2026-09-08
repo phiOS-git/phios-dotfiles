@@ -146,15 +146,29 @@ hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("sidebar", "toggle")), { de
 hl.bind(mainMod .. " + S",     hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })      -- S-40: no prior bind claimed S, obvious mnemonic
 -- S-43, revised after real-hardware feedback ("it shouldn't be a toggle,
 -- while pressed it shows, when released it fades out"): press/release
--- pair on the same combo, not a single toggle bind. `release = true` is a
--- documented, general flag (hyprwm/hyprland-wiki, configuring/core/binds/
--- flags.md: "Will trigger on release of a key" — no special-casing for
--- bare modifiers only, unlike the Alt+Tab submap quirk this file already
--- documents elsewhere) — confirmed before writing this, not guessed.
--- Unverified on real hardware: flag for cheap veto if release doesn't
--- fire reliably while SUPER is still physically held.
+-- pair, not a single toggle bind.
+--
+-- SECOND round: the first attempt bound release on the FULL combo
+-- ("SUPER + G", release = true), confirmed real syntax but confirmed
+-- BROKEN on real hardware — releasing G before Super left the overlay
+-- stuck on, the exact class of quirk this file's own Alt+Tab binds
+-- already ran into and solved the same way: bind the release on the BARE
+-- key ("g" alone, no modifier prefix), not the full combo, so it fires
+-- regardless of whether Super is still held at the moment G comes up —
+-- exactly what ALT_L/ALT_R already do below for Alt+Tab's own confirm.
+-- `non_consuming = true` on the bare-key release bind is not optional:
+-- ALT_L/ALT_R's own release binds (below) get away without it because a
+-- bare modifier key has no text meaning to a focused app, but "g" is a
+-- real printable character typed constantly everywhere in the session —
+-- an unmodified bind on it would otherwise very plausibly swallow every
+-- press of the letter "g" system-wide. `non_consuming` (hyprwm/
+-- hyprland-wiki, configuring/core/binds/flags.md: "Key/mouse events will
+-- be passed to the active window in addition to triggering the
+-- dispatcher") is the documented flag for exactly this case, applied
+-- before this bind was ever shipped, not discovered after breaking
+-- typing.
 hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")), { description = "Show the cursor spotlight (hold)" }) -- "G" for "glow" -- no closer mnemonic was free ("F"/"L" already used)
-hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true })
+hl.bind("g", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true })
 hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")), { description = "Lock the screen" })          -- universal desktop-environment convention
 hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(qsIpc("overview", "toggle")), { description = "Toggle the window overview" })    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
 -- "slash" (lowercase), not "Slash": X11/XKB keysym names for punctuation
