@@ -20,3 +20,4 @@ bluez
 bluez-utils
 sof-firmware
 rtkit
+quickshell
