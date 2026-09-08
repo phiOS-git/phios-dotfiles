@@ -152,6 +152,37 @@ hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(qsIpc("overview", "toggle")), { d
 -- named keys like "Return"/"Tab"/"Escape", which are capitalized.
 hl.bind(mainMod .. " + SHIFT + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle")), { description = "Toggle the cheat sheet" }) -- Super+? — common "show shortcuts" convention
 
+-- S-46: fixed volume/brightness keys (funzionalita §2.15, C-09). S-06's
+-- own diagnosis already found the kernel reports STANDARD, correctly-named
+-- codes for every one of these (KEY_MUTE, KEY_VOLUMEUP/DOWN,
+-- KEY_BRIGHTNESSUP/DOWN, i.e. Hyprland's XF86Audio*/XF86MonBrightness*
+-- keysyms) — no hwdb rule was ever needed, the actual gap this whole time
+-- was simply that no bind existed yet (S-06's own words: "almost
+-- certainly the absence of any compositor keybinding"). `repeating = true,
+-- locked = true` on the brightness binds matches the real Hyprland wiki's
+-- own worked example for this exact keysym pair (configuring/core/
+-- environment-variables.md's hyprsunset-gamma example) — `locked` so they
+-- still work from the lock screen, which volume/brightness genuinely
+-- should.
+--
+-- Volume goes straight to wpctl (WirePlumber's own CLI, real/standard),
+-- not through phi-shell: Services/AudioBridge.qml already reflects live
+-- PipeWire state reactively, regardless of which process changed it, so
+-- there is nothing phi-shell needs to be told. Brightness is NOT like
+-- that — Services/Brightness.qml caches `percent` from its own
+-- brightnessctl reads, so it goes through `qs ipc call brightness up/down`
+-- (that file's own S-46 IpcHandler) instead of a bare brightnessctl call,
+-- so the OSD (S-43) updates atomically rather than going stale.
+-- Bare key name, ONE string argument, no modifier prefix — matches the
+-- real wiki's own worked example exactly (hl.bind("XF86MonBrightnessUp",
+-- ...)), not a two-argument hl.bind("", "Key", ...) form, which an
+-- earlier draft of this file used and which no source here confirms.
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { repeating = true, locked = true })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), { repeating = true, locked = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(qsIpc("brightness", "down")), { repeating = true, locked = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qsIpc("brightness", "up")), { repeating = true, locked = true })
+
 -- Alt+Tab (S-37, architettura §8.2.2 S10): the one binding that genuinely
 -- fits "Alt for applications" — cycling BETWEEN running applications is
 -- exactly that, and matches the universal Alt+Tab convention besides.
