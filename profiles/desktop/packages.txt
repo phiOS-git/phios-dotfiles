@@ -14,7 +14,6 @@ mpv
 zathura
 zathura-pdf-mupdf
 imv
-cliphist
 wl-clipboard
 bluez
 bluez-utils
