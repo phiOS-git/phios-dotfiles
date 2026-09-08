@@ -62,6 +62,106 @@ hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
 
 --------------------------------
+---- PHI-SHELL KEYBINDINGS  ----
+--------------------------------
+
+-- S-38: "propose a complete scheme... Super for the window manager, Alt
+-- for applications, modes for rare actions" (master plan). Every M2/M3
+-- shell surface reaches this way, all through the same `qs ipc call
+-- <target> <fn>` mechanism S-31 established and every surface since has
+-- followed — confirmed against the real Quickshell documentation's own
+-- worked example (io/ipchandler.hpp): no `-p <path>` flag, it auto-
+-- targets the one running instance.
+--
+-- The pre-existing Super+Return/B/E/Q/arrows/M binds above (S-24) are
+-- deliberately left untouched, even though app-launching sits oddly
+-- against "Alt for applications" read strictly: no real keybinding has
+-- ever been used on real hardware yet (every M2/M3 step's own note, most
+-- recently S-37's), so there is no muscle memory here to protect, but
+-- treating "open a terminal" as basic window-manager-level functionality
+-- (as most tiling WM configs do) rather than an "application" in the
+-- Alt-Tab sense is this agent's own reading, not a document's — flagged
+-- for the user's own amend, exactly as this step's DONE WHEN asks for
+-- ("the user confirms the scheme is the one they want to learn").
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("qs ipc call launcher toggle"))    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
+hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd("qs ipc call sidebar toggle"))     -- N for the sidebar's own default tab, Notifications
+hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd("qs ipc call lock lock"))          -- universal desktop-environment convention
+hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd("qs ipc call overview toggle"))    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
+-- "slash" (lowercase), not "Slash": X11/XKB keysym names for punctuation
+-- are lowercase words (matching "left"/"right"/"up"/"down" above), unlike
+-- named keys like "Return"/"Tab"/"Escape", which are capitalized.
+hl.bind(mainMod .. " + SHIFT + slash", hl.dsp.exec_cmd("qs ipc call cheatsheet toggle")) -- Super+? — common "show shortcuts" convention
+
+-- Alt+Tab (S-37, architettura §8.2.2 S10): the one binding that genuinely
+-- fits "Alt for applications" — cycling BETWEEN running applications is
+-- exactly that, and matches the universal Alt+Tab convention besides.
+-- Three ways out of the submap (Alt release, Escape, catchall) so a
+-- stray keypress can never leave the session stuck inside it (the real
+-- documentation's own explicit warning: "Do not forget a keybind to
+-- reset the keymap while inside it!").
+hl.bind("ALT + Tab", hl.dsp.submap("alttab"))
+
+hl.define_submap("alttab", function()
+    -- Binding "ALT + Tab" again inside the submap, not a bare "Tab": Alt
+    -- is still physically held from entering the submap, and this
+    -- project has no confirmed source for whether Hyprland's submap key
+    -- matching requires an exact modifier-state match the way a normal
+    -- global bind does — repeating the held modifier is the safer
+    -- reading, not a confirmed one; flagged for cheap veto if cycling
+    -- does not respond to a second Tab press on real hardware.
+    hl.bind("ALT + Tab", hl.dsp.exec_cmd("qs ipc call alttab next"))
+    hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd("qs ipc call alttab prev"))
+
+    -- Releasing Alt confirms and exits — the actual mechanism S-37's own
+    -- card names ("release Alt exits the mode and confirms").
+    hl.bind("ALT_L", function()
+        hl.dispatch(hl.dsp.exec_cmd("qs ipc call alttab confirm"))
+        hl.dispatch(hl.dsp.submap("reset"))
+    end, { release = true })
+
+    hl.bind("Escape", function()
+        hl.dispatch(hl.dsp.exec_cmd("qs ipc call alttab cancel"))
+        hl.dispatch(hl.dsp.submap("reset"))
+    end)
+    hl.bind("catchall", function()
+        hl.dispatch(hl.dsp.exec_cmd("qs ipc call alttab cancel"))
+        hl.dispatch(hl.dsp.submap("reset"))
+    end)
+end)
+
+-- Screenshot/OCR/QR/recording (S-36): a "mode for a rare action" (master
+-- plan's own third category), not five-plus separate modifier chords —
+-- Print enters the mode, one mnemonic letter picks the action, every
+-- action exits back to the global keymap on its own (the documented
+-- "same keybind performs multiple actions" pattern, factored through one
+-- local helper rather than repeated seven times).
+hl.bind("Print", hl.dsp.submap("screenshot"))
+
+hl.define_submap("screenshot", function()
+    local function fireAndReset(cmd)
+        return function()
+            hl.dispatch(hl.dsp.exec_cmd(cmd))
+            hl.dispatch(hl.dsp.submap("reset"))
+        end
+    end
+
+    hl.bind("a", fireAndReset("qs ipc call screenshot area"))
+    hl.bind("w", fireAndReset("qs ipc call screenshot window"))
+    hl.bind("f", fireAndReset("qs ipc call screenshot fullscreen"))
+    hl.bind("o", fireAndReset("qs ipc call screenshot ocr"))
+    hl.bind("q", fireAndReset("qs ipc call screenshot qr"))
+    hl.bind("r", fireAndReset("qs ipc call record start"))
+    hl.bind("SHIFT + r", fireAndReset("qs ipc call record stop"))
+    hl.bind("Escape", hl.dsp.submap("reset"))
+    hl.bind("catchall", hl.dsp.submap("reset"))
+end)
+
+-- Deliberately NOT bound to anything: Widgets/ContextMenu.qml (mouse-
+-- driven, and unwired to any surface by the user's own S-37 decision) and
+-- Tooltip/Tooltip.qml (hover-driven, no keyboard trigger makes sense for
+-- either).
+
+--------------------------------
 ---- WINDOWS AND WORKSPACES ----
 --------------------------------
 
