@@ -235,13 +235,16 @@ follows the same `awaiting-verification` → `verified` discipline as a step.
 | OOP-22 | Shell restyle R4 — D: bar popouts align to the button's right edge | awaiting-verification | phi-shell 5e24f3d · dotfiles this commit | 2026-09-10 | Batch D of `shell-restyle-r4` (see OOP-19), phi-shell only. **Item 4 — the overlays from the status bar (the click-popouts for volume/brightness/wifi/bluetooth/network/battery/gpu) are positioned too low and their right side should align with the right side of the bar button.** "Too low" was two things: OOP-20 already replaced `Panels/BarPopout.qml`'s over-estimated bar height with `Services/BarMetrics.height`; this batch also drops the card one rhythm unit (`space1`) below the bar for breathing room rather than flush against it. "Right-aligned to the button": `Widgets/Segment.qml` gains `rightX()` (screen x of the button's right edge, replacing OOP-17's now-unused `centerX()`); `Services/BarPopout.qml` `anchorX`→`anchorRightX`; `Panels/BarPopout.qml` positions the card so its right edge sits at `anchorRightX` (clamped to the screen, corner fallback) instead of centring on the button. The seven right-isle modules pass `root.rightX()`. This positioning infra is reused by the richer bar-click control card that replaces the pill in batch E (OOP-23). **Not verified — no compositor here.** New/changed: `Widgets/Segment.qml`, `Services/BarPopout.qml`, `Panels/BarPopout.qml`, `Bar/modules/{Volume,Brightness,Network,Wifi,Bluetooth,Battery,Gpu}.qml`. |
 | OOP-23 | Shell restyle R4 — E: volume/brightness overlay split | awaiting-verification | phi-shell 422d896 · dotfiles this commit | 2026-09-10 | Batch E of `shell-restyle-r4` (see OOP-19), phi-shell only. **Item 3** — the volume/brightness function keys and the bar volume/brightness icons should evoke *different* overlays. **Function keys** (`XF86Audio*` → `wpctl`, `XF86MonBrightness*` → `qsIpc("brightness", …)` — both already wired in `hyprland.lua.tmpl`, both already change a property `Osd/Osd.qml` watches): the OSD is restyled from a labelled column to the **overlay-reference pill** — glyph · a read-only `Widgets.Meter` · the % — on one row, still centre-bottom, still auto-hiding (~1.5s). The meter is read-only here: nothing to drag on a surface that vanishes in a second. **Bar icons**: `Panels/BarPopout.qml`'s volume/brightness case is no longer that pill — it is a real control card. Volume: a draggable level (`Meter` interactive, live `AudioBridge.setVolume`), a **Mute** `ToggleRow`, a "Sound settings…" button. Brightness: a draggable level (commit on release — `brightnessctl` spawns), **Night mode** + **True Tone** `ToggleRow`s (`Services/NightShift`), a "Display settings…" button. `meterBody` / `Services.BarPopout.isMeter()` removed — one `cardBody` with per-key sections, the same shape the wifi/bluetooth/etc sections already used. **New `Services/SettingsPanel.qml`** — a singleton owning the Settings panel's `shown` state plus an optional `pendingSection` to jump to, so the card's settings buttons open the panel in-process at a section (`openSection("devices")` / `openSection("theme")` — brightness's night/true-tone toggles live in the Theme section per OOP-08, so its deep-link goes there; volume's goes to Devices). `Settings/Settings.qml` routes `shown` / close / Esc / click-outside / the `Super+S` IpcHandler through the singleton — it used to own a private `shown` bool nothing could reach, unlike every other panel (NotificationPanel/AgentPanel/Calendar). **No `hyprland.lua` change** — `Super+S` still `qs ipc call settings toggle`, now delegating. **Not verified — no compositor here**; the OSD pill height (a rough `chMetrics.height + panelPadding·2 + space2·ch`) and the section-jump (`registryRows` may not be loaded if the button is clicked in the first frame — acceptable) are the screenshot-pass checks. New/changed: `Osd/Osd.qml`, `Panels/BarPopout.qml`, `Services/BarPopout.qml`, `Services/SettingsPanel.qml` (new), `Settings/Settings.qml`. |
 | OOP-24 | Shell restyle R4 — F: unified Alt+Tab / overview surface | awaiting-verification | phi-shell ea61494 · dotfiles this commit | 2026-09-10 | Batch F of `shell-restyle-r4` (see OOP-19), phi-shell only (the `hyprland.lua` bind/gesture cleanup is batch G). **Item 1 — unify SUPER+TAB and ALT+TAB (both broken) into one surface, ALT+TAB only.** `AltTab/AltTab.qml` rebuilt from the flat window strip into the user's layout: window boxes (icon over name, all `cellW × cellH`) grouped by workspace into **centred horizontal rows** — top row the lowest-numbered workspace, bottom row the highest — with the **full workspace list along the screen bottom**, centred, the workspace of the *selected* window highlighted (so Tab cycling moves the strip highlight coherently — `selectedWorkspaceId` is derived from the selected window, not the actually-focused workspace). Two open modes carried on `heldOpen`: **transient** (entered by the `ALT+Tab` Hyprland submap — `next`/`prev` cycle, `ALT` release → `confirm` → focus + close, `Escape` → `cancel`) and **persistent** (the three-finger-up gesture / a plain `toggle` — no key held, pointer-driven, closes on three-finger-down / a click on a box or pill / a click on the dim). A click on a window box runs `hyprctl dispatch focuswindow address:<addr>` (the mechanism `Launcher`'s `activateWindow` proves works — the wlr `Toplevel.activate()` was found not to focus) and closes; a click on a workspace pill runs `hyprctl dispatch workspace <id>` and closes. Window data is a **`hyprctl clients -j` snapshot on open** (the shape `Screenshot.qml` / the old confirm path / `phi`'s `internal/query/windows.go` all already parse — a momentary surface wants a snapshot, and it dodges betting on an unverified `Quickshell.Hyprland.HyprlandToplevel.workspace` field); the bottom strip reads the live `Services.HyprlandBridge.workspaces` (proven by `Bar/modules/Workspaces.qml`). The `IpcHandler` gains `open`/`close`/`toggle`; a **back-compat `overview` target** is kept, so the *current, unchanged* `hyprland.lua` (`Super+Tab` → `overview toggle`, the gestures → `overview open`/`close`) keeps working — OOP-24 is functional on its own, OOP-25 is cleanup. **Item 8 — the overview dim should match the notification panel / chat / cheatsheet and cover the status bar.** `AltTab` gets the OOP-16 treatment: `WlrLayer.Overlay` + `exclusiveZone: -1` + a `Widgets.Scrim` (it had none, `exclusiveZone: 0`, and stayed on the `Top` layer). `Overview/Overview.qml` is **retired** — left dormant in the tree (same as `Panels/tabs/Calendar.qml` after OOP-06), with a header note; `shell.qml` drops its instance + import. `Screenshot.qml`'s scrim also does not cover the bar but is deliberately left alone (a capture tool dimming the bar is questionable, and the user did not name it). **Not verified — no compositor here.** Screenshot-pass risks: vertical overflow with many workspace rows is not handled; a workspace with more windows than fit one row's width will clip (`Row`, no wrap); the `hyprctl clients -j` snapshot vs. `HyprlandToplevel` model choice; whether the transient surface on the `Overlay` layer with no `LayerFocus` ever mis-handles focus return on `cancel`. New/changed: `AltTab/AltTab.qml`, `Overview/Overview.qml` (header only), `shell.qml`. |
+| OOP-25 | Shell restyle R4 — G: hyprland.lua bind + gesture cleanup | awaiting-verification | dotfiles this commit | 2026-09-10 | Batch G of `shell-restyle-r4` (see OOP-19), `phios-dotfiles` only. **Item 1, compositor side.** `profiles/desktop/templates/.config/hypr/hyprland.lua.tmpl`: the `Super+Tab` → `qsIpc("overview", "toggle")` bind is **removed** (user: "using only ALT+TAB"); the three-finger-up / -down gestures are **retargeted** from `qsIpc("overview", …)` to `qsIpc("alttab", "open")` / `qsIpc("alttab", "close")`. The `Alt+Tab` submap already drove `alttab` and is unchanged. OOP-24's back-compat `overview` IpcHandler means this cleanup is not load-bearing — it removes a now-dead bind and a stale name, it does not enable anything. Apply: `git pull` dotfiles → `phi theme set <variant>` (re-renders `hyprland.lua` — the template carries `${PHI_CURSOR_*}` substitutions) → `hyprctl reload`. **Item 5 — reduce the window-area gap to the screen edges and the bar so it equals the inter-window gap, keeping the two variables separate — is HELD for the user.** `phios-dotfiles` sets NO Hyprland layout config today (`hyprland.lua.tmpl` has `hl.monitor`/`hl.env`/binds/rules/gestures only — no `general { }` block, no `gaps_in`/`gaps_out`); Hyprland's defaults (`gaps_in 5`, `gaps_out 20`) are in force. Setting them needs a top-level declarative call whose exact form this repo has never used and which cannot be verified from here — a wrong call in this file breaks the whole config (binds, autostart, all of it), the exact risk S-24/S-25 treated as a hard stop. **Question for the user:** what is the Lua call that sets a `general:` option in your config (`hl.general({ gaps_in = N, gaps_out = N })`? `hl.keyword("general:gaps_in", N)`? something else?), or do you already set gaps in a config file outside this repo? Once known it is a two-line addition. New/changed: `profiles/desktop/templates/.config/hypr/hyprland.lua.tmpl`. |
 
 ### `shell-restyle` — consolidated status (2026-09-10)
 
 A single visual restyle of `phi-shell` + the design tokens, requested out of
-plan, run over three feedback rounds. **Every row OOP-02 … OOP-18 is
-`awaiting-verification`** — nothing in this track has rendered on real
-hardware yet. One consolidated screenshot pass promotes them all; a final
+plan, run over four feedback rounds. **Every row OOP-02 … OOP-25 is
+`awaiting-verification`** — nothing in this track has been confirmed on real
+hardware yet (R4's feedback implies R1–R3 *were* applied and run, since the
+user is describing rendered behaviour, but no screenshot pass has formally
+promoted them). One consolidated screenshot pass promotes them all; a final
 commit then flips them to `verified`.
 
 **Rounds**
@@ -273,19 +276,43 @@ commit then flips them to `verified`.
     height (`BarIsle` gains `padH` separate from `pad`; bar height no longer
     keys off the centre isle, so it doesn't resize when an app
     opens/closes); isle Segments halved their vertical inset.
+- **R4 — OOP-19 … OOP-25** (`shell-restyle-r4`, 10 items):
+  - OOP-19 (A): item 9 selected list rows / panels invert their text
+    (`ListRow` + `Panel.contentColor`); item 7 runner name↔directory pushed
+    to opposite ends.
+  - OOP-20 (B): item 2 — one `Services/BarMetrics` source for bar height;
+    the notification / chat docks start below the bar (scrim still covers it).
+  - OOP-21 (C): items 6 + 10 — the isle background is gone; a bar button is
+    a bare opposite-coloured glyph on the wallpaper, boxed only when
+    selected (was the inverse of a panel). **This closes R3 #7**, held then.
+  - OOP-22 (D): item 4 — bar popouts align their right edge to the button's
+    right edge, one rhythm unit below the bar (`Segment.rightX()`).
+  - OOP-23 (E): item 3 — the volume/brightness function keys get the OSD
+    pill (centre-bottom); the bar icons open a real control card (level +
+    Mute / Night mode + True Tone + a Settings deep-link, via the new
+    `Services/SettingsPanel`).
+  - OOP-24 (F): item 1 — one unified Alt+Tab surface (window boxes grouped
+    by workspace in centred rows, workspace strip along the bottom);
+    Overview retired. Item 8 — it gets the OOP-16 scrim treatment.
+  - OOP-25 (G): item 1 compositor side — `Super+Tab` bind removed, the
+    three-finger gestures retargeted to `alttab`. **Item 5 (window-area
+    gaps) is HELD** — no Hyprland layout config exists in this repo and the
+    declarative Lua call cannot be verified from here (see OOP-25's row).
 
 **Apply path (whole track)**
 
-1. `git pull` in `phios-dotfiles` (through commit for OOP-18's dotfiles row).
+1. `git pull` in `phios-dotfiles` (through OOP-25's commit).
 2. `phi theme set <active variant>` — **required**: OOP-10's 1px border /
-   8px padding / 13px size scale and OOP-14's templates come only from the
-   regenerated `Config/Tokens.qml` and the rendered app themes.
-3. `git pull` in `phi-shell` (through `f114eea`).
+   8px padding / 13px size scale, OOP-14's templates, and OOP-25's
+   `hyprland.lua` re-render all come only from `phi theme set`.
+3. `git pull` in `phi-shell` (through OOP-24's `ea61494`).
 4. `pkill -x qs && qs -p ~/.config/quickshell/phi` (capture the log —
-   `DesktopEntries.applications` and the Nerd-Font glyph codepoints are the
-   two most likely things to need a one-line fix).
-5. Restart yazi / nvim / kitty for their theme (reload still unwired).
-   No `phios-install` / `hyprctl reload` — no `hyprland.lua` change in R2/R3.
+   `DesktopEntries.applications`, the Nerd-Font glyphs, the new
+   `Services/BarMetrics`/`SettingsPanel` singletons and the rebuilt
+   `AltTab.qml` are the most likely to need a one-line fix).
+5. `hyprctl reload` — **R4 changes `hyprland.lua`** (OOP-25: the removed
+   `Super+Tab` bind, the retargeted gestures).
+6. Restart yazi / nvim / kitty for their theme (reload still unwired).
 
 **R3 items NOT built — pending this verification + a disk fix**
 
@@ -298,13 +325,11 @@ commit then flips them to `verified`.
 - **#6** — lock screen (`Lock/Lock.qml`): bring onto the new grammar and
   add a content fade-in (the surface bg must stay opaque per the
   ext-session-lock protocol).
-- **#7 — HELD, needs user clarification.** "Remove the status bar main
-  background": the bar window is already `color: "transparent"`. If it
-  means removing the per-isle coloured blocks so buttons sit directly on
-  the wallpaper, that also requires re-deriving the whole `isle` colour
-  pair in `Widgets/WidgetStates.js` (buttons on wallpaper want the panel
-  pair, not the inverted isle pair) and touches every bar module — not to
-  be guessed.
+- **#7 — CLOSED at OOP-21 (R4).** The user confirmed it means the per-isle
+  blocks, and added the colour-inversion half (R4 item 6). `BarIsle` no
+  longer paints a block; `surfaceColors()`'s "isle" branch has no resting
+  fill or border; `barText`/`barButtonHover` re-derived. Legibility over
+  the wallpaper is a screenshot-pass check.
 - **#11** — btop / Steam workspace buttons. btop button = switch to the
   `special:btop` workspace, launch btop if absent, unify with the existing
   special-workspace feature. A Steam button appears after the numbered
@@ -327,6 +352,15 @@ commit then flips them to `verified`.
   match depends on hyprctl's exact JSON spacing.
 - Exact px for the size scale (`11/13/14/16/18/21/24`) and panel padding
   (8px) are judgment calls — index 1 (13px) also drives every `1ch` gap.
+- **R4:** bar glyphs/text as `colorOpposite` directly on the wallpaper
+  (OOP-21) — depends entirely on which wallpaper is set. The unified
+  `AltTab.qml` (OOP-24) has never rendered: `hyprctl clients -j` snapshot
+  shape, `DesktopEntries.heuristicLookup` icon hit-rate, no handling yet
+  for vertical overflow (many workspace rows) or a workspace with more
+  windows than fit one row, and whether the transient (Alt-held) surface
+  on the Overlay layer ever fumbles focus return on `cancel`. The OSD pill
+  height is a rough formula. `Services/SettingsPanel`'s section-jump
+  (`openSection`) assumes `registryRows` is loaded.
 
 **Environment note (2026-09-10):** the workstation disk hit 0 bytes free
 mid-session (APFS local snapshots the likely cause); `df -h /` recovered to

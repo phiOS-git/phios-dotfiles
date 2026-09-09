@@ -209,7 +209,10 @@ hl.bind(mainMod .. " + P",     hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { desc
 hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")), { description = "Show the cursor spotlight (hold)" }) -- "G" for "glow" -- no closer mnemonic was free ("F"/"L" already used)
 hl.bind("g", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true })
 hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")), { description = "Lock the screen" })          -- universal desktop-environment convention
-hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(qsIpc("overview", "toggle")), { description = "Toggle the window overview" })    -- window-manager-level "show every window", distinct from Alt+Tab's per-application cycling below
+-- OOP-24/OOP-25 (user: "unify SUPER+TAB and ALT+TAB, using only ALT+TAB"):
+-- the Super+Tab overview bind is removed. The window overview and Alt+Tab
+-- are one surface now (AltTab.qml); Alt+Tab (below) and the three-finger
+-- gesture (GESTURES section) are its only entry points.
 -- "slash" (lowercase), not "Slash": X11/XKB keysym names for punctuation
 -- are lowercase words (matching "left"/"right"/"up"/"down" above), unlike
 -- named keys like "Return"/"Tab"/"Escape", which are capitalized.
@@ -481,12 +484,14 @@ hl.window_rule({
 ---- GESTURES ----
 -----------------
 
--- Window overview recall gesture (S-35, master plan shell doc §13): three-
--- finger swipe on razer's touchpad, mirroring the "opposite axis to the
--- L/R workspace switch, so no conflict" requirement — Hyprland's own
+-- Overview / Alt+Tab recall gesture (S-35 + S-37, unified at OOP-24):
+-- three-finger swipe on razer's touchpad, mirroring the "opposite axis to
+-- the L/R workspace switch, so no conflict" requirement — Hyprland's own
 -- built-in workspace-swipe gesture already owns left/right, so up opens
 -- and down closes, matching a common show/dismiss convention rather than
--- both directions doing the same toggle. Syntax confirmed against the
+-- both directions doing the same toggle. OOP-25: retargeted from the old
+-- "overview" IPC name to "alttab" — the surface is one now, opened
+-- persistently (no Alt held) by the gesture. Syntax confirmed against the
 -- real Hyprland wiki source (hyprwm/hyprland-wiki, configuring/core/
 -- binds/gestures.md) rather than assumed — this project's own risk C-06
 -- flag on a fast-moving Lua config API applies here as much as anywhere
@@ -497,10 +502,10 @@ hl.window_rule({
 hl.gesture({
     fingers = 3,
     direction = "up",
-    action = function() hl.exec_cmd(qsIpc("overview", "open")) end,
+    action = function() hl.exec_cmd(qsIpc("alttab", "open")) end,
 })
 hl.gesture({
     fingers = 3,
     direction = "down",
-    action = function() hl.exec_cmd(qsIpc("overview", "close")) end,
+    action = function() hl.exec_cmd(qsIpc("alttab", "close")) end,
 })
