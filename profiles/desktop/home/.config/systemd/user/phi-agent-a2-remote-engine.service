@@ -1,0 +1,40 @@
+# phiOS — A2 worker engine for a DECLARED-REMOTE session (§10.3).
+# Declared in services-user.txt, NEVER enabled by the installer.
+#
+# Starting THIS unit is what "declares a session remote": it is the only
+# A2 launch that carries OPENCODE_SERVER_PASSWORD and opens the inbound
+# unix socket the overlay listener connects to. Local A2
+# (phi-agent-a2.service) has neither, so V-02 against a default A2 stays
+# clean.
+#
+# Do NOT enable this permanently. Start it only for the duration of a
+# remote session:  systemctl --user start phi-agent-a2-remote.service
+# (which pulls this in via Requires=), and stop it after.
+#
+# UNVERIFIED: written from systemd.exec(5); not run.
+
+[Unit]
+Description=phiOS AI worker engine (A2, contained, remote session)
+Documentation=https://github.com/phiOS-git/phios-dotfiles
+Requires=phi-agent-broker@a2.service phi-agent-net-bridge.service
+After=phi-agent-broker@a2.service phi-agent-net-bridge.service
+Conflicts=phi-agent-a2.service
+StartLimitIntervalSec=60
+StartLimitBurst=4
+
+[Service]
+Type=simple
+# The password: a systemd credential from a user-owned mode-600 file
+# OUTSIDE the repository. phi-agent-contain bind-mounts it into the
+# container and the wrapper reads it into the environment there — it is
+# never a --setenv value (that would put it in bwrap's argv). Never in
+# cleartext in the dotfiles (§10.3).
+LoadCredential=remote-password:%h/.config/phi-agent/a2/remote-password
+ExecStart=%h/.local/bin/phi-agent-contain a2 --remote -- opencode serve --hostname 127.0.0.1 --port 4299
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=default.target

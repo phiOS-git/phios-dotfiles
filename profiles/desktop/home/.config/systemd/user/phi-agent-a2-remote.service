@@ -1,0 +1,51 @@
+# phiOS — A2 remote surface: the overlay listener (§10.3, §5.3).
+# Declared in services-user.txt, NEVER enabled by the installer.
+#
+#   # for the duration of a remote session only:
+#   systemctl --user start phi-agent-a2-remote.service
+#   ... work remotely ...
+#   systemctl --user stop phi-agent-a2-remote.service phi-agent-a2-remote-engine.service
+#
+# This is the ONLY thing that ever binds the overlay address, and it binds
+# ONLY that address — never 0.0.0.0, never another interface (V-17). The
+# address is machine data (ADR 067 / CLAUDE.md rule 5): it is NOT in the
+# repository. Set PHI_AGENT_REMOTE_ADDR in ~/.config/phi-agent/env; the
+# unit refuses to start without it.
+#
+# Reachability inside the overlay is the overlay's own access policy
+# (default-deny, explicit allow to the user's own devices toward this
+# port) — not configured here. No second encryption layer: the overlay
+# already encrypts (§5.3).
+#
+# UNVERIFIED: written from socat(1) / systemd.exec(5); not run.
+
+[Unit]
+Description=phiOS AI worker remote surface (overlay listener)
+Documentation=https://github.com/phiOS-git/phios-dotfiles
+Requires=phi-agent-a2-remote-engine.service
+After=phi-agent-a2-remote-engine.service
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.config/phi-agent/env
+Environment=PHI_AGENT_REMOTE_PORT=4399
+ExecStartPre=/usr/bin/sh -c 'test -n "${PHI_AGENT_REMOTE_ADDR}" || { echo "PHI_AGENT_REMOTE_ADDR is unset — set it in ~/.config/phi-agent/env (the overlay address, never in the repo)"; exit 1; }'
+ExecStart=/usr/bin/socat TCP-LISTEN:${PHI_AGENT_REMOTE_PORT},bind=${PHI_AGENT_REMOTE_ADDR},fork,reuseaddr UNIX-CONNECT:%h/.local/state/phi-agent/net/a2-remote.sock
+Restart=on-failure
+RestartSec=3
+
+MemoryMax=32M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/state/phi-agent
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+UMask=0077
+
+[Install]
+WantedBy=default.target

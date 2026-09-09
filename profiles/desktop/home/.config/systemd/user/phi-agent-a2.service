@@ -1,0 +1,33 @@
+# phiOS — A2 worker engine, LOCAL (docs/phios-agente.md §3.1, §4.4).
+# Declared in services-user.txt, NEVER enabled by the installer.
+#
+#   systemctl --user enable --now phi-agent-a2.service
+#
+# Contained `opencode serve` on loopback only, NO password, NO overlay
+# listener. This is the day-to-day contained A2 the S-76 transition
+# switches to. The remote surface is a SEPARATE pair of units
+# (phi-agent-a2-remote*.service) that only run when a session is declared
+# remote (§10.3).
+#
+# No fallback ExecStart — stays `failed` if bubblewrap is gone (V-04).
+# UNVERIFIED: written from systemd.exec(5); not run.
+
+[Unit]
+Description=phiOS AI worker engine (A2, contained opencode serve, loopback)
+Documentation=https://github.com/phiOS-git/phios-dotfiles
+Requires=phi-agent-broker@a2.service phi-agent-net-bridge.service
+After=phi-agent-broker@a2.service phi-agent-net-bridge.service
+StartLimitIntervalSec=60
+StartLimitBurst=4
+
+[Service]
+Type=simple
+Environment=PHI_AGENT_A2_PORT=4299
+ExecStart=%h/.local/bin/phi-agent-contain a2 -- opencode serve --hostname 127.0.0.1 --port ${PHI_AGENT_A2_PORT}
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=default.target

@@ -65,12 +65,14 @@ usage() {
 
 instance=
 dry_run=0
+remote=0
 cmd=()
 
 while (($#)); do
 	case $1 in
 		a1|a2) [[ -z $instance ]] || die "instance given twice"; instance=$1; shift ;;
 		--dry-run) dry_run=1; shift ;;
+		--remote) remote=1; shift ;;
 		-h|--help) usage; exit 0 ;;
 		--) shift; cmd=("$@"); break ;;
 		*) die "unexpected argument: $1 (try --help)" ;;
@@ -79,6 +81,9 @@ done
 
 [[ -n $instance ]] || { usage >&2; die "no instance (a1|a2)"; }
 ((${#cmd[@]})) || die "no command after --"
+if ((remote)); then
+	[[ $instance == a2 ]] || die "--remote is A2 only (phios-agente.md §10.3)"
+fi
 
 # ---------------------------------------------------------------------------
 # Fail-closed preflight (V-04)
@@ -285,19 +290,42 @@ case $instance in
 		add_env GIT_COMMITTER_NAME "${GIT_COMMITTER_NAME:-${GIT_AUTHOR_NAME:-phi agent}}"
 		add_env GIT_COMMITTER_EMAIL "${GIT_COMMITTER_EMAIL:-${GIT_AUTHOR_EMAIL:-phi-agent@localhost}}"
 
-		# Bring the two forwarders up inside the namespace, then exec the
-		# real command. socat is /usr/bin/socat (the /usr bind); the
-		# forwarders are children of this shell, which --die-with-parent
-		# reaps with the container. NO_PROXY (127.0.0.1,localhost, set
-		# above for both instances) is CORRECT here: it routes the broker
-		# call straight to the :8790 forwarder (-> broker-a2.sock), while
-		# every other host still goes through HTTPS_PROXY -> :8118 ->
+		# The two OUTBOUND forwarders, always. socat is /usr/bin/socat (the
+		# /usr bind); the forwarders are children of this shell, which
+		# --die-with-parent reaps with the container. NO_PROXY
+		# (127.0.0.1,localhost, set above for both instances) routes the
+		# broker call straight to the :8790 forwarder (-> broker-a2.sock),
+		# while every other host goes through HTTPS_PROXY -> :8118 ->
 		# proxy.sock -> tinyproxy's whitelist. A process that unsets the
-		# proxy vars can then reach only the broker, nothing else — which
-		# is exactly what V-03 checks.
-		cmd=(/bin/sh -c '
+		# proxy vars can then reach only the broker — which is V-03.
+		wrap='
 			/usr/bin/socat TCP-LISTEN:8118,bind=127.0.0.1,fork,reuseaddr UNIX-CONNECT:/run/phi-agent/net/proxy.sock &
-			/usr/bin/socat TCP-LISTEN:8790,bind=127.0.0.1,fork,reuseaddr UNIX-CONNECT:/run/phi-agent/net/broker-a2.sock &
+			/usr/bin/socat TCP-LISTEN:8790,bind=127.0.0.1,fork,reuseaddr UNIX-CONNECT:/run/phi-agent/net/broker-a2.sock &'
+
+		if ((remote)); then
+			# --remote (§10.3): the ONLY time A2 gets a password and an
+			# INBOUND socket. A default A2 launch has neither, so V-02 run
+			# against it stays clean with nothing to explain. The overlay
+			# address is bound by the HOST unit (phi-agent-a2-remote.service),
+			# never in here and never in the repo — this side only exposes
+			# opencode's loopback port on a unix socket the host reads.
+			#
+			# The password is bind-mounted as a file and read by the wrapper
+			# into the environment INSIDE the container — never passed as a
+			# --setenv value, which would put it in bwrap's argv where any
+			# `ps` could read it.
+			pw_file=${PHI_AGENT_REMOTE_PASSWORD_FILE:-${CREDENTIALS_DIRECTORY:+$CREDENTIALS_DIRECTORY/remote-password}}
+			[[ -n $pw_file && -r $pw_file ]] || die "containment unavailable: --remote needs a readable password file (PHI_AGENT_REMOTE_PASSWORD_FILE or a systemd credential)"
+			bind_args+=(--ro-bind "$pw_file" /run/phi-agent/remote-password)
+			add_env OPENCODE_SERVER_USERNAME "${OPENCODE_SERVER_USERNAME:-phi}"
+			# Assignment context (VAR=$(...)) does not word-split, so a
+			# password with spaces survives; then export by name.
+			wrap+='
+			OPENCODE_SERVER_PASSWORD=$(cat /run/phi-agent/remote-password); export OPENCODE_SERVER_PASSWORD
+			/usr/bin/socat UNIX-LISTEN:/run/phi-agent/net/a2-remote.sock,fork,reuseaddr TCP:127.0.0.1:4299 &'
+		fi
+
+		cmd=(/bin/sh -c "$wrap"'
 			sleep 0.5
 			exec "$@"
 		' phi-agent-a2 "${cmd[@]}")

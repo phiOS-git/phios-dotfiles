@@ -54,7 +54,14 @@
     "task": "deny",
     "webfetch": "ask",
     "websearch": "allow",
-    "external_directory": "deny",
+    "external_directory": {
+      "*": "deny",
+      "/home/agent/notes/**": "allow",
+      "/home/agent/.local/share/personalita/**": "allow",
+      "/home/agent/.config/opencode/**": "deny",
+      "/home/agent/.local/share/opencode/**": "deny",
+      "/home/agent/.local/state/**": "deny"
+    },
     "doom_loop": "ask"
   }
 }

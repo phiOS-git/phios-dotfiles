@@ -139,3 +139,40 @@ the containment. It is tool 5 and the only place the agent's capabilities
 grow (§7.1).
 
 A1 runs as `phi-agent-a1.service` on `127.0.0.1:4199`.
+
+## Inline questions and the remote surface (S-74)
+
+`phi agent ask "..."` sends one question to the running A1 service and
+prints the reply. It creates an opencode session, uses it, and **deletes
+it** — so it never shows in the panel list and never reaches memory
+(§10.2). It needs `phi-agent-a1.service` up; it never starts an engine.
+
+```
+phi agent ask "what does ADR 094 say?"
+phi agent ask --personality technical "explain this bwrap flag: --unshare-cgroup"
+```
+
+The **remote surface** is A2 only, and off by default (§10.3). Three units:
+
+| unit | role |
+|---|---|
+| `phi-agent-a2.service` | local contained A2, loopback, no password |
+| `phi-agent-a2-remote-engine.service` | A2 with the password + an inbound socket — starting it *is* "declaring the session remote" |
+| `phi-agent-a2-remote.service` | the overlay listener; the only thing that binds `PHI_AGENT_REMOTE_ADDR`, and only that address |
+
+For a remote session:
+
+```
+# one-time: the address and the password
+echo 'PHI_AGENT_REMOTE_ADDR=<this-machine-overlay-address>' >> ~/.config/phi-agent/env
+printf '%s' '<a strong password>' > ~/.config/phi-agent/a2/remote-password && chmod 600 ~/.config/phi-agent/a2/remote-password
+
+# per session:
+systemctl --user start phi-agent-a2-remote.service    # pulls in the engine
+# ... connect from another of your devices on the overlay, port 4399, user "phi" ...
+systemctl --user stop phi-agent-a2-remote.service phi-agent-a2-remote-engine.service
+```
+
+Overlay reachability is the overlay's own default-deny policy — allow only
+your own devices toward port 4399. No extra encryption layer (the overlay
+already encrypts).
