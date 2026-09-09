@@ -109,5 +109,33 @@ outside the containment (§4.7).
   read from its own file (S-71).
 - The remote-surface password: a systemd credential from a root-owned file
   outside the repository (S-74).
-- Personalities and projects: created by hand in milestone 0 under the A1
-  data tree, `~/.local/share/phi-agent/a1/` (§8.2, §14.1). S-73.
+- Personalities and projects: the §8.2 data model under
+  `~/.local/share/phi-agent/a1/`. Bootstrapped by `phi agent init` (two
+  seed personalities, no projects). Managed with `phi agent project`.
+
+## The data model and the engine (S-73)
+
+```
+phi agent init                       # seed personalita/general.md + technical.md
+phi agent project new study          # create a project (materiali/ archivio/ proposte/ output/ + progetto.md + memoria.md)
+phi agent project use study          # set active + restart phi-agent-a1 so the containment is rebuilt for it
+phi agent project list               # projects, active one marked, personalities
+```
+
+`memoria.md` is mounted **read-only** into the containment (the agent
+cannot write its own memory — §8.4). The agent leaves durable-fact
+proposals in `proposte/` (mounted writable); you promote them:
+
+```
+phi agent memory list                # pending proposals for the active project
+phi agent memory show FILE           # the LITERAL text it would append, as a diff — never a summary (§8.6)
+phi agent memory accept FILE         # append it to memoria.md and remove the proposal
+phi agent memory reject FILE         # discard
+```
+
+The `phi` MCP server (`phi agent mcp`, one read-only tool `phi_context`) is
+registered in `a1/opencode/opencode.json` and spawned by opencode inside
+the containment. It is tool 5 and the only place the agent's capabilities
+grow (§7.1).
+
+A1 runs as `phi-agent-a1.service` on `127.0.0.1:4199`.

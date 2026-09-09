@@ -127,7 +127,14 @@ fi
 
 NOTES=${PHI_AGENT_NOTES_DIR:-$HOME/notes}
 CODE_ROOT=${PHI_AGENT_CODE_ROOT:-$HOME/code}
+
+# Active project: the env var wins; otherwise the marker `phi agent project
+# use` writes. Neither set = no project (valid for the V-01..V-04 proof).
 PROJECT_NAME=${PHI_AGENT_PROJECT:-}
+if [[ -z $PROJECT_NAME && -r $AGENT_STATE/active-project ]]; then
+	PROJECT_NAME=$(< "$AGENT_STATE/active-project")
+	PROJECT_NAME=${PROJECT_NAME//[$'\t\r\n ']/}
+fi
 PROJECT_DIR=
 if [[ -n $PROJECT_NAME ]]; then
 	PROJECT_DIR=$AGENT_DATA/projects/$PROJECT_NAME

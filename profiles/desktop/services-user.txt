@@ -12,6 +12,11 @@ wireplumber.service
 phi-agent-broker@a1.service
 phi-agent-broker@a2.service
 
+# S-73: the A1 assistant engine (contained `opencode serve`). Pulls in
+# phi-agent-broker@a1 via Requires=. `phi agent project use` restarts it.
+#   systemctl --user enable --now phi-agent-a1.service
+phi-agent-a1.service
+
 # S-72: A2's egress whitelist (docs/phios-agente.md §5.1). Both are only
 # needed when A2 runs (from S-76). phi-agent-net-bridge pulls in
 # phi-agent-proxy via Requires=.

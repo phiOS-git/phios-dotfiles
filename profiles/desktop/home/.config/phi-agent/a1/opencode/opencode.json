@@ -3,7 +3,7 @@
   "autoupdate": false,
   "share": "disabled",
   "snapshot": false,
-  "instructions": [],
+
   "provider": {
     "phi-broker": {
       "npm": "@ai-sdk/openai-compatible",
@@ -18,6 +18,28 @@
     }
   },
   "model": "phi-broker/REPLACE-WITH-YOUR-MODEL-ID",
+
+  "instructions": [
+    "/home/agent/project/progetto.md",
+    "/home/agent/project/memoria.md"
+  ],
+
+  "agent": {
+    "general": {
+      "mode": "primary",
+      "prompt": "{file:/home/agent/.local/share/personalita/general.md}"
+    },
+    "technical": {
+      "mode": "primary",
+      "prompt": "{file:/home/agent/.local/share/personalita/technical.md}"
+    }
+  },
+  "default_agent": "general",
+
+  "mcp": {
+    "phi": { "type": "local", "command": ["phi", "agent", "mcp"], "enabled": true }
+  },
+
   "permission": {
     "read": {
       "*": "allow",

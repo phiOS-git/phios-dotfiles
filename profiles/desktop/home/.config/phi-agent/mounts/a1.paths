@@ -9,9 +9,11 @@
 #
 # Ordering: the project is bound read-only first; proposte/ and output/ are
 # re-bound writable underneath it afterwards. memoria.md, materiali/ and
-# archivio/ therefore stay read-only with no explicit rule — S-73 adds an
-# explicit read-only memoria.md line so the guarantee is visible, not
-# derived (§8.4, ADR 094).
+# archivio/ therefore stay read-only. The explicit memoria.md line below is
+# the visible form of the §8.4 / ADR 094 guarantee: the agent CANNOT write
+# its own memory, and that is enforced by this mount, not by the interface.
+# Only `phi agent memory accept` (the client, outside the containment)
+# promotes a proposte/ file into memoria.md.
 
 # A1's own XDG trees — writable (§4.3 "albero XDG di A1: scrittura").
 # opencode keeps its sessions, auth and cache here.

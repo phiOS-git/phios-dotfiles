@@ -1,0 +1,40 @@
+# phiOS — A1 assistant engine (docs/phios-agente.md §10.1, §4.3).
+# Declared in services-user.txt, NEVER enabled by the installer.
+#
+#   systemctl --user enable --now phi-agent-a1.service
+#
+# `opencode serve` inside the containment, on host loopback. `phi agent
+# project use <name>` restarts this unit so the containment is rebuilt for
+# the new project (§4.3 "il cambio di progetto ricostruisce il contenimento
+# e riavvia il servizio").
+#
+# NO degraded mode: ExecStart is phi-agent-contain, which exits non-zero if
+# bubblewrap is unavailable, and there is no fallback ExecStart — the unit
+# then stays `failed` with no opencode process, which is V-04.
+#
+# UNVERIFIED: written from systemd.exec(5); not run.
+
+[Unit]
+Description=phiOS AI assistant engine (A1, contained opencode serve)
+Documentation=https://github.com/phiOS-git/phios-dotfiles
+Requires=phi-agent-broker@a1.service
+After=phi-agent-broker@a1.service
+# Do not restart in a tight loop if the containment is genuinely broken —
+# surface it instead.
+StartLimitIntervalSec=60
+StartLimitBurst=4
+
+[Service]
+Type=simple
+Environment=PHI_AGENT_A1_PORT=4199
+ExecStart=%h/.local/bin/phi-agent-contain a1 -- opencode serve --hostname 127.0.0.1 --port ${PHI_AGENT_A1_PORT}
+Restart=on-failure
+RestartSec=3
+
+NoNewPrivileges=true
+# bubblewrap needs user namespaces; do not let unit hardening block them.
+# (RestrictNamespaces is deliberately NOT set here.)
+UMask=0077
+
+[Install]
+WantedBy=default.target
