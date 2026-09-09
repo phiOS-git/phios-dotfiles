@@ -74,9 +74,13 @@ PHI_FONT_UI='Source Sans 3'
 PHI_FONT_SYMBOL='Symbols Nerd Font Mono'
 
 # --- Cursor theme (§6.7 class 5, S-54) --------------------------------------
-# "Thin, black, white-outlined" (architettura §8.2.3): xcursor-themes'
-# bundled "whiteglass" conforms, by the user's own choice over producing a
-# bespoke one — approved this session, not in master plan §15 before now.
+# ADR 125: does NOT conform to architettura §8.2.3's "sottile, nero
+# bordato di bianco" (thin, black, white-outlined) — whiteglass is a WHITE
+# cursor (xcursor-themes' other bundled option, redglass, is red; neither
+# is black). Caught after first shipping this as "conforms" on a wrong
+# assumption, corrected before handoff, and the user chose to accept this
+# deviation rather than have a bespoke theme produced. A real, acknowledged
+# gap from the written spec, not a fix — say so if this is ever revisited.
 # One value for every consumer: Hyprland's own cursor, GTK, and Qt/the
 # shell all resolve XCURSOR_THEME (hyprland.lua.tmpl's own S-54 note has
 # the per-toolkit detail). Not variant-dependent, so it lives here rather

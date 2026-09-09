@@ -52,9 +52,11 @@ hypridle
 # timeout 0") — both are in this `desktop` profile, `mini` is not.
 plymouth
 
-# S-54: cursor theme (architettura §8.2.3 "thin, black, white-outlined").
-# NOT in master plan §15 before now — approved by explicit user choice this
-# session, over producing a bespoke one, per this step's own AGENT card
-# ("either find a conforming one or produce it"). "whiteglass" is the
-# bundled theme this package provides that matches the description.
+# S-54: cursor theme. NOT in master plan §15 before now — approved by
+# explicit user choice this session, over producing a bespoke one, per
+# this step's own AGENT card ("either find a conforming one or produce
+# it"). ADR 125: "whiteglass" does NOT actually match architettura §8.2.3's
+# "thin, black, white-outlined" (it is white, not black) — a real mistake
+# found and corrected before handoff; the user chose to accept this
+# deviation anyway rather than have a bespoke theme produced.
 xcursor-themes
