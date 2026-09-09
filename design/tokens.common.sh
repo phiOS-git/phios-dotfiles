@@ -96,17 +96,25 @@ PHI_CURSOR_THEME='whiteglass'
 PHI_CURSOR_SIZE='24'
 
 # --- Size scale (§6.3) ------------------------------------------------------
-# Derived, not arbitrary: a 14px base at a 1.125 ratio (major second), rounded
-# to whole pixels. Index 1 is the base; index 0 is the one step below it, which
-# is why the scale does not start at the base. Two decisions are placeholders,
-# the base and the ratio, and both are one line each.
-PHI_FONT_SIZE_0='12px'
-PHI_FONT_SIZE_1='14px'
-PHI_FONT_SIZE_2='16px'
-PHI_FONT_SIZE_3='18px'
-PHI_FONT_SIZE_4='20px'
-PHI_FONT_SIZE_5='22px'
-PHI_FONT_SIZE_6='25px'
+# Derived, not arbitrary: a 13px base at ~1.125 (major second), rounded to
+# whole pixels and hand-tightened at the top so the seven steps stay close.
+# Index 1 is the base; index 0 is the one step below it, which is why the
+# scale does not start at the base. Two decisions are placeholders, the base
+# and the ratio, and both are one line each.
+#
+# OOP-10 (shell restyle R2): base dropped 14px -> 13px and the upper steps
+# pulled in, on the user's feedback that the shell read too large and the
+# hierarchy too loud for a "minimal / developer" surface. Index 1 is also
+# the cell-width basis for every `1ch` spacing in phi-shell, so this makes
+# the whole GUI rhythm proportionally tighter, not just the text. Exact px
+# per step is a judgment call — flagged for the screenshot pass.
+PHI_FONT_SIZE_0='11px'
+PHI_FONT_SIZE_1='13px'
+PHI_FONT_SIZE_2='14px'
+PHI_FONT_SIZE_3='16px'
+PHI_FONT_SIZE_4='18px'
+PHI_FONT_SIZE_5='21px'
+PHI_FONT_SIZE_6='24px'
 
 # --- Spacing (§6.3) ---------------------------------------------------------
 # Multiples of 1ch of PHI_FONT_MONO, which is the point: the GUI rhythm is
@@ -145,17 +153,23 @@ PHI_RADIUS_LARGE='4px'
 # radius-base is: unverified on real HiDPI/fractional-scaling output.
 PHI_BORDER_WIDTH='1px'
 
-# border-width-strong — OOP-02. The restyle draws every panel with a 2px
-# border in the opposite structural colour (a wireframe/CAD read); the
-# hairline border-width above stays the value for buttons, separators and
-# focus rings. Same [PLACEHOLDER] caveat.
-PHI_BORDER_WIDTH_STRONG='2px'
+# border-width-strong — OOP-02, retuned OOP-10. The restyle first drew
+# every panel with a 2px opposite-colour border (a hard wireframe read);
+# the user's R2 feedback, checked against references/panel-reference-*, is
+# that the frame should be a hairline like every other stroke. Now 1px —
+# equal to border-width. Kept as its own token because it is still a
+# distinct ROLE (a surface's outline vs. a control's outline / a
+# separator) and the two may diverge again; a consumer asking for the
+# panel-frame width should not have to know it currently equals the
+# hairline. Same [PLACEHOLDER] caveat.
+PHI_BORDER_WIDTH_STRONG='1px'
 
-# panel-padding — OOP-02. The restyle sets panel inner padding to a flat
-# 4px, not a multiple of 1ch: the space-N scale (§6.3) is the rhythm for
-# gaps BETWEEN elements, but a panel's own edge inset in this grammar is a
-# tight fixed frame, deliberately independent of the font's cell width.
-PHI_PANEL_PADDING='4px'
+# panel-padding — OOP-02, retuned OOP-10. Was a flat 4px; the references
+# show the frame sitting well off its content. 8px — still a fixed frame,
+# not a multiple of 1ch (the space-N scale is the rhythm for gaps BETWEEN
+# elements; a panel's own edge inset is deliberately independent of the
+# font's cell width). Exact value is a judgment call — flagged.
+PHI_PANEL_PADDING='8px'
 
 # --- User-tunable scale (OOP-02) ------------------------------------------
 # Identity by default. The settings panel's Theme section (OOP-07) writes a
