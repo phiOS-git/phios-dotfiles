@@ -42,6 +42,19 @@ profiles/base/templates/.config/nvim/lua/theme.lua.tmpl         | .config/nvim/l
 profiles/desktop/templates/.config/kitty/theme.conf.tmpl        | .config/kitty/theme.conf           | [unknown] | B
 profiles/desktop/templates/.config/mpv/script-opts/osc.conf.tmpl| .config/mpv/script-opts/osc.conf   | [unknown] | A
 
+# S-51 typography (§6.4). kitty's font_family/symbol_map, same reload class
+# and same [unknown] gap as theme.conf.tmpl above (kitty's own remote-control
+# config reload is a real feature but has not been wired by any step yet).
+profiles/desktop/templates/.config/kitty/fonts.conf.tmpl        | .config/kitty/fonts.conf           | [unknown] | B
+
+# Per-user fontconfig fallback chain (§6.4, target group "app native
+# GTK/Qt/anything that resolves generic font families"). No app in this repo
+# watches ~/.config/fontconfig/ for a live change — fontconfig itself may
+# need `fc-cache` before a NEW font file is even discoverable, which is a
+# one-time step tied to package installation, not to a theme-variant switch.
+# Restart, same as every other class C target group 2 row below.
+profiles/desktop/templates/.config/fontconfig/fonts.conf.tmpl   | .config/fontconfig/fonts.conf      | -         | C
+
 # phi-shell (S-20). Not `[unknown]`: Quickshell watches every QML file it
 # has loaded and hot-reloads on change by itself (master plan §8.1, "hot
 # reload al salvataggio") — there is no separate command to run, and no gap

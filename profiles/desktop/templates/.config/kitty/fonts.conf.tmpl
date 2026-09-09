@@ -1,0 +1,45 @@
+# phiOS — kitty font configuration (S-51, master plan §6.4).
+#
+# Separate from theme.conf.tmpl (colours) on purpose: this file changes only
+# when a font token changes, not on every `phi theme set`, and keeping the
+# two apart means a font edit never touches a colour-only diff or vice versa.
+#
+# §6.4's fallback chain, generated from tokens rather than hand-written:
+#   1. font-mono (primary)
+#   2. font-symbol (glyphs only)
+#   3. targeted Noto (Greek + extended Latin; no CJK — Q-18, no noto-fonts-cjk
+#      package is declared anywhere in this repo)
+# kitty resolves `font_family` and its own fallback through fontconfig on
+# Linux, so step 3 is already covered by fontconfig/fonts.conf.tmpl in this
+# same profile — kitty does not need Noto named here again.
+#
+# `symbol_map` is the part fontconfig's own fallback cannot cover: kitty does
+# NOT rely on fontconfig alone for missing glyphs (§6.4's own "copertura del
+# caso yazi" note) — the codepoints below are Private Use Area, and without
+# an explicit symbol_map kitty renders them as boxes even with a correct
+# fontconfig fallback chain in place. Ranges are the published Nerd Fonts
+# v3.5.0 glyph-set table (github.com/ryanoasis/nerd-fonts wiki, "Glyph Sets
+# and Code Points" — fetched and quoted this session, not guessed): Pomicons,
+# Powerline, Powerline Extra, Font Awesome Extension, Weather, Seti-UI +
+# Custom, Devicons, Codicons, Font Awesome, Font Logos, Octicons + two extra
+# symbols, IEC Power Symbols, Material Design Icons. This is what yazi's file
+# icons and any other Nerd-Font-glyph TUI (btop included) need to stop
+# rendering as boxes once the patched font (ttf-iosevkatermslab-nerd) is
+# removed — verify with a real `yazi`/`btop` screenshot BEFORE removing it,
+# per this step's own DONE WHEN. Unverified end to end: no compositor or
+# real kitty instance here to confirm the glyphs actually resolve.
+font_family      ${PHI_FONT_MONO}
+
+symbol_map U+E000-U+E00A ${PHI_FONT_SYMBOL}
+symbol_map U+E0A0-U+E0A2,U+E0B0-U+E0B3 ${PHI_FONT_SYMBOL}
+symbol_map U+E0A3,U+E0B4-U+E0C8,U+E0CA,U+E0CC-U+E0D7,U+2630 ${PHI_FONT_SYMBOL}
+symbol_map U+E200-U+E2A9 ${PHI_FONT_SYMBOL}
+symbol_map U+E300-U+E3E3 ${PHI_FONT_SYMBOL}
+symbol_map U+E5FA-U+E6BB ${PHI_FONT_SYMBOL}
+symbol_map U+E700-U+E958 ${PHI_FONT_SYMBOL}
+symbol_map U+EA60-U+EC84 ${PHI_FONT_SYMBOL}
+symbol_map U+ED00-U+F2FF ${PHI_FONT_SYMBOL}
+symbol_map U+F300-U+F384 ${PHI_FONT_SYMBOL}
+symbol_map U+F400-U+F533,U+2665,U+26A1 ${PHI_FONT_SYMBOL}
+symbol_map U+23FB-U+23FE,U+2B58 ${PHI_FONT_SYMBOL}
+symbol_map U+F0001-U+F1AF0 ${PHI_FONT_SYMBOL}

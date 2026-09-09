@@ -21,12 +21,13 @@
 # carried forward from something that already runs on the machines. Colour
 # provenance is tracked separately, in tokens.dark.sh.
 #
-#   PHI_FONT_MONO              Q-N01 open (§6.4): Iosevka or Source Code Pro.
-#                              Closes at S-51. Nothing renders a font token
-#                              before then, so changing it costs one line.
-#   PHI_FONT_READING/UI/SYMBOL family strings taken from §6.4. The packages
-#                              are M5 (§15.2) and are not installed yet, so
-#                              these strings are unverified against fontconfig.
+#   PHI_FONT_MONO/READING/UI/SYMBOL  family strings, §6.4/S-51. The packages
+#                              are M5 (§15.2) and, as of this commit, declared
+#                              in profiles/base/packages.txt but not yet
+#                              installed on any real machine — every string
+#                              below is unverified against a real fc-list
+#                              until the user installs them (§6.4's own "Q-N01
+#                              closes at S-51" is done: Source Code Pro).
 #   PHI_FONT_SIZE_*            base and ratio invented; see the group note.
 #   PHI_SPACE_*                the multipliers are invented; the 1ch unit is
 #                              required by §6.3.
@@ -47,17 +48,24 @@
 # the symbol font is a separate glyphs-only family in the fallback chain, and
 # in kitty it additionally needs symbol_map directives (§6.4).
 
-# Q-N01 open (§6.4, closes at S-51): Iosevka vs Source Code Pro. Iosevka is
-# the plan's proposal — a narrow cell fits more columns on the 13" screen and
-# the 1ch spacing rhythm below works better against a narrow grid.
-PHI_FONT_MONO='Iosevka'
+# Q-N01 closed at S-51, by the user's own choice over the master plan's
+# Iosevka proposal: Source Code Pro is the third member of the same Adobe
+# superfamily as font-reading/font-ui below, for typographic coherence across
+# all three text roles — the style plan's own original stated value, ahead of
+# Iosevka's narrower cell.
+PHI_FONT_MONO='Source Code Pro'
 
-# Closed in §6.4. Both are M5 packages and neither is installed yet.
+# Closed in §6.4.
 PHI_FONT_READING='Source Serif 4'
 PHI_FONT_UI='Source Sans 3'
 
-# Glyphs only, never a text font: it exists to be third in the fallback chain.
-PHI_FONT_SYMBOL='Symbols Nerd Font'
+# Glyphs only, never a text font: it exists to be second in the fallback
+# chain (§6.4's "1. font-mono, 2. font-symbol, 3. targeted Noto"). Mono
+# metrics (S-51), not the proportional "Symbols Nerd Font": a terminal grid
+# needs every cell the same width, and an icon glyph at the wrong advance
+# width would misalign the column after it. Ships as the ttf-nerd-fonts-
+# symbols-mono split of the §15.2 package.
+PHI_FONT_SYMBOL='Symbols Nerd Font Mono'
 
 # --- Size scale (§6.3) ------------------------------------------------------
 # Derived, not arbitrary: a 14px base at a 1.125 ratio (major second), rounded

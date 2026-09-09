@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<!--
+  phiOS — per-user fontconfig fallback chain (S-51, master plan §6.4).
+
+  Generated from tokens, per §6.4's own instruction ("da generare dai token,
+  non scritto a mano"). Covers every GTK/Qt/native app that resolves the
+  generic "monospace"/"sans-serif"/"serif" families rather than a template of
+  its own (kitty's font_family/symbol_map live separately, kitty/fonts.conf.
+  tmpl in this same profile, since kitty resolves fonts through its own
+  config, not these generic aliases).
+
+  Chain, three steps, same order for every role (§6.4):
+    1. the role's own family (font-mono / font-ui / font-reading)
+    2. font-symbol — glyphs only, covers Nerd Font icon codepoints for any
+       app that reads PUA glyphs through plain fontconfig fallback instead of
+       an app-specific mechanism (kitty needs symbol_map too; see that file)
+    3. a targeted Noto family — Greek (Φ, §6.6) and extended Latin coverage
+       ONLY. No CJK: Q-18 stays closed by omission — this repo declares
+       noto-fonts and nothing from the noto-fonts-cjk group, so there is
+       nothing for step 3 to reach even if it wanted to.
+  Noto's own family names differ per script width, which is why each alias
+  below targets the Noto family that matches its own role's metrics
+  (monospace stays fixed-width, sans/serif stay proportional) rather than a
+  single generic "Noto Sans" for all three.
+
+  Unverified: none of PHI_FONT_MONO/UI/READING/SYMBOL, nor the assumption
+  that the noto-fonts package installs a "Noto Sans Mono" family, have ever
+  been checked against a real `fc-list` — the packages are declared
+  (profiles/base/packages.txt) but not installed on any real machine yet.
+-->
+<fontconfig>
+  <alias>
+    <family>monospace</family>
+    <prefer>
+      <family>${PHI_FONT_MONO}</family>
+      <family>${PHI_FONT_SYMBOL}</family>
+      <family>Noto Sans Mono</family>
+    </prefer>
+  </alias>
+  <alias>
+    <family>sans-serif</family>
+    <prefer>
+      <family>${PHI_FONT_UI}</family>
+      <family>${PHI_FONT_SYMBOL}</family>
+      <family>Noto Sans</family>
+    </prefer>
+  </alias>
+  <alias>
+    <family>serif</family>
+    <prefer>
+      <family>${PHI_FONT_READING}</family>
+      <family>${PHI_FONT_SYMBOL}</family>
+      <family>Noto Serif</family>
+    </prefer>
+  </alias>
+</fontconfig>

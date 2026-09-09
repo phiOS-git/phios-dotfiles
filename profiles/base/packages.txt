@@ -5,7 +5,12 @@ zoxide
 fzf
 fd
 bat
-ttf-iosevkatermslab-nerd
+ttf-iosevkatermslab-nerd     # PATCHED (ADR 054 violation). Remove ONLY after the S-51 yazi/btop glyph check passes on real hardware — not before (§6.4). Superseded below.
+adobe-source-code-pro-fonts  # font-mono, unpatched (Q-N01 closed: Source Code Pro, S-51)
+adobe-source-serif-fonts     # font-reading (§6.4)
+adobe-source-sans-fonts      # font-ui (§6.4)
+ttf-nerd-fonts-symbols-mono  # font-symbol, glyphs-only split of ttf-nerd-fonts-symbols (§15.2) — Mono metrics match the terminal grid; symbol_map needs an exact fc-list family name, verify once installed
+noto-fonts                   # targeted fallback: Greek (Φ) + extended Latin only — no noto-fonts-cjk (Q-18)
 yazi
 neovim
 nnn
