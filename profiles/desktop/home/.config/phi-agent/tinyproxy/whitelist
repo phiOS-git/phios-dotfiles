@@ -1,0 +1,42 @@
+# phiOS — A2 egress whitelist (docs/phios-agente.md §5.1).
+#
+# One POSIX extended regex per line, matched against the destination host
+# (FilterExtended On, FilterCaseSensitive Off). tinyproxy default-denies
+# everything not matched here.
+#
+# RULE: this list grows ONLY by explicit addition, for a registry a project
+# on this machine actually fetches from. Never "just in case", never a
+# whole TLD, never a wildcard broader than one service's domains.
+#
+# The broker does NOT need a line here — A2 reaches it on a dedicated unix
+# socket (net/broker-a2.sock), not through this proxy.
+
+# --- always needed: loopback (the broker forwarder, health checks) ---
+^127\.0\.0\.1$
+^localhost$
+
+# --- package registries: UNCOMMENT ONLY WHAT YOUR PROJECTS USE ---
+# Go modules
+#^proxy\.golang\.org$
+#^sum\.golang\.org$
+#^storage\.googleapis\.com$
+# Rust / cargo
+#^crates\.io$
+#^static\.crates\.io$
+#^index\.crates\.io$
+# Node / npm
+#^registry\.npmjs\.org$
+# Python / pip
+#^pypi\.org$
+#^files\.pythonhosted\.org$
+# git over https (source dependencies, submodules)
+#^github\.com$
+#^codeload\.github\.com$
+#^objects\.githubusercontent\.com$
+#^raw\.githubusercontent\.com$
+
+# --- opencode's own runtime needs (if it fetches @ai-sdk/* at first run) ---
+# See PROGRESS.md S-71 held item. Uncomment only if a first contained run
+# shows opencode trying to reach one of these.
+#^registry\.npmjs\.org$
+#^opencode\.ai$

@@ -1,0 +1,49 @@
+# phiOS — A2 network bridge: unix socket -> tinyproxy (docs/phios-agente.md
+# §5.1). Declared in services-user.txt, NEVER enabled by the installer.
+#
+#   systemctl --user enable --now phi-agent-net-bridge.service
+#
+# A2 has --unshare-net and no TCP path to the host. This socat turns a
+# host-side unix socket (bind-mounted into A2 through the net/ bridge dir)
+# into a connection to the whitelist proxy. The dedicated broker socket
+# (net/broker-a2.sock) is created by phi-agent-broker@a2.service itself and
+# needs no bridge here.
+#
+# UNVERIFIED: written from socat(1) / systemd.exec(5), not run.
+
+[Unit]
+Description=phiOS AI agent A2 proxy bridge (unix socket -> tinyproxy)
+Documentation=https://github.com/phiOS-git/phios-dotfiles
+Requires=phi-agent-proxy.service
+After=phi-agent-proxy.service
+Before=phi-agent-a2.service
+
+[Service]
+Type=simple
+# The socket lives in the bridge dir that phi-agent-contain binds into A2.
+ExecStartPre=/usr/bin/mkdir -p %h/.local/state/phi-agent/net
+ExecStart=/usr/bin/socat UNIX-LISTEN:%h/.local/state/phi-agent/net/proxy.sock,fork,unlink-early,mode=0600 TCP:127.0.0.1:8888
+Restart=on-failure
+RestartSec=2
+
+MemoryMax=32M
+TasksMax=64
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/state/phi-agent
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+UMask=0077
+
+[Install]
+WantedBy=default.target

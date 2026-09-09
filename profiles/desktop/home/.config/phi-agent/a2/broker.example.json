@@ -1,0 +1,22 @@
+{
+  "//": "Copy to broker.json (same directory) and edit. NOTHING SECRET here — the key is a separate file, provider-key, mode 600. See ../README.md.",
+
+  "//listen": "A2's broker listens on a UNIX SOCKET, not TCP: A2 has --unshare-net and reaches it through this socket bind-mounted into the container. Keep this path — phi-agent-contain's :8790 forwarder expects it.",
+  "listen": "unix:~/.local/state/phi-agent/net/broker-a2.sock",
+
+  "//upstream": "The provider API ORIGIN only, no path. Same value as the a1 broker unless A2 uses a different key/provider.",
+  "upstream": "https://api.example.com",
+
+  "auth_header": "authorization",
+  "auth_value": "Bearer {key}",
+
+  "extra_headers": {},
+
+  "strip_request_headers": ["authorization", "x-api-key", "openai-organization"],
+
+  "rate_limit": { "requests": 120, "window_seconds": 60 },
+
+  "upstream_timeout_seconds": 0,
+
+  "meter_file": ""
+}

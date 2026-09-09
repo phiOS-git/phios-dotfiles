@@ -65,7 +65,11 @@ xcursor-themes
 # zotac and razer only — both carry this `desktop` profile, mini does not
 # (§1.2: "la configurazione di mini ... senza partecipare a questa
 # architettura"). opencode is the engine (ADR 117, closes Q-40/C-12);
-# bubblewrap is the containment mechanism (ADR 087). socat + tinyproxy for
-# A2's egress whitelist are added at S-72, where they are first configured.
+# bubblewrap is the containment mechanism (ADR 087).
 bubblewrap
 opencode
+
+# S-72: A2's egress whitelist (§5.1). socat bridges the --unshare-net'd A2
+# container to a host tinyproxy that forwards only to whitelisted hosts.
+socat
+tinyproxy

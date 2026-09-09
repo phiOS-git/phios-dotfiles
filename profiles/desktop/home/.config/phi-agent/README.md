@@ -63,6 +63,33 @@ Consumption is logged as JSONL at
 enforces a local fixed-window request limit (`rate_limit` in
 `broker.json`).
 
+## A2's network (S-72, phios-agente.md §5.1)
+
+A2 runs with `--unshare-net`: a fresh namespace, only a down loopback, no
+route anywhere. Two unix sockets in `~/.local/state/phi-agent/net/`,
+bind-mounted into the container, are the only way out:
+
+| socket | to | purpose |
+|---|---|---|
+| `broker-a2.sock` | `phi-agent-broker@a2` | the provider call (§6.2); created by the broker unit itself |
+| `proxy.sock` | `tinyproxy` via `phi-agent-net-bridge` | everything else, filtered by `tinyproxy/whitelist` |
+
+`phi-agent-contain` runs two `socat` forwarders inside the namespace that
+turn those sockets into `127.0.0.1:8790` (broker) and `127.0.0.1:8118`
+(proxy), and sets `HTTP(S)_PROXY` to the latter. A process that unsets the
+proxy variables is left able to reach only the broker — never a free
+network (that is V-03).
+
+**The whitelist grows only by explicit addition.** `tinyproxy/whitelist`
+ships with loopback allowed and every package registry commented out;
+uncomment exactly the ones a project on this machine actually fetches from.
+
+Enable (only when A2 is in use, from S-76):
+
+```
+systemctl --user enable --now phi-agent-proxy.service phi-agent-net-bridge.service
+```
+
 ### Do this at the provider, not here
 
 - **Set a hard spending cap on the API key.** It is the only measure that

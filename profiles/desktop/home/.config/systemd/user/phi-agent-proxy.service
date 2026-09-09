@@ -1,0 +1,43 @@
+# phiOS — A2 egress whitelist proxy (docs/phios-agente.md §5.1).
+# Declared in services-user.txt, NEVER enabled by the installer.
+#
+#   systemctl --user enable --now phi-agent-proxy.service
+#
+# UNVERIFIED: written from systemd.exec(5) / tinyproxy(8), not run.
+
+[Unit]
+Description=phiOS AI agent A2 egress proxy (tinyproxy, whitelist)
+Documentation=https://github.com/phiOS-git/phios-dotfiles
+Before=phi-agent-net-bridge.service phi-agent-a2.service
+
+[Service]
+Type=simple
+RuntimeDirectory=phi-agent
+RuntimeDirectoryPreserve=yes
+# tinyproxy has no ~ / env expansion: render the real paths in first.
+ExecStartPre=/usr/bin/sh -c 'sed "s#__HOME__#%h#g; s#__RUNTIME__#%t#g" %h/.config/phi-agent/tinyproxy/tinyproxy.conf > %t/phi-agent/tinyproxy.conf'
+ExecStart=/usr/bin/tinyproxy -d -c %t/phi-agent/tinyproxy.conf
+Restart=on-failure
+RestartSec=2
+
+MemoryMax=64M
+TasksMax=32
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%t/phi-agent
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+UMask=0077
+
+[Install]
+WantedBy=default.target

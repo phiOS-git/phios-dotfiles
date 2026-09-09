@@ -252,17 +252,48 @@ case $instance in
 		[[ -n $PROJECT_NAME ]] && add_env PHI_AGENT_PROJECT "$PROJECT_NAME"
 		;;
 	a2)
-		# A2 has NO network here: --unshare-net gives it a fresh namespace
-		# with only a down loopback. S-72 adds the socat bridge + tinyproxy
-		# whitelist and the HTTP(S)_PROXY vars; until then A2 cannot reach
-		# anything, which is the safe direction (§5.1) and makes V-03's
-		# "denied" hold trivially. A process that clears the proxy vars a
-		# later step will set still ends up with no route, not a free one.
+		# A2's network boundary IS the namespace, not a variable (§5.1):
+		# --unshare-net gives it a fresh namespace with only a down
+		# loopback. The ONLY way out is two unix sockets, created on the
+		# host and reachable through the bridge dir bound below:
+		#   net/proxy.sock     -> host tinyproxy (the §5.1 egress whitelist)
+		#   net/broker-a2.sock -> the A2 credential broker (§6.2)
+		# The in-container command is wrapped further down with two socat
+		# forwarders that turn those sockets into loopback TCP ports. A
+		# process that unsets HTTP(S)_PROXY reaches tinyproxy on nothing
+		# and is left with NO network, not free network — which is V-03.
 		net_args+=(--unshare-net)
+
+		bridge_dir=$state_home/phi-agent/net
+		mkdir -p -- "$bridge_dir"
+		bind_args+=(--bind "$bridge_dir" /run/phi-agent/net)
+
+		add_env HTTP_PROXY  "http://127.0.0.1:8118"
+		add_env HTTPS_PROXY "http://127.0.0.1:8118"
+		add_env http_proxy  "http://127.0.0.1:8118"
+		add_env https_proxy "http://127.0.0.1:8118"
+
 		add_env GIT_AUTHOR_NAME "${GIT_AUTHOR_NAME:-phi agent}"
 		add_env GIT_AUTHOR_EMAIL "${GIT_AUTHOR_EMAIL:-phi-agent@localhost}"
 		add_env GIT_COMMITTER_NAME "${GIT_COMMITTER_NAME:-${GIT_AUTHOR_NAME:-phi agent}}"
 		add_env GIT_COMMITTER_EMAIL "${GIT_COMMITTER_EMAIL:-${GIT_AUTHOR_EMAIL:-phi-agent@localhost}}"
+
+		# Bring the two forwarders up inside the namespace, then exec the
+		# real command. socat is /usr/bin/socat (the /usr bind); the
+		# forwarders are children of this shell, which --die-with-parent
+		# reaps with the container. NO_PROXY (127.0.0.1,localhost, set
+		# above for both instances) is CORRECT here: it routes the broker
+		# call straight to the :8790 forwarder (-> broker-a2.sock), while
+		# every other host still goes through HTTPS_PROXY -> :8118 ->
+		# proxy.sock -> tinyproxy's whitelist. A process that unsets the
+		# proxy vars can then reach only the broker, nothing else — which
+		# is exactly what V-03 checks.
+		cmd=(/bin/sh -c '
+			/usr/bin/socat TCP-LISTEN:8118,bind=127.0.0.1,fork,reuseaddr UNIX-CONNECT:/run/phi-agent/net/proxy.sock &
+			/usr/bin/socat TCP-LISTEN:8790,bind=127.0.0.1,fork,reuseaddr UNIX-CONNECT:/run/phi-agent/net/broker-a2.sock &
+			sleep 0.5
+			exec "$@"
+		' phi-agent-a2 "${cmd[@]}")
 		;;
 esac
 

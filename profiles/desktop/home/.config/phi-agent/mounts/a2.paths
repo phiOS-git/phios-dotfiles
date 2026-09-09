@@ -30,3 +30,9 @@ rw   @CODE_ROOT@                 @CONTAINER_HOME@/code
 # own (§4.4). Path from PHI_AGENT_A2_TOOLCHAIN_CACHE, default under the A2
 # cache tree.
 rw?  @A2_TOOLCHAIN_CACHE@        @CONTAINER_HOME@/.cache/phi-agent-toolchains
+
+# The network bridge dir (~/.local/state/phi-agent/net -> /run/phi-agent/net)
+# is bound by phi-agent-contain itself, not listed here: it is structural to
+# the --unshare-net design (S-72), not a per-project perimeter choice. It
+# carries the two unix sockets (broker-a2.sock, proxy.sock) that are A2's
+# only route out.
