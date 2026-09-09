@@ -43,25 +43,26 @@ at S-12 and reads `adapters.txt` for destinations and reloads.
 
 ## What is provisional
 
-Everything, and each file says which of its values is which.
+Not the palette itself any more — S-50 derived it in OKLCH and `phi theme
+check` (`phi/internal/theme/check.go`) reports zero violations on both
+variants. Each file still says which of its values is which.
 
 `tokens.dark.sh` is the palette that runs on `zotac` and `razer` today,
-extended to the full §6.2 set. Values marked `[carried]` are the ones that
-render right now — nine from the old `theme.sh` plus the fixed pairings inside
-the templates. S-03 moved those templates onto the token names and confirmed
-that all six render byte-identically against the pre-S-03 output, which is what
-those values are for. Values marked `[filled]` are slots §6.2 requires that
-today's palette had no value for.
+extended to the full §6.2 set. Values marked `[carried]` are ones that render
+right now, unchanged by S-50. Values marked `[derived]` were computed by
+S-50: a fixed OKLCH hue/chroma with lightness solved against the real WCAG
+contrast formula, not chosen by eye. Values marked `[filled]` are slots
+§6.2 requires that today's palette had no value for, interpolated along the
+ramp its neighbours define.
 
 `tokens.light.sh` has never rendered on a machine. All of it was constructed
-at S-02, and the file records exactly how, so S-51 can tell intent from
-accident.
+at S-02 and re-derived at S-50; the file records exactly how, so a future
+step can tell intent from accident.
 
 `tokens.common.sh` opens with a `PLACEHOLDERS` block naming every value in it
-that was invented rather than carried forward. `font-mono` is `Q-N01`, still
-open, and closes at S-51.
+that was invented rather than carried forward. `font-mono` was `Q-N01`,
+closed this session: **Source Code Pro**. S-51 does the actual work
+(package, fontconfig chain, kitty `symbol_map`, removing the patched font).
 
-Contrast ratios are recorded next to the values in both palette files. Two
-pairs fail the 4.5:1 minimum in the dark variant and are named there. The
-check §6.2 requires to be **executable** (`phi theme check`) does not exist
-yet; those numbers were computed off-machine at S-02.
+Contrast ratios are recorded next to the values in both palette files.
+`phi theme check` passes with zero violations on both variants as of S-50.

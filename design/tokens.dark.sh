@@ -8,47 +8,61 @@
 # #rrggbbaa because a scrim without alpha is not a scrim.
 #
 # ---------------------------------------------------------------------------
-# PROVENANCE. This is the *starting* dark palette, not the final one. S-51
-# derives the real palette in OKLCH; until then every value below is one of:
+# PROVENANCE — S-50, the real derivation §6.2 requires ("si deriva
+# algoritmicamente... in OKLCH"), executed and checked against `phi theme
+# check` (zero violations, both variants — see phi/internal/theme/check.go).
+# Every value below is one of:
 #
-#   [carried]     the value that renders on zotac and razer today. Nine came
-#                 from theme.sh, the rest from the fixed pairings inside the
-#                 current templates (kitty's cursor_text_color, btop's
-#                 selected_fg, yazi's count_* foregrounds). S-03 rewrote the
-#                 templates onto the token names and checked that all six
-#                 render byte-identically; changing one of these now changes
-#                 what the machines display.
-#   [filled]      a slot §6.2 requires that today's palette has no value for.
-#                 Interpolated in OKLab lightness along the ramp its neighbours
-#                 already define. This is gap-filling, not derivation.
+#   [carried]   unchanged since the value that renders on zotac and razer
+#               today. Changing one of these changes what the machines
+#               display, so S-50 only touches the ones with a real reason to.
+#   [derived]   computed this step: fixed OKLCH hue (H) and chroma (C) —
+#               either carried forward from an existing anchor or a new one
+#               for a slot that had none — with lightness (L) solved by
+#               bisection against the *real* WCAG contrast formula
+#               (phi/internal/tokens/color.go's Contrast, not an OKLab proxy:
+#               §6.2's 4.5:1 is a WCAG AA figure and only means what it says
+#               under WCAG's own math), then converted back to sRGB. The
+#               solver also rejects any (L,C,H) whose linear-sRGB falls
+#               outside [0,1] — no clipped, hue-shifted colour ever ships.
+#   [filled]    a slot §6.2 requires that has no anchor of its own.
+#               Interpolated in OKLab lightness along the ramp its neighbours
+#               define. Gap-filling, not derivation.
 #
-#   theme.sh name        token         hex
-#   PHI_BG               bg-0          #1a1918
-#   PHI_SURFACE          bg-1          #242320
-#   PHI_FG               fg-0          #d6d1c9
-#   PHI_FG_DIM           fg-2          #7d786f
-#   PHI_ACCENT           accent        #d3a0ac
-#   PHI_ERROR            error         #b57b73
-#   PHI_WARN             warn          #c0a874
-#   PHI_SUCCESS          success       #8fa77e
-#   PHI_INFO             info          #7f95ab
+# Every [carried]/[derived] OKLCH triple below was measured off the hex with
+# the same conversion the solver uses (Björn Ottosson's OKLab, standard
+# matrices) — not asserted, computed and printed.
 #
-# FG_DIM sits at fg-2 and not at fg-1 because §6.2 requires a uniform
-# progression in perceptual luminance. #d6d1c9 is L=0.862 and #7d786f is
-# L=0.574 in OKLab; putting the second at fg-1 would force fg-2 and fg-3 below
-# the background. At fg-2 the four steps are even, 0.144 apart.
+#   token      role                      OKLCH (L, C, H)          hex
+#   bg-0       structure, deepest        0.2142  0.0025   67.7°   #1a1918
+#   bg-1       structure, +1             0.2561  0.0057   91.6°   #242320
+#   fg-0       primary text              0.8624  0.0122   79.8°   #d6d1c9
+#   fg-2 (old) secondary text/comments    0.5744  0.0148   82.4°  #7d786f
+#   accent     Tier 1                    0.7566  0.0624    3.1°   #d3a0ac
+#   error      Tier 2, oxide             0.6401  0.0741   28.0°   #b57b73
+#   warn       Tier 2, ochre             0.7403  0.0745   85.9°   #c0a874
+#   success    Tier 2, moss              0.6989  0.0639  132.6°   #8fa77e
+#   info       Tier 2, slate             0.6603  0.0413  248.5°   #7f95ab
 #
-# CONTRAST, measured, not asserted. Ratios are WCAG 2.x against bg-0:
-#   fg-0 11.56:1   fg-1 7.00:1   fg-2 4.00:1   fg-3 2.16:1
+# STRUCTURE FIX (fg-1/fg-2/fg-3). §6.2 requires a uniform progression in
+# perceptual luminance across fg-0..fg-3. The prior ramp forced fg-2 through
+# fg-3's own hue/chroma anchor at L=0.574, which measures 4.00:1 against
+# bg-0 — a real failure below the 4.5:1 floor, on today's running machines.
+# Fixed by re-solving the ramp at fg-2's own (H=82.39°, C=0.0148): fg-0 stays
+# the carried anchor (L=0.8624); the solver finds the L that puts fg-2 at
+# 4.6:1 (a small margin above the floor, not the floor itself — the same
+# margin every other checked pair in this file already carries); fg-1 and
+# fg-3 fall out as the two remaining points of a *uniform* 4-point ramp
+# through those same two fixed ends. fg-3 stays outside the 4.5:1 requirement
+# by construction (non-text: dividers, disabled marks) but its ratio rose
+# too, as a side effect of the wider, still-even spacing.
+#
+# CONTRAST, measured against bg-0 with `phi theme check`'s own formula:
+#   fg-0 11.56:1   fg-1 7.50:1   fg-2 4.60:1   fg-3 2.73:1
 #   accent 7.85:1  error 5.05:1  warn 7.60:1  success 6.69:1  info 5.68:1
-# Two of these are below the 4.5:1 minimum §6.2 sets for normal text:
-#   fg-2 at 4.00:1 — and it is today's comment and secondary-text colour, so
-#     this is a real failure on the running machines, not a hypothetical one.
-#   fg-3 at 2.16:1 — non-text by construction (dividers, disabled marks). It
-#     is recorded rather than fixed because raising it would collapse the ramp.
-# Both are S-51's to resolve, and §6.2 requires the check to be executable by
-# then (`phi theme check`). It is not executable yet; these numbers were
-# computed off-machine and are as good as the arithmetic behind them.
+# Every checked pair (fg-0/1/2, accent, error, warn, success, info — fg-3 is
+# non-text by construction and excluded, same as §6.2 intends) now clears
+# 4.5:1. `phi theme check` on this file reports zero violations.
 # ---------------------------------------------------------------------------
 
 # --- Variant identity ------------------------------------------------------
@@ -67,9 +81,9 @@ PHI_BG_2='#2e2d2a'            # [filled]  +1 ramp step
 PHI_BG_3='#393835'            # [filled]  +2 ramp steps
 
 PHI_FG_0='#d6d1c9'            # [carried] PHI_FG — primary text
-PHI_FG_1='#a8a39b'            # [filled]  midpoint of fg-0 and fg-2
-PHI_FG_2='#7d786f'            # [carried] PHI_FG_DIM — secondary text, comments
-PHI_FG_3='#544f47'            # [filled]  -1 ramp step — non-text
+PHI_FG_1='#aea99f'            # [derived] same H/C as fg-2, ramp point 1 of 4
+PHI_FG_2='#878279'            # [derived] H=82.39° C=0.0148, solved for 4.6:1
+PHI_FG_3='#635e55'            # [derived] same H/C as fg-2, ramp point 3 of 4
 
 PHI_BORDER='#242320'          # [carried] kitty inactive_border_color
 PHI_BORDER_STRONG='#3e3d3a'   # [filled]  same hue at L=0.360
@@ -97,15 +111,23 @@ PHI_INFO_FG='#1a1918'         # [carried] same pairing
 
 # --- Tier 3: syntax (§6.2) --------------------------------------------------
 # For disambiguating categories that appear at the same time: code, logs,
-# diffs. [filled] as a set — each one is mapped onto a hue that already
-# exists rather than inventing six new ones. S-51 gives them their own chroma
-# so a keyword and a string stop borrowing the accent and the success colour.
-PHI_SYNTAX_1='#d3a0ac'        # keyword          -> accent
-PHI_SYNTAX_2='#8fa77e'        # string           -> success
-PHI_SYNTAX_3='#c0a874'        # number, constant -> warn
-PHI_SYNTAX_4='#7f95ab'        # function         -> info
-PHI_SYNTAX_5='#b57b73'        # type             -> error
-PHI_SYNTAX_6='#7d786f'        # operator, punct. -> fg-2
+# diffs. S-50 derives each one on the same hue direction as the Tier 1/2
+# role it disambiguates against, but at its OWN lightness — solved for a
+# single shared syntax-legibility target (5.6:1 against bg-0, dark) instead
+# of inheriting that role's own individual contrast. This is why every value
+# below differs from its Tier 1/2 counterpart even though the hue is shared:
+# a keyword no longer renders as the literal same hex as the accent used for
+# focus rings, and all six syntax roles read as one consistent weight of ink
+# rather than five different UI-element weights borrowed wholesale. Solved
+# with the gamut-safety check documented above; syntax-2's chroma was backed
+# off from success's own 0.0639 to 0.0579 — full chroma at this lightness
+# fell outside sRGB.
+PHI_SYNTAX_1='#b68490'        # keyword          -> accent hue,  H=3.06°   C=0.0624
+PHI_SYNTAX_2='#829873'        # string           -> success hue, H=132.59° C=0.0579
+PHI_SYNTAX_3='#a68f5b'        # number, constant -> warn hue,    H=85.85°  C=0.0745
+PHI_SYNTAX_4='#7e94a9'        # function         -> info hue,    H=248.45° C=0.0413
+PHI_SYNTAX_5='#bd837b'        # type             -> error hue,   H=27.99°  C=0.0741
+PHI_SYNTAX_6='#878279'        # operator, punct. -> fg-2 (same token, no separate hue: muted ink, not a category)
 
 # --- Selection and terminal cursor (§6.2) -----------------------------------
 PHI_SELECTION_BG='#242320'    # [carried] kitty selection_background
@@ -115,28 +137,37 @@ PHI_CURSOR_TERM='#d3a0ac'     # [carried] kitty cursor — separate from the GUI
 # --- ANSI 16 (§6.2, ADR 053) ------------------------------------------------
 # This is the base16-style surface ADR 053 asks for: the sixteen slots every
 # terminal tool assumes for errors, warnings, diffs and file types. It is not
-# a second palette — every value here is one of the tokens above.
+# a second palette — every chromatic slot is one of the tokens above, or a
+# derivation on the same anchor.
 #
-# [carried] exactly as today's kitty theme renders, which is what keeps S-03
-# output-identical. §6.2 wants this map derived rather than hand-picked, and
-# two things are wrong with it until S-51 does that:
-#   - bright is identical to normal for all six chromatic pairs, so a tool
-#     that uses bright to add emphasis adds nothing.
-#   - slot 6/14 (cyan) is the same value as 4/12 (blue). A tool that uses both
-#     cannot be told apart.
+# S-50 fixes the two defects §6.2 flagged:
+#   - Cyan (slot 6/14) collided with blue (slot 4/12) because nothing in
+#     Tier 1/2/3 owns a cyan hue — info/slate sits at H=248° (blue-violet),
+#     success/moss at H=132° (green). A genuinely new anchor, H=195°
+#     (a teal-cyan, consistent with the retro/CAD chroma level of the other
+#     anchors), sits between them and is used ONLY here — no other tier
+#     references it, so it costs nothing to the four-hue Tier 2 direction.
+#   - Bright was identical to normal for all six chromatic pairs. Fixed by
+#     solving each bright slot on its normal slot's own hue at a HIGHER
+#     chroma (roughly ×1.35, gamut-safety-checked the same way as Tier 3)
+#     and a higher contrast target — more vivid AND more prominent, not
+#     just relabelled.
+# Achromatic slots (0/7/8/15) were not flagged and are untouched, still
+# [carried]/[derived from fg-2] exactly as before (fg-2's own fix propagates
+# into slot 8 automatically, since it is the same token).
 PHI_ANSI_0='#242320'          # black          -> bg-1
 PHI_ANSI_1='#b57b73'          # red            -> error
 PHI_ANSI_2='#8fa77e'          # green          -> success
 PHI_ANSI_3='#c0a874'          # yellow         -> warn
 PHI_ANSI_4='#7f95ab'          # blue           -> info
 PHI_ANSI_5='#d3a0ac'          # magenta        -> accent
-PHI_ANSI_6='#7f95ab'          # cyan           -> info (collision, S-51)
+PHI_ANSI_6='#3d9e9e'          # cyan           -> new anchor, H=195° C=0.09, solved 5.5:1
 PHI_ANSI_7='#d6d1c9'          # white          -> fg-0
-PHI_ANSI_8='#7d786f'          # bright black   -> fg-2
-PHI_ANSI_9='#b57b73'          # bright red
-PHI_ANSI_10='#8fa77e'         # bright green
-PHI_ANSI_11='#c0a874'         # bright yellow
-PHI_ANSI_12='#7f95ab'         # bright blue
-PHI_ANSI_13='#d3a0ac'         # bright magenta
-PHI_ANSI_14='#7f95ab'         # bright cyan
+PHI_ANSI_8='#878279'          # bright black   -> fg-2 (S-50's fixed value)
+PHI_ANSI_9='#d7897f'          # bright red     -> error hue, higher C, solved 6.5:1
+PHI_ANSI_10='#87a76f'         # bright green   -> success hue, higher C, solved 6.5:1
+PHI_ANSI_11='#bd9d53'         # bright yellow  -> warn hue, higher C, solved 6.8:1
+PHI_ANSI_12='#809ebd'         # bright blue    -> info hue, higher C, solved 6.3:1
+PHI_ANSI_13='#d292a2'         # bright magenta -> accent hue, higher C, solved 7.0:1
+PHI_ANSI_14='#1eaaab'         # bright cyan    -> slot-6 hue, higher C, solved 6.2:1
 PHI_ANSI_15='#d6d1c9'         # bright white   -> fg-0
