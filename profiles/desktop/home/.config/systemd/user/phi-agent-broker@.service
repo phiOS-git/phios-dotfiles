@@ -1,0 +1,65 @@
+# phiOS — provider-credential broker, one instance per template (a1, a2).
+# docs/phios-agente.md §6.2 / §11. Declared in services-user.txt, NEVER
+# enabled by the installer.
+#
+#   systemctl --user enable --now phi-agent-broker@a1.service
+#
+# The broker holds the provider key and is the only route opencode has to
+# the provider (its baseURL points at 127.0.0.1). If the broker is down,
+# opencode gets connection-refused and no agent works — which is the
+# intended fail-closed behaviour (§6.2), not a bug to paper over.
+#
+# UNVERIFIED: the hardening directives below are written from systemd.exec(5)
+# and have not been run. If the unit fails to start, loosen from the bottom
+# up (SystemCallFilter and MemoryDenyWriteExecute first — Go binaries
+# sometimes trip the latter) and report which line it was.
+
+[Unit]
+Description=phiOS AI agent credential broker (%i)
+Documentation=https://github.com/phiOS-git/phios-dotfiles
+Before=phi-agent-%i.service
+
+[Service]
+Type=simple
+# Fail-closed: --check validates broker.json and that the key is loadable
+# before the socket is ever bound.
+ExecStartPre=/usr/bin/phi agent broker --instance %i --check
+ExecStart=/usr/bin/phi agent broker --instance %i
+Restart=on-failure
+RestartSec=2
+
+# The key enters the broker's process only, via a systemd credential from a
+# user-owned file with mode 600 — never a repository, never a plain
+# Environment= line (§6, ADR 092). $CREDENTIALS_DIRECTORY is a 0700 tmpfs
+# not inherited by children.
+LoadCredential=provider-key:%h/.config/phi-agent/%i/provider-key
+Environment=PHI_AGENT_BROKER_KEY_FILE=%d/provider-key
+
+# §11 items 1-2: resource limits, no privilege escalation, private tmp,
+# kernel-parameter protection.
+MemoryMax=256M
+TasksMax=64
+CPUQuota=50%
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/state/phi-agent
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+UMask=0077
+
+[Install]
+WantedBy=default.target

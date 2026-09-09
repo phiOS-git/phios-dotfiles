@@ -3,3 +3,11 @@
 pipewire.service
 pipewire-pulse.service
 wireplumber.service
+
+# S-71: the AI agent credential broker (docs/phios-agente.md §6.2). One
+# instance per opencode instance. a1 is enabled at the end of milestone 0;
+# a2 at S-76, when the current uncontained engine is retired. The units are
+# only ever enabled by hand, after V-01..V-04 and V-08/V-09 pass:
+#   systemctl --user enable --now phi-agent-broker@a1.service
+phi-agent-broker@a1.service
+phi-agent-broker@a2.service

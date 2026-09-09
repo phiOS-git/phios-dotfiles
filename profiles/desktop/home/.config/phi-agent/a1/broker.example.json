@@ -1,0 +1,23 @@
+{
+  "//": "Copy to broker.json (same directory) and edit. NOTHING SECRET here — the key is a separate file, provider-key, mode 600. See ../README.md.",
+
+  "listen": "127.0.0.1:8789",
+
+  "//upstream": "The provider API ORIGIN only, no path. The incoming request path from opencode is appended unchanged. Examples: https://api.openai.com  |  https://api.anthropic.com  |  https://openrouter.ai",
+  "upstream": "https://api.example.com",
+
+  "//auth": "How the key is attached. For an OpenAI-compatible provider: auth_header 'authorization', auth_value 'Bearer {key}'. For Anthropic's native API: auth_header 'x-api-key', auth_value '{key}', and add anthropic-version to extra_headers.",
+  "auth_header": "authorization",
+  "auth_value": "Bearer {key}",
+
+  "extra_headers": {},
+
+  "strip_request_headers": ["authorization", "x-api-key", "openai-organization"],
+
+  "rate_limit": { "requests": 60, "window_seconds": 60 },
+
+  "upstream_timeout_seconds": 0,
+
+  "//meter_file": "Defaults to ~/.local/state/phi-agent/a1/broker-meter.jsonl. One JSON object per request.",
+  "meter_file": ""
+}

@@ -4,6 +4,20 @@
   "share": "disabled",
   "snapshot": false,
   "instructions": [],
+  "provider": {
+    "phi-broker": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "phi broker (A1)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8789/v1",
+        "apiKey": "the-real-key-is-held-by-phi-agent-broker"
+      },
+      "models": {
+        "REPLACE-WITH-YOUR-MODEL-ID": { "name": "phi broker model" }
+      }
+    }
+  },
+  "model": "phi-broker/REPLACE-WITH-YOUR-MODEL-ID",
   "permission": {
     "read": {
       "*": "allow",
