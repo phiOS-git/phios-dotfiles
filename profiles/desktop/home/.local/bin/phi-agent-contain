@@ -126,6 +126,16 @@ AGENT_CACHE=$cache_home/phi-agent/$instance
 
 env_file=$conf_home/phi-agent/env
 if [[ -r $env_file ]]; then
+	# The file is sourced as a shell fragment. The one footgun is an
+	# unquoted space in a value: `KEY=a b` runs `b` as a command and, under
+	# `set -e`, aborts here with a bare "command not found". Catch it first
+	# and say what is wrong.
+	while IFS= read -r _line || [[ -n $_line ]]; do
+		_line=${_line%%#*}
+		if [[ $_line =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=[^[:space:]\"\']*[[:space:]]+[^[:space:]] ]]; then
+			die "$env_file: unquoted space in a value — write KEY=\"a b\":${_line}"
+		fi
+	done < "$env_file"
 	# shellcheck disable=SC1090
 	set -a; . "$env_file"; set +a
 fi
