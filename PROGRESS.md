@@ -228,4 +228,101 @@ follows the same `awaiting-verification` → `verified` discipline as a step.
 | OOP-15 | Shell restyle R3 — A: bar/runner spacing tweaks | awaiting-verification | phi-shell dc8c608 · dotfiles be090fe | 2026-09-10 | **`Out-of-plan: shell-restyle-r3`** — a third feedback round on the shell restyle (11 items). Advisor call: split by verifiability again; this is commit A, the pure value tweaks. **#3 reduce the gap between the bar and the window area**: `Bar/Bar.qml` `islandMargin` `space2`→`space1`, and the bar height is now `max(fontSize1, isle footprints) + islandMargin` (was `fontSize1 + islandMargin·2`) so the tighter margin cannot clip the isle content — the exclusive zone (= bar height) shrinks with it. **#4 runner**: `Launcher/Launcher.qml` panel `padding` bumped to `space3·ch` (more air, left/right especially) and the `Widgets.Separator` between the input and the option list removed — the gap alone divides them. **#8 centre isle**: `centerIsle` gets `pad: space2·ch` so the active-window title does not touch the isle edge. New/changed: `Bar/Bar.qml`, `Launcher/Launcher.qml`. **#7 ("remove the status bar main background") is held for the user** — it is ambiguous (the bar window is already transparent; removing the per-isle fill also means re-deriving the whole `isle` colour pair in `Widgets/WidgetStates.js` and every bar button, since buttons on the wallpaper want the panel pair, not the isle pair). Not verified — no compositor here. |
 | OOP-16 | Shell restyle R3 — B: modal scrim covers the bar | awaiting-verification | phi-shell 93f25dd · dotfiles 7f50467 | 2026-09-10 | Commit B of `shell-restyle-r3`. **#1**: the settings / chat scrim did not dim the status bar, and the notification panel had no scrim at all. Cause: the modal panel windows ran `exclusiveZone: 0`, so the compositor shrank them out of the bar's reserved strip and they also sat on the same layer as the bar. Fix (same guard form as `Background/Background.qml`): `Settings`, `Panels/AgentPanel`, `Panels/Sidebar`, `Cheatsheet` and `Launcher` now set `exclusiveZone: -1` and `WlrLayershell.layer = WlrLayer.Overlay` in `Component.onCompleted` (merged with the existing `_animReady` handler where there was one), so their full-screen scrim covers the whole output including the bar. `Panels/Sidebar.qml` gains a `Widgets.Scrim` it never had. `Launcher` is raised too (so a click on the bar strip dismisses it) but keeps NO scrim — it stays a light overlay. `Panels/Calendar` and `Panels/BarPopout` deliberately stay on `Top` with no scrim (corner popouts; R3 #9 asks for no shadow on those). All five still gate `visible` on `shown || fadeRoot.opacity > 0`, so the Overlay surface unmaps when closed and never holds input globally. New/changed: `Settings/Settings.qml`, `Cheatsheet/Cheatsheet.qml`, `Launcher/Launcher.qml`, `Panels/AgentPanel.qml`, `Panels/Sidebar.qml`. Not verified — no compositor here. |
 | OOP-17 | Shell restyle R3 — C: bar popouts + meter widget | awaiting-verification | phi-shell 2811a64 · dotfiles n/a | 2026-09-10 | Commit C of `shell-restyle-r3` (#2, #9), phi-shell only. **New `Widgets/Meter.qml`**: a pill track + fill, read-only by default, or `interactive` with `moved(v)` (continuous) + `released(v)` (once) signals; the fill follows the pointer during a drag even when the consumer only commits on release. `Osd/Osd.qml` reworked to use it (the OSD's own header had said it would extract this "once a second caller exists"). **Bar popouts anchor below the button that opened them** (#2): `Widgets/Segment.qml` gains a guarded `centerX()` (mapToItem(null), try/catch → 0), the seven right-isle modules pass it, `Services/BarPopout.qml` carries `anchorX` again and `Panels/BarPopout.qml` positions the card at `anchorX ± clamp`, corner as the fallback. **volume / brightness popout is an overlay-reference.png pill** (#9): glyph · a draggable `Widgets.Meter` · the percentage, no card chrome, no scrim (this window never had one). Volume commits live (`AudioBridge.setVolume`); brightness commits on release only (it spawns `brightnessctl`). **wifi / bluetooth / network / battery popouts** carry a compact readout (SSID / adapter+device / overlay name / charge+time-left) and a deep-link button (`nmtui`, `bluetuith`) where a TUI exists; GPU stays a pointer to the bar readout (its live values live in the module, not a service). New: `Widgets/Meter.qml`. Changed: `Osd/Osd.qml`, `Services/BarPopout.qml`, `Panels/BarPopout.qml`, `Widgets/Segment.qml`, `Bar/modules/{Volume,Brightness,Network,Wifi,Bluetooth,Battery,Gpu}.qml`. Not verified — no compositor here; the popout anchoring and the meter drag are the parts most needing the screenshot round. |
-| OOP-18 | Shell restyle R3 — D: centre-isle height / bar vertical padding | awaiting-verification | phi-shell this commit · dotfiles n/a | 2026-09-10 | Follow-up in `shell-restyle-r3`, phi-shell only. User: the active-window title isle was taller than the bar and the bar resized when an app opened/closed; the title element should be the same height as every other bar element, with only horizontal padding. Cause: OOP-15/#8 gave `centerIsle` `pad: space2`, which BarIsle applied to BOTH axes, and `Bar.qml` height keyed off `centerIsle.implicitHeight`. Fix: `Widgets/BarIsle.qml` splits `padH` (horizontal, defaults to `pad`) from `pad` (vertical); `Bar/Bar.qml` centre isle is `height: max(side isle heights)` with `pad: 0` + `padH: space2`, and the bar height `Math.max` no longer includes the centre isle — so the bar is stable regardless of the active window. `Widgets/Segment.qml` isle Segments also drop to half a rhythm unit of vertical inset (`paddingV · 0.5` on `ambient:"isle"`), for a tighter bar overall. New/changed: `Widgets/BarIsle.qml`, `Bar/Bar.qml`, `Widgets/Segment.qml`. Not verified — no compositor here. |
+| OOP-18 | Shell restyle R3 — D: centre-isle height / bar vertical padding | awaiting-verification | phi-shell f114eea · dotfiles n/a | 2026-09-10 | Follow-up in `shell-restyle-r3`, phi-shell only. User: the active-window title isle was taller than the bar and the bar resized when an app opened/closed; the title element should be the same height as every other bar element, with only horizontal padding. Cause: OOP-15/#8 gave `centerIsle` `pad: space2`, which BarIsle applied to BOTH axes, and `Bar.qml` height keyed off `centerIsle.implicitHeight`. Fix: `Widgets/BarIsle.qml` splits `padH` (horizontal, defaults to `pad`) from `pad` (vertical); `Bar/Bar.qml` centre isle is `height: max(side isle heights)` with `pad: 0` + `padH: space2`, and the bar height `Math.max` no longer includes the centre isle — so the bar is stable regardless of the active window. `Widgets/Segment.qml` isle Segments also drop to half a rhythm unit of vertical inset (`paddingV · 0.5` on `ambient:"isle"`), for a tighter bar overall. New/changed: `Widgets/BarIsle.qml`, `Bar/Bar.qml`, `Widgets/Segment.qml`. Not verified — no compositor here. |
+
+### `shell-restyle` — consolidated status (2026-09-10)
+
+A single visual restyle of `phi-shell` + the design tokens, requested out of
+plan, run over three feedback rounds. **Every row OOP-02 … OOP-18 is
+`awaiting-verification`** — nothing in this track has rendered on real
+hardware yet. One consolidated screenshot pass promotes them all; a final
+commit then flips them to `verified`.
+
+**Rounds**
+
+- **R1 — OOP-02 … OOP-08** (`shell-restyle`): the two-colour B&W grammar,
+  status bar rebuilt to isles, shared panels / cheatsheet / runner /
+  notification panel / clipboard restyled, calendar placeholder, chat
+  left-dock, centred Settings panel with an editable Theme section.
+- **R2 — OOP-09 … OOP-14** (`shell-restyle-r2`): blank-Theme fix, wallpaper
+  gap, notification-panel slide direction, cheatsheet spacing, `Φ` case,
+  Settings close button (OOP-09); tighter 13px-base font scale, hairline
+  1px panel border, 8px panel padding, accent off titles (OOP-10); btop
+  quoting bug + `icon+value` bar indicators + click-popouts + full-height
+  buttons (OOP-11); runner centred / fixed-height / apps-by-default /
+  coherent sizes / wider (OOP-12); cheatsheet columns + Settings keyword
+  search (OOP-13); expanded Neovim theme + English template headers
+  (OOP-14).
+- **R3 — OOP-15 … OOP-18** (`shell-restyle-r3`, 11 items; 8 landed):
+  - OOP-15 (A): #3 tighter bar height/margins, #4 runner padding + no
+    input/options rule, #8 centre-isle horizontal padding.
+  - OOP-16 (B): #1 modal panels raised to `WlrLayer.Overlay` +
+    `exclusiveZone: -1` so the scrim dims the bar; notification panel got a
+    scrim.
+  - OOP-17 (C): #2 bar popouts drop below their button (`Segment.centerX()`);
+    #9 volume/brightness popout is a draggable `overlay-reference` pill via
+    the new `Widgets/Meter.qml` (also adopted by `Osd/Osd.qml`);
+    wifi/bluetooth/network/battery popouts carry a readout + TUI deep-link.
+  - OOP-18 (D): the active-window centre isle is now exactly the side-isle
+    height (`BarIsle` gains `padH` separate from `pad`; bar height no longer
+    keys off the centre isle, so it doesn't resize when an app
+    opens/closes); isle Segments halved their vertical inset.
+
+**Apply path (whole track)**
+
+1. `git pull` in `phios-dotfiles` (through commit for OOP-18's dotfiles row).
+2. `phi theme set <active variant>` — **required**: OOP-10's 1px border /
+   8px padding / 13px size scale and OOP-14's templates come only from the
+   regenerated `Config/Tokens.qml` and the rendered app themes.
+3. `git pull` in `phi-shell` (through `f114eea`).
+4. `pkill -x qs && qs -p ~/.config/quickshell/phi` (capture the log —
+   `DesktopEntries.applications` and the Nerd-Font glyph codepoints are the
+   two most likely things to need a one-line fix).
+5. Restart yazi / nvim / kitty for their theme (reload still unwired).
+   No `phios-install` / `hyprctl reload` — no `hyprland.lua` change in R2/R3.
+
+**R3 items NOT built — pending this verification + a disk fix**
+
+- **#5 + #10** — kitty window chrome (padding, border) and the yazi /
+  Librewolf theme files. yazi's `theme.toml` needs a proper expansion but
+  yazi rejects unknown keys and falls back to its default theme, so the
+  user's yazi version is needed first. Librewolf's `userChrome.css` is two
+  lines and has no `adapters.txt` row (random profile-dir prefix — see that
+  template's header).
+- **#6** — lock screen (`Lock/Lock.qml`): bring onto the new grammar and
+  add a content fade-in (the surface bg must stay opaque per the
+  ext-session-lock protocol).
+- **#7 — HELD, needs user clarification.** "Remove the status bar main
+  background": the bar window is already `color: "transparent"`. If it
+  means removing the per-isle coloured blocks so buttons sit directly on
+  the wallpaper, that also requires re-deriving the whole `isle` colour
+  pair in `Widgets/WidgetStates.js` (buttons on wallpaper want the panel
+  pair, not the inverted isle pair) and touches every bar module — not to
+  be guessed.
+- **#11** — btop / Steam workspace buttons. btop button = switch to the
+  `special:btop` workspace, launch btop if absent, unify with the existing
+  special-workspace feature. A Steam button appears after the numbered
+  workspaces (before btop) whenever a Steam window exists, switching to
+  `name:steam`. Planned shape: a workspace-existence check off
+  `Hyprland.workspaces` (`name:steam` appears once a window lands there via
+  the `hyprland.lua` class rule) — no new service surface.
+
+**Known unverifiable risks carried into the screenshot pass**
+
+- `Bar/glyphs.js` — 17 Nerd-Font `nf-md` codepoints, never checked against
+  the font. All-boxes = `font-symbol` not resolving; some-boxes = specific
+  wrong codepoints. Value text always renders regardless.
+- `Quickshell.DesktopEntries.applications` — guarded; worst case the
+  runner's empty-query browse list is empty (typed queries still work).
+- `Font.DemiBold` on `Source Sans 3` — if the face is absent, titles won't
+  look distinct from body text (they lost their accent colour in OOP-10).
+- `btop` special-workspace `active` state is a local bool (no compositor
+  property to read); the `hyprctl clients -j | grep '"class": "phios-btop"'`
+  match depends on hyprctl's exact JSON spacing.
+- Exact px for the size scale (`11/13/14/16/18/21/24`) and panel padding
+  (8px) are judgment calls — index 1 (13px) also drives every `1ch` gap.
+
+**Environment note (2026-09-10):** the workstation disk hit 0 bytes free
+mid-session (APFS local snapshots the likely cause); `df -h /` recovered to
+~1.3 GB after cleanup. `phi theme set` and `git pull` write to that disk —
+free space before applying.
