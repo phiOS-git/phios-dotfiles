@@ -36,6 +36,13 @@
 #   PHI_BORDER_WIDTH           1px, added at S-21 (not in §6.3 at all — a real
 #                              gap, not a deferred decision). Same fractional-
 #                              HiDPI caveat as PHI_RADIUS_BASE.
+#   PHI_RADIUS_SMALL/LARGE     1px/4px, OOP-02 (shell restyle) — two fixed
+#   PHI_BORDER_WIDTH_STRONG    radii and a 2px panel border the restyle's
+#   PHI_PANEL_PADDING          grammar needs and §6.3 does not cover. 4px
+#                              panel padding, flat, not a 1ch multiple.
+#   PHI_FONT_SCALE/SPACE_SCALE identity (1) by default, OOP-02 — the hook the
+#                              settings panel's editable Theme section
+#                              multiplies its per-user override through.
 #   PHI_Z_*                    invented; only the ordering is specified.
 #   PHI_MOTION_*               all durations invented. §6.5 fixes the four
 #                              categories and their character, not any
@@ -120,6 +127,16 @@ PHI_SPACE_6='8ch'
 PHI_RADIUS_BASE='2px'
 PHI_RADIUS_PILL='9999px'
 
+# radius-small / radius-large — OOP-02 (shell restyle). §6.3 fixes exactly
+# one non-pill radius (radius-base), but the restyle's own grammar needs
+# two more fixed points: the status bar's isles round at 1px (all but a
+# sharp edge) and the runner rounds at 4px (deliberately softer than every
+# other panel, shell doc §3). Neither is expressible as a multiple of
+# radius-base, so they are their own tokens. Same fractional-HiDPI
+# [PLACEHOLDER] caveat as radius-base.
+PHI_RADIUS_SMALL='1px'
+PHI_RADIUS_LARGE='4px'
+
 # border-width has no home in §6.3's own token table — added at S-21, where
 # the widget library found the gap: a separator, a panel border and a focus
 # ring all need a stroke width, and DONE WHEN forbids a literal size in any
@@ -127,6 +144,29 @@ PHI_RADIUS_PILL='9999px'
 # one token rather than a per-widget guess. [PLACEHOLDER] the same way
 # radius-base is: unverified on real HiDPI/fractional-scaling output.
 PHI_BORDER_WIDTH='1px'
+
+# border-width-strong — OOP-02. The restyle draws every panel with a 2px
+# border in the opposite structural colour (a wireframe/CAD read); the
+# hairline border-width above stays the value for buttons, separators and
+# focus rings. Same [PLACEHOLDER] caveat.
+PHI_BORDER_WIDTH_STRONG='2px'
+
+# panel-padding — OOP-02. The restyle sets panel inner padding to a flat
+# 4px, not a multiple of 1ch: the space-N scale (§6.3) is the rhythm for
+# gaps BETWEEN elements, but a panel's own edge inset in this grammar is a
+# tight fixed frame, deliberately independent of the font's cell width.
+PHI_PANEL_PADDING='4px'
+
+# --- User-tunable scale (OOP-02) ------------------------------------------
+# Identity by default. The settings panel's Theme section (OOP-07) writes a
+# per-user override for these into $XDG_STATE_HOME/phi/theme-overrides.json
+# (never this file, never the repo — I-05: design/ stays the source of the
+# DEFAULTS). font-scale multiplies the whole generated size scale; space-
+# scale multiplies the whole spacing scale. Dimensionless factors, not a
+# "size" in the I-05 sense — same latitude as the opacity ratio in
+# phi-shell's Widgets/WidgetStates.js.
+PHI_FONT_SCALE='1'
+PHI_SPACE_SCALE='1'
 
 # --- Layering (§6.3) --------------------------------------------------------
 # Only the order is specified. The gaps of 100 exist so a surface can be
