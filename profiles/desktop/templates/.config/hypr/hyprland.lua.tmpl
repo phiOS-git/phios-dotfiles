@@ -163,7 +163,12 @@ end
 -- literally as "_lua 16"), which is what Cheatsheet.qml was rendering
 -- verbatim for lack of anything better to show.
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")), { description = "Toggle the launcher" })    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
-hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("sidebar", "toggle")), { description = "Toggle the sidebar" })     -- N for the sidebar's own default tab, Notifications
+hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("notifications", "toggle")), { description = "Toggle the notification panel" })     -- OOP-06: the sidebar is the notification panel; target renamed (a "sidebar" alias still works)
+-- OOP-06: open the notification panel straight onto the Clipboard tab,
+-- with its search focused. Super+Shift+V is the near-universal
+-- "clipboard history" shortcut (KDE Klipper, GNOME extensions, cliphist
+-- guides all use it).
+hl.bind(mainMod .. " + SHIFT + V", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")), { description = "Open the clipboard history" })
 hl.bind(mainMod .. " + S",     hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })      -- S-40: no prior bind claimed S, obvious mnemonic
 -- Out-of-plan (2026-09-09): the phi agent panel (phios-agente.md §10.1,
 -- "evocazione da scorciatoia globale"). "P" for phi/panel, and it was
