@@ -23,9 +23,9 @@ Two opencode instances, separated by capability and by containment:
 | `mounts/a1.paths` | A1 perimeter (§4.3) | repo |
 | `mounts/a2.paths` | A2 perimeter (§4.4) | repo |
 | `mounts/never.paths` | the V-01/V-02 checklist of paths that must stay unreachable | repo |
-| `a1/opencode/opencode.json` | A1 engine config — provider `phi-broker` points at the broker on loopback, hardening permissions | repo |
-| `a2/opencode/opencode.json` | A2 engine config — same, on the a2 broker port | repo |
-| `a1/broker.example.json` | template for the broker config | — |
+| `<inst>/opencode/opencode.example.json` | template for the engine config — provider `phi-broker` on loopback, hardening permissions | — |
+| `~/.config/phi-agent/<inst>/opencode/opencode.json` | **you create this** from the example: set the model id (two places) | you |
+| `<inst>/broker.example.json` | template for the broker config | — |
 | `~/.config/phi-agent/<inst>/broker.json` | **you create this**: provider origin + how the key attaches (no key) | you |
 | `~/.config/phi-agent/<inst>/provider-key` | **you create this**, `chmod 600`: the raw provider API key | you |
 | `tinyproxy/tinyproxy.conf` | A2 egress whitelist (S-72) | repo |
@@ -43,6 +43,7 @@ cd ~/.config/phi-agent/a1
 cp broker.example.json broker.json
 $EDITOR broker.json          # set upstream (provider ORIGIN, no path) and auth_header/auth_value
 printf '%s' 'sk-...your-key...' > provider-key && chmod 600 provider-key
+cp opencode/opencode.example.json opencode/opencode.json
 $EDITOR opencode/opencode.json   # replace REPLACE-WITH-YOUR-MODEL-ID (two places)
 phi agent broker --instance a1 --check     # must print a summary and exit 0
 systemctl --user enable --now phi-agent-broker@a1.service
@@ -187,9 +188,10 @@ locally, you publish.
    ```
    systemctl --user enable --now phi-agent-broker@a2.service phi-agent-proxy.service phi-agent-net-bridge.service
    ```
-   and set up `~/.config/phi-agent/a2/broker.json` + `provider-key` and the
-   model id in `a2/opencode/opencode.json`, and uncomment the registries
-   your projects need in `tinyproxy/whitelist`.
+   and set up `~/.config/phi-agent/a2/broker.json` + `provider-key`, copy
+   `a2/opencode/opencode.example.json` to `opencode.json` and set the model
+   id, and uncomment the registries your projects need in
+   `tinyproxy/whitelist`.
 
 2. Use `phi-code` for coding sessions instead of bare `opencode`:
    ```

@@ -21,10 +21,11 @@ rw   @AGENT_DATA@                @CONTAINER_HOME@/.local/share
 rw   @AGENT_STATE@               @CONTAINER_HOME@/.local/state
 rw   @AGENT_CACHE@               @CONTAINER_HOME@/.cache
 
-# The engine config, read-only. A single file, not the whole .config dir:
-# the file is a dotfiles symlink and only its resolved target needs to be
-# reachable. agent/ (the personality prompt files) is added at S-73.
-ro   @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/opencode.json
+# The engine config, read-only. A single file, not the whole .config dir.
+# "?" — you create it from opencode.example.json (it carries the model id,
+# §6). Absent, opencode cannot start, but a bare `sh` in the container
+# still can, so the V-01..V-04 proof runs before any provider setup.
+ro?  @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/opencode.json
 
 # Personalities — read-only (§4.3). "personalita/ scrive solo l'utente";
 # the agent never writes here. The writable @AGENT_DATA@ bind above already

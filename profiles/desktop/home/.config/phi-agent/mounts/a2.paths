@@ -19,8 +19,10 @@ rw   @AGENT_DATA@                @CONTAINER_HOME@/.local/share
 rw   @AGENT_STATE@               @CONTAINER_HOME@/.local/state
 rw   @AGENT_CACHE@               @CONTAINER_HOME@/.cache
 
-# The engine config, read-only.
-ro   @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/opencode.json
+# The engine config, read-only. "?" — you create it from
+# opencode.example.json (it carries the model id). Absent, opencode cannot
+# start but a bare `sh` in the container still can.
+ro?  @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/opencode.json
 
 # The code projects root — writable (§4.4 "radice dei progetti di codice in
 # scrittura"). Path from PHI_AGENT_CODE_ROOT.
