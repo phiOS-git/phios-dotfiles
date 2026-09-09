@@ -176,3 +176,39 @@ systemctl --user stop phi-agent-a2-remote.service phi-agent-a2-remote-engine.ser
 Overlay reachability is the overlay's own default-deny policy — allow only
 your own devices toward port 4399. No extra encryption layer (the overlay
 already encrypts).
+
+## Transition from unconfined opencode (S-76)
+
+Do this only after V-01…V-04 and V-08/V-09 have passed. It removes the
+agent's access to your SSH keys and its ability to push — A2 commits
+locally, you publish.
+
+1. Enable the A2 support services:
+   ```
+   systemctl --user enable --now phi-agent-broker@a2.service phi-agent-proxy.service phi-agent-net-bridge.service
+   ```
+   and set up `~/.config/phi-agent/a2/broker.json` + `provider-key` and the
+   model id in `a2/opencode/opencode.json`, and uncomment the registries
+   your projects need in `tinyproxy/whitelist`.
+
+2. Use `phi-code` for coding sessions instead of bare `opencode`:
+   ```
+   cd ~/code/some-project
+   phi-code
+   ```
+   Run a **real** task and let it finish. Confirm from inside:
+   `cat ~/.ssh/id_*` fails, `git push` fails (no route to a forge), and
+   `git commit` works. Publish afterward from your normal shell.
+
+3. Once a real session completes cleanly, retire the old config:
+   ```
+   mv ~/.config/opencode ~/.config/opencode.pre-phios.bak
+   ```
+   Keep the backup until you are sure `phi-code` covers everything you
+   used opencode for. The step is done when the unconfined configuration
+   is gone.
+
+`phi-agent-a2.service` (plain loopback serve) is optional — a persistent
+server for tooling that speaks opencode's HTTP API. Reaching its port from
+the host needs a bridge you add yourself; day-to-day interactive use is
+`phi-code`.

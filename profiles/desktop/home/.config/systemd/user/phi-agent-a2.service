@@ -4,10 +4,13 @@
 #   systemctl --user enable --now phi-agent-a2.service
 #
 # Contained `opencode serve` on loopback only, NO password, NO overlay
-# listener. This is the day-to-day contained A2 the S-76 transition
-# switches to. The remote surface is a SEPARATE pair of units
-# (phi-agent-a2-remote*.service) that only run when a session is declared
-# remote (§10.3).
+# listener. OPTIONAL: a persistent A2 server for tooling that speaks
+# opencode's HTTP API. Its port lives inside A2's --unshare-net namespace,
+# so reaching it from the host needs a bridge you add yourself. Day-to-day
+# interactive coding is `phi-code` (profiles/desktop .../zsh/agent.zsh),
+# which runs the opencode TUI in the container directly. The remote surface
+# is a SEPARATE pair of units (phi-agent-a2-remote*.service), started only
+# for a declared-remote session (§10.3).
 #
 # No fallback ExecStart — stays `failed` if bubblewrap is gone (V-04).
 # UNVERIFIED: written from systemd.exec(5); not run.
