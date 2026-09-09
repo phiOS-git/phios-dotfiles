@@ -38,8 +38,14 @@
 #                              HiDPI caveat as PHI_RADIUS_BASE.
 #   PHI_Z_*                    invented; only the ordering is specified.
 #   PHI_MOTION_*               all durations invented. §6.5 fixes the four
-#                              categories and their character, not any number.
-#                              S-52 implements motion and replaces these.
+#                              categories and their character, not any
+#                              number. S-52 audited every real consumer
+#                              against these values and found no reason to
+#                              change them — still invented numbers, no
+#                              longer untested ones.
+#   PHI_CURSOR_*               S-54. Theme name is closed (whiteglass); size
+#                              (24) is a plain, common default, not measured
+#                              against any real HiDPI screen.
 # ---------------------------------------------------------------------------
 
 # --- Typography roles (§6.3, §6.4) -----------------------------------------
@@ -66,6 +72,17 @@ PHI_FONT_UI='Source Sans 3'
 # width would misalign the column after it. Ships as the ttf-nerd-fonts-
 # symbols-mono split of the §15.2 package.
 PHI_FONT_SYMBOL='Symbols Nerd Font Mono'
+
+# --- Cursor theme (§6.7 class 5, S-54) --------------------------------------
+# "Thin, black, white-outlined" (architettura §8.2.3): xcursor-themes'
+# bundled "whiteglass" conforms, by the user's own choice over producing a
+# bespoke one — approved this session, not in master plan §15 before now.
+# One value for every consumer: Hyprland's own cursor, GTK, and Qt/the
+# shell all resolve XCURSOR_THEME (hyprland.lua.tmpl's own S-54 note has
+# the per-toolkit detail). Not variant-dependent, so it lives here rather
+# than in tokens.dark.sh/tokens.light.sh.
+PHI_CURSOR_THEME='whiteglass'
+PHI_CURSOR_SIZE='24'
 
 # --- Size scale (§6.3) ------------------------------------------------------
 # Derived, not arbitrary: a 14px base at a 1.125 ratio (major second), rounded

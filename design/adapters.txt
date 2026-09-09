@@ -55,6 +55,13 @@ profiles/desktop/templates/.config/kitty/fonts.conf.tmpl        | .config/kitty/
 # Restart, same as every other class C target group 2 row below.
 profiles/desktop/templates/.config/fontconfig/fonts.conf.tmpl   | .config/fontconfig/fonts.conf      | -         | C
 
+# Hyprland's own config (S-54, master plan §6.7 class A: "Hyprland" is one
+# of this class's own named targets). Was a plain home/ file through S-53;
+# became a template at S-54 for its one real substitution, XCURSOR_THEME/
+# XCURSOR_SIZE — everything else in it is unrelated, unchanged Lua.
+# `hyprctl reload` is Hyprland's own real, standard live-reload command.
+profiles/desktop/templates/.config/hypr/hyprland.lua.tmpl        | .config/hypr/hyprland.lua          | hyprctl reload | A
+
 # phi-shell (S-20). Not `[unknown]`: Quickshell watches every QML file it
 # has loaded and hot-reloads on change by itself (master plan §8.1, "hot
 # reload al salvataggio") — there is no separate command to run, and no gap

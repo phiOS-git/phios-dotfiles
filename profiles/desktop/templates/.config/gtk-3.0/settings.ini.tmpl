@@ -6,13 +6,21 @@
 # gtk-decoration-layout empty suppresses the header-bar's own min/max/close
 # buttons (Q-N05: CSD suppressed — decided this session). This alone does
 # NOT remove client-side decoration for a libadwaita/GTK4 app that hardcodes
-# its own HeaderBar as content — see profiles/desktop/home/.config/hypr/
-# hyprland.lua's GTK_CSD=0 (hl.env(), ENVIRONMENT section) and its own note
-# on that limit.
+# its own HeaderBar as content — see profiles/desktop/templates/.config/
+# hypr/hyprland.lua.tmpl's GTK_CSD=0 (hl.env(), ENVIRONMENT section, a
+# template since S-54) and its own note on that limit.
 #
 # Class C, same reasoning as gtk.css.tmpl in this same directory.
+#
+# gtk-cursor-theme-name/-size (S-54): a real, long-standing GtkSettings
+# property. Redundant with the XCURSOR_THEME/XCURSOR_SIZE env vars
+# hyprland.lua.tmpl sets process-wide (S-54's own note there) — kept
+# anyway in case a GTK app resolves its cursor theme before that env var
+# is visible to it.
 
 [Settings]
 gtk-application-prefer-dark-theme=${PHI_VARIANT_IS_DARK}
 gtk-decoration-layout=
+gtk-cursor-theme-name=${PHI_CURSOR_THEME}
+gtk-cursor-theme-size=${PHI_CURSOR_SIZE}
 

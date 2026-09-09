@@ -11,8 +11,10 @@ scancodes for every one of those keys — `KEY_MUTE`, `KEY_VOLUMEUP`,
 `KEY_VOLUMEDOWN`, `KEY_BRIGHTNESSUP`, `KEY_BRIGHTNESSDOWN` — with no
 hwdb-level remapping needed at all. The real gap was one layer up: no
 Hyprland keybinding existed for any of them. S-46 fixed that instead
-(`profiles/desktop/home/.config/hypr/hyprland.lua`, the `XF86Audio*` /
-`XF86MonBrightness*` binds).
+(`profiles/desktop/templates/.config/hypr/hyprland.lua.tmpl` since S-54,
+`profiles/desktop/home/.config/hypr/hyprland.lua` before it — same file,
+moved when it became a template — the `XF86Audio*` / `XF86MonBrightness*`
+binds).
 
 `Fn+F4` is the one exception S-06 found, and it is not a keycode gap
 either: the keyboard's own firmware synthesizes the literal Windows

@@ -3,11 +3,15 @@
 `zotac` and `razer`. The two machines with a graphical session: `phi-shell`
 plus the Hyprland Lua configuration that starts it (S-20–S-24).
 
-`home/.config/hypr/hyprland.lua` is a plain linked file, not a `templates/`
-one — Hyprland's Lua config has no design-token substitution point, so
-nothing here is generated. `home/.config/kitty/` and `templates/` carry the
-themed terminal/file-manager/media-player configs (design tokens flow
-through `templates/`, S-01–S-02).
+`templates/.config/hypr/hyprland.lua.tmpl` became a template at S-54, for
+one substitution (`XCURSOR_THEME`/`XCURSOR_SIZE`, master plan §6.7 class A —
+"Hyprland" is one of that class's own named targets, `hyprctl reload` is
+its real reload command). It was a plain `home/` file through S-53:
+Hyprland's Lua config had no design-token substitution point in use before
+then, so nothing in it was generated. Everything else in the file is still
+ordinary Lua, unrelated to this change. `home/.config/kitty/` and
+`templates/` carry the themed terminal/file-manager/media-player configs
+(design tokens flow through `templates/`, S-01–S-02).
 
 ## Hyprland Lua API compatibility (S-25, risk C-06)
 

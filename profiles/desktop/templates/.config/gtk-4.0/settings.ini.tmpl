@@ -5,7 +5,12 @@
 # same Q-N05 decision, same libadwaita-hardcoded-HeaderBar caveat.
 #
 # Class C, same reasoning as gtk.css.tmpl in this same directory.
+#
+# gtk-cursor-theme-name/-size (S-54): see gtk-3.0/settings.ini.tmpl's
+# identical note in the sibling directory.
 
 [Settings]
 gtk-application-prefer-dark-theme=${PHI_VARIANT_IS_DARK}
 gtk-decoration-layout=
+gtk-cursor-theme-name=${PHI_CURSOR_THEME}
+gtk-cursor-theme-size=${PHI_CURSOR_SIZE}

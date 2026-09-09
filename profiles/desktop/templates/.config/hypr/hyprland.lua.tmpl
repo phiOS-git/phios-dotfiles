@@ -25,6 +25,27 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
 hl.env("GTK_CSD", "0")
 
+-- S-54: XCURSOR_THEME/XCURSOR_SIZE are the standard freedesktop cursor-spec
+-- variables every well-behaved Wayland client (Hyprland's own compositor
+-- cursor, GTK, Qt/quickshell) resolves on its own -- one env var here is
+-- what DONE WHEN's "consistent across GTK, Qt and the shell" actually
+-- means, not three separate per-toolkit settings. GTK also gets an
+-- explicit gtk-cursor-theme-name (settings.ini.tmpl): real and
+-- long-standing GtkSettings property, kept as a second, redundant path in
+-- case a GTK app resolves its cursor before this env var is visible to it.
+-- Qt/qt6ct deliberately does NOT get an equivalent: its own upstream
+-- source (github.com/trialuser02/qt6ct, checked this session) has no
+-- cursor-theme setting at all -- Qt's Wayland platform plugin reads
+-- XCURSOR_THEME directly, the same as any other Wayland client, so a
+-- qt6ct-specific key would be inventing a config option that does not
+-- exist.
+--
+-- This file became a design/adapters.txt template at S-54 for exactly
+-- this one substitution -- everything else in it is still plain Lua, same
+-- as every step before this one left it.
+hl.env("XCURSOR_THEME", "${PHI_CURSOR_THEME}")
+hl.env("XCURSOR_SIZE", "${PHI_CURSOR_SIZE}")
+
 ------------------
 ---- MONITORS ----
 ------------------
@@ -212,6 +233,29 @@ hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), { repeating = true, locked = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(qsIpc("brightness", "down")), { repeating = true, locked = true })
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qsIpc("brightness", "up")), { repeating = true, locked = true })
+
+-- Magnifier (S-54, architettura §8.2.4/master plan §8.3 surface 21):
+-- "il compositore ha uno zoom nativo" -- cursor:zoom_factor, confirmed
+-- against the real Hyprland wiki source this session (configuring/core/
+-- config-options.md: "The factor to zoom by around the cursor. Like a
+-- magnifying glass"), not guessed at. Set live via `hyprctl keyword`
+-- (Hyprland's own generic runtime config-write command) rather than a
+-- phi-shell IPC round-trip -- this is a plain compositor setting with no
+-- shell-side state to keep in sync, unlike brightness/spotlight above.
+-- Two fixed levels, not a stateful toggle: reading the CURRENT factor back
+-- to decide which way to flip it would need `hyprctl getoption -j` piped
+-- through a JSON parser inside this one exec_cmd string, untestable from
+-- here and one more thing to get subtly wrong -- two plain binds are
+-- simpler and cannot desync.
+-- The OTHER half of this card, "the lens effect is a shader", is not
+-- attempted: S-43's own spotlight work already found, and verified,
+-- that `decoration:screen_shader` does not expose the cursor position to
+-- a shader (this file's own spotlight note, and architettura's own closed
+-- finding on hyprwm/Hyprland#1502) -- the identical limitation would block
+-- a cursor-following lens the same way, so this is not re-investigated
+-- from scratch, only cited.
+hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("hyprctl keyword cursor:zoom_factor 2.5"), { description = "Magnifier: zoom in around the cursor" })
+hl.bind(mainMod .. " + SHIFT + Z", hl.dsp.exec_cmd("hyprctl keyword cursor:zoom_factor 1.0"), { description = "Magnifier: reset zoom" })
 
 -- Alt+Tab (S-37, architettura §8.2.2 S10): the one binding that genuinely
 -- fits "Alt for applications" — cycling BETWEEN running applications is

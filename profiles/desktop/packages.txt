@@ -51,3 +51,10 @@ hypridle
 # razer only per master plan §9.1 ("non mini: headless, root non cifrata,
 # timeout 0") — both are in this `desktop` profile, `mini` is not.
 plymouth
+
+# S-54: cursor theme (architettura §8.2.3 "thin, black, white-outlined").
+# NOT in master plan §15 before now — approved by explicit user choice this
+# session, over producing a bespoke one, per this step's own AGENT card
+# ("either find a conforming one or produce it"). "whiteglass" is the
+# bundled theme this package provides that matches the description.
+xcursor-themes
