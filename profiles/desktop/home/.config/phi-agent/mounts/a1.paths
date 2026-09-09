@@ -1,0 +1,41 @@
+# phi-agent — A1 (assistant) perimeter (phios-agente.md §4.3).
+#
+# Recomputed per active project: no other project is visible (§4.3). The
+# active project name comes from PHI_AGENT_PROJECT; when it is unset the
+# @PROJECT@ lines below expand to an empty path and are skipped by the "?"
+# suffix, so the container still starts for the V-01..V-04 proof without a
+# project selected. S-73 populates the real §8.2 tree and `phi agent
+# project` writes PHI_AGENT_PROJECT.
+#
+# Ordering: the project is bound read-only first; proposte/ and output/ are
+# re-bound writable underneath it afterwards. memoria.md, materiali/ and
+# archivio/ therefore stay read-only with no explicit rule — S-73 adds an
+# explicit read-only memoria.md line so the guarantee is visible, not
+# derived (§8.4, ADR 094).
+
+# A1's own XDG trees — writable (§4.3 "albero XDG di A1: scrittura").
+# opencode keeps its sessions, auth and cache here.
+rw   @AGENT_DATA@                @CONTAINER_HOME@/.local/share
+rw   @AGENT_STATE@               @CONTAINER_HOME@/.local/state
+rw   @AGENT_CACHE@               @CONTAINER_HOME@/.cache
+
+# The engine config, read-only. A single file, not the whole .config dir:
+# the file is a dotfiles symlink and only its resolved target needs to be
+# reachable. agent/ (the personality prompt files) is added at S-73.
+ro   @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/opencode.json
+
+# Personalities — read-only (§4.3). "personalita/ scrive solo l'utente";
+# the agent never writes here. The writable @AGENT_DATA@ bind above already
+# exposes this dir at .local/share/personalita/ inside the container; this
+# line re-binds the SAME container path read-only. Created at S-73.
+ro?  @AGENT_DATA@/personalita    @CONTAINER_HOME@/.local/share/personalita
+
+# The active project. Everything read-only except the two write areas.
+ro?  @PROJECT@                   @CONTAINER_HOME@/project
+ro?  @PROJECT@/memoria.md        @CONTAINER_HOME@/project/memoria.md
+rw?  @PROJECT@/proposte          @CONTAINER_HOME@/project/proposte
+rw?  @PROJECT@/output            @CONTAINER_HOME@/project/output
+
+# The note archive — read-only (§4.3). J3: "consultazione di un archivio di
+# appunti personali, sola lettura". Path from PHI_AGENT_NOTES_DIR.
+ro?  @NOTES@                     @CONTAINER_HOME@/notes

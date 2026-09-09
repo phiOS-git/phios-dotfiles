@@ -1,0 +1,24 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
+  "share": "disabled",
+  "snapshot": false,
+  "instructions": [],
+  "permission": {
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "/home/agent/.config/opencode/**": "deny",
+      "/home/agent/.local/share/opencode/**": "deny",
+      "/home/agent/.local/state/**": "deny"
+    },
+    "edit": "ask",
+    "bash": "deny",
+    "task": "deny",
+    "webfetch": "ask",
+    "websearch": "allow",
+    "external_directory": "deny",
+    "doom_loop": "ask"
+  }
+}

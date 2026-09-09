@@ -1,0 +1,61 @@
+# phi-agent — paths that must NEVER be reachable from inside either
+# containment (phios-agente.md §4.5). This file is NOT read by
+# phi-agent-contain: it is the checklist for V-01 and V-02, and a
+# review aid. Every entry here should return "No such file or directory"
+# (or, for a socket, "Connection refused" / absent) when tested from
+# inside `phi-agent-contain a1 -- sh` or `... a2 -- sh`.
+#
+# Format: one path or glob per line. $HOME is the real user's home.
+
+# --- secrets on disk (V-01) ---
+$HOME/.ssh
+$HOME/.ssh/id_ed25519
+$HOME/.ssh/id_rsa
+$HOME/.gnupg
+$HOME/.password-store
+$HOME/.local/share/keyrings
+$HOME/.config/keepassxc
+$HOME/.local/share/mail
+$HOME/.thunderbird
+$HOME/.mozilla
+$HOME/.librewolf
+$HOME/.config/librewolf
+
+# --- the rest of the user's data ---
+$HOME/Documents
+$HOME/Downloads
+$HOME/.git-credentials
+$HOME/.netrc
+$HOME/.aws
+$HOME/.config/gh
+$HOME/.gitconfig
+
+# --- other homes and system state ---
+/home
+/root
+/var
+/srv
+/opt
+/mnt
+/boot
+/efi
+
+# --- /etc beyond the §4.2 whitelist ---
+/etc/shadow
+/etc/gshadow
+/etc/sudoers
+/etc/ssh
+
+# --- session sockets (V-02): present as a path OR reachable as a socket
+#     means the boundary leaks. The SSH-agent socket is the important one:
+#     it lets a key be USED without being READ (§4.5). ---
+$SSH_AUTH_SOCK
+$XDG_RUNTIME_DIR
+$XDG_RUNTIME_DIR/bus
+$XDG_RUNTIME_DIR/pipewire-0
+/run/user
+$WAYLAND_DISPLAY
+
+# --- environment (V-02): none of these names should be set inside ---
+#   SSH_AUTH_SOCK  DBUS_SESSION_BUS_ADDRESS  WAYLAND_DISPLAY  DISPLAY
+#   XAUTHORITY  *_API_KEY  ANTHROPIC_*  OPENAI_*  *_TOKEN  AWS_*

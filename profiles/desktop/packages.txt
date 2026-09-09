@@ -60,3 +60,12 @@ plymouth
 # found and corrected before handoff; the user chose to accept this
 # deviation anyway rather than have a bespoke theme produced.
 xcursor-themes
+
+# S-70: AI agent subsystem (docs/phios-agente.md, master plan §15.3, M7).
+# zotac and razer only — both carry this `desktop` profile, mini does not
+# (§1.2: "la configurazione di mini ... senza partecipare a questa
+# architettura"). opencode is the engine (ADR 117, closes Q-40/C-12);
+# bubblewrap is the containment mechanism (ADR 087). socat + tinyproxy for
+# A2's egress whitelist are added at S-72, where they are first configured.
+bubblewrap
+opencode

@@ -1,0 +1,32 @@
+# phi-agent — A2 (worker) perimeter (phios-agente.md §4.4).
+#
+# A2 has a shell, so the containment IS the boundary (§7.2): the code
+# projects root, its own XDG trees, and its own toolchain caches are
+# writable, and nothing else exists. Network is removed here
+# (--unshare-net, set by phi-agent-contain) and reintroduced as a
+# whitelist by S-72; there is no direct route out of this namespace.
+#
+# Git identity is passed as GIT_AUTHOR_* / GIT_COMMITTER_* environment
+# variables by phi-agent-contain, never by mounting ~/.gitconfig, which can
+# carry credential helpers and insteadOf URL rewrites (§4.4).
+#
+# A2 does NOT publish to or fetch from remotes (§4.4, ADR 089): it edits
+# and commits locally; publishing is the user's action. There is no SSH
+# key, no SSH-agent socket, and no network path to a forge from in here.
+
+# A2's own XDG trees — writable.
+rw   @AGENT_DATA@                @CONTAINER_HOME@/.local/share
+rw   @AGENT_STATE@               @CONTAINER_HOME@/.local/state
+rw   @AGENT_CACHE@               @CONTAINER_HOME@/.cache
+
+# The engine config, read-only.
+ro   @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/opencode.json
+
+# The code projects root — writable (§4.4 "radice dei progetti di codice in
+# scrittura"). Path from PHI_AGENT_CODE_ROOT.
+rw   @CODE_ROOT@                 @CONTAINER_HOME@/code
+
+# Toolchain caches dedicated to A2 — writable, and separate from the user's
+# own (§4.4). Path from PHI_AGENT_A2_TOOLCHAIN_CACHE, default under the A2
+# cache tree.
+rw?  @A2_TOOLCHAIN_CACHE@        @CONTAINER_HOME@/.cache/phi-agent-toolchains

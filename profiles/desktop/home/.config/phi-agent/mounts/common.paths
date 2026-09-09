@@ -1,0 +1,51 @@
+# phi-agent — common read-only base, both instances (phios-agente.md §4.2).
+#
+# Grammar: see the header of ~/.local/bin/phi-agent-contain.
+# Everything here is the minimum a modern userspace binary needs to run;
+# nothing here carries user data. A later bind in an instance file can
+# shadow a path listed here.
+
+# The system tree. /bin /sbin /lib /lib64 are symlinks into it on Arch.
+ro   /usr                       /usr
+sym  usr/bin                    /bin
+sym  usr/bin                    /sbin
+sym  usr/lib                    /lib
+sym  usr/lib                    /lib64
+
+# Name resolution and TLS trust. resolv.conf/hosts are needed by A1 (live
+# network) and harmless for A2 (which resolves through the proxy). The CA
+# bundle is needed by both: A1 for direct HTTPS, A2 for end-to-end TLS to
+# the provider tunnelled through the plaintext proxy CONNECT.
+#
+# resolv.conf is "?" because on a systemd-resolved host it is a symlink into
+# /run, which is a fresh tmpfs in the container — bwrap resolves the symlink
+# on the host side when it can, and a start with no DNS is still better than
+# a refusal to start (§4.7 is about the containment mechanism, not DNS).
+ro?  /etc/resolv.conf           /etc/resolv.conf
+ro   /etc/hosts                 /etc/hosts
+ro   /etc/nsswitch.conf         /etc/nsswitch.conf
+ro   /etc/ssl                   /etc/ssl
+ro?  /etc/ca-certificates       /etc/ca-certificates
+ro?  /etc/pki                   /etc/pki
+
+# Numeric-id resolution and the local timezone. passwd/group are the real
+# system files, read-only — the container has no shadow, no gshadow.
+ro   /etc/passwd                /etc/passwd
+ro   /etc/group                 /etc/group
+ro?  /etc/localtime             /etc/localtime
+
+# ca-certificates keeps its runtime bundle under /etc; some distros also
+# look in /usr/share which is already covered by the /usr bind above.
+
+# The container home is an empty directory; the instance file mounts the
+# agent's own XDG trees underneath it.
+dir  /home/agent
+
+# NOT here, ever (phios-agente.md §4.5), and there is no line you can add to
+# this file to bring them in without it being obvious in review:
+#   /home outside /home/agent, the rest of $HOME, ~/.ssh, ~/.gnupg,
+#   ~/.password-store, ~/.mozilla and other browser profiles, ~/.local/mail
+#   and other local mail, /var /srv /opt /mnt /boot /efi, /etc beyond the
+#   handful above, and every session socket ($XDG_RUNTIME_DIR, the Wayland
+#   socket, the D-Bus session bus, PipeWire, the SSH-agent socket).
+# See mounts/never.paths for the machine-readable version used by V-01.
