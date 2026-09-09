@@ -165,6 +165,13 @@ end
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")), { description = "Toggle the launcher" })    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
 hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("sidebar", "toggle")), { description = "Toggle the sidebar" })     -- N for the sidebar's own default tab, Notifications
 hl.bind(mainMod .. " + S",     hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })      -- S-40: no prior bind claimed S, obvious mnemonic
+-- Out-of-plan (2026-09-09): the phi agent panel (phios-agente.md §10.1,
+-- "evocazione da scorciatoia globale"). "P" for phi/panel, and it was
+-- free. On razer this is also what Fn+F4 synthesizes in firmware
+-- (KEY_RIGHTMETA + KEY_P, S-06) — so Fn+F4 likely toggles the panel too
+-- there, which is a reasonable answer to S-06's open "what should Super+P
+-- do on Linux" question; confirm at verification.
+hl.bind(mainMod .. " + P",     hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { description = "Toggle the phi agent panel" })
 -- S-43, revised after real-hardware feedback ("it shouldn't be a toggle,
 -- while pressed it shows, when released it fades out"): press/release
 -- pair, not a single toggle bind.
