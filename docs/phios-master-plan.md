@@ -723,7 +723,7 @@ Chiude `C-08`. Nove sezioni. Perimetro: **solo stato realmente runtime**; il res
 | **Keybindings** | Vista di reference da `hyprctl binds -j`. **Sola lettura e ricerca**: nessuna modifica da interfaccia (shell §14, decisione chiusa) |
 | **Notifications** | Modalità non disturbare (durata o a richiesta) · regole per applicazione · blink Chroma su notifica |
 | **Security** | ClamAV: stato del servizio, freschezza firme, **toggle della scansione on-access**, percorsi sorvegliati, ultimo esito, avvio scansione, quarantena · face unlock: enroll e gestione, **disabilitato** finché `Q-01` resta rimandata · gestione segreti (punto di ingresso al password manager scelto) |
-| **AI Agent** | Toggle di attivazione, stato connessione, progetto attivo, proposte di memoria in attesa. Contenuto dettagliato in `phios-agente.md` |
+| **AI Agent** | Toggle di attivazione, stato connessione, stato dei servizi, readout broker/motore, contatore proposte di memoria in attesa, editor della lista di blocco per la directory di lavoro di A2. La gestione di progetti e personalità è passata al pannello (`phios-agente-delta.md` D-06). Contenuto dettagliato in `phios-agente.md` + `phios-agente-delta.md` |
 | **Updates** | Vista a quattro categorie: T0 (`core`/`extra`), AUR (vuota finché `Q-01` è rimandata), T4 build manuale, **`phi-packages`**. Check aggiornamenti per categoria |
  
 ### 9.13 Altre feature confermate, senza modifiche rispetto ai documenti di origine
@@ -909,6 +909,7 @@ Quindi cloud, foto, pacchetti e musica si possono impostare subito e restano dov
 | Server MCP `phi` | 0, poi cresce | M7 |
 | Livello client verso il motore, riassunto e archiviazione, trasferimento proposte | 1 | M7 |
 | Pannello (appartiene alla shell) | — | M3 placeholder, M7 funzionale |
+| Rilavorazione pannello (4 sezioni), memoria a 3 livelli, cartelle di interesse, specchio conversazioni, superficie A2 (`phios-agente-delta.md`) | 1 | Out-of-plan `agent-panel-rework` |
  
 ### 11.4 Prove bloccanti
  
@@ -1041,7 +1042,7 @@ Elencati nei `packages.txt` attuali. Nessuna azione salvo le correzioni indicate
 |---|---|---|---|
 | `perl-image-exiftool` | extra | Lettura EXIF per la pipeline foto | M6 |
 | `ttf-nerd-fonts-symbols` | extra | Font di soli simboli (ADR 054) | M5 |
-| `ttf-iosevka` *(o `adobe-source-code-pro-fonts`)* | extra | `font-mono` non patchato — `Q-N01` | M5 |
+| `adobe-source-code-pro-fonts` | extra | `font-mono` non patchato — `Q-N01` chiusa (ADR 123) | M5 |
 | `adobe-source-serif-fonts` | extra | `font-reading` | M5 |
 | `adobe-source-sans-fonts` | extra | `font-ui` | M5 |
 | `noto-fonts` | extra | Fallback mirato (latino esteso, greco per Φ) | M5 |
@@ -1063,6 +1064,7 @@ Elencati nei `packages.txt` attuali. Nessuna azione salvo le correzioni indicate
 | `wf-recorder` | extra | Registrazione schermo | M3 |
 | `zbar` | extra | Lettura QR | M3 |
 | `grim` `slurp` | extra | Cattura (la UI è custom) | M3 |
+| `libnotify` | extra | `notify-send`, per testare il demone notifiche (S-30) senza `busctl` a mano; approvato dall'utente durante la verifica M3 | M3 |
 | `plymouth` | extra | Animazione di boot | M5 |
 | `clamav` | extra | Antivirus residente con scansione on-access. **Solo `zotac` e `razer`**, mai `mini` | M6 |
 | `languagetool` | extra | Correzione grammaticale locale | M6 |
@@ -1170,10 +1172,10 @@ Le verifiche `V-01`…`V-18` di `phios-agente.md` restano vincolanti e non si du
  
 | ID | Domanda | Impatta | Quando |
 |---|---|---|---|
-| `Q-N01` | `font-mono`: Iosevka o Source Code Pro? | §6.4, S-51 | M5 |
+| `Q-N01` | **Chiusa (ADR 123, S-50, 2026-09-09)**: ~~`font-mono`: Iosevka o Source Code Pro?~~ Source Code Pro, per scelta diretta dell'utente | §6.4, S-51 | M5 |
 | `Q-N02` | **Chiusa (ADR 121, S-22, 2026-09-08)**: ~~Elenco workspace in barra: per-monitor o condiviso?~~ Per-monitor, confermato dall'utente col compositore davanti | §8.4, S-22 | M2 |
 | `Q-N03` | **Chiusa (ADR 122, S-22, 2026-09-08)**: ~~btop: workspace normale a ID alto e persistente, o special workspace a comparsa?~~ Special workspace dedicato a btop, con un toggle visivo in barra trattato come i pulsanti workspace — non ancora costruito da nessuno step | shell §2 | M2 |
-| `Q-N04` | Tematizzare `systemd-boot`? | §6.7 classe 5 | M5 |
+| `Q-N04` | **Chiusa (ADR 124, S-53, 2026-09-09)**: ~~Tematizzare `systemd-boot`?~~ No, lasciato al default, per scelta diretta dell'utente | §6.7 classe 5 | M5 |
 | `Q-N05` | Decorazioni CSD: attivate o soppresse? | §6.7, S-41 | M4 |
 | `Q-N06` | Le foto restano sull'esterno da 1 TB (ADR 042) o passano sull'interno, data la classe irrecuperabile e il rischio noto dei dischi USB? | §10.3 | M6 |
 | `Q-N07` | Contenuto dello schema di keybinding: quale tasto fa cosa. È un lavoro a sé, non risolto da nessuna valutazione tecnica. **Nota da S-22 (2026-09-08):** a questa data nessuna keybinding Hyprland è ancora configurata sulle macchine reali — nessuna funzione della shell guidata da tastiera è verificabile prima che questo step la chiuda; ogni step precedente a `S-38` che vuole un test da tastiera deve prima chiedere se il bind esiste già | shell §14 | M3 |
@@ -1245,6 +1247,10 @@ Continuazione di `phios-architettura.md` §19 e `phios-agente.md` §16.
 | 120 | 2026-09-06 | §16 | Ciclo a uno step in volo, con `PROGRESS.md` come memoria durevole e un commit per step | Più step in parallelo; nessun tracciamento persistente | Sì |
 | 121 | 2026-09-08 | §8.4, `Q-N02` | Elenco workspace in barra: **per-monitor**, non condiviso — ogni barra mostra solo i workspace del proprio monitor (`Bar/modules/Workspaces.qml`, S-22). Confermato dall'utente col compositore davanti, come richiesto dal `DONE WHEN` di S-22 | Elenco condiviso su ogni monitor, con indicazione di quale monitor possiede ciascun workspace | Sì, un solo filtro da rimuovere |
 | 122 | 2026-09-08 | shell §2, `Q-N03` | btop vive su uno **special workspace dedicato**, con un **toggle visivo in barra** trattato come i pulsanti dei workspace — non un workspace normale a ID alto e persistente. Decisione presa, implementazione non ancora assegnata a nessuno step | Workspace normale a ID alto e persistente; toggle solo nelle impostazioni (il ripiego originale di `Q-N03`) | Sì |
+| 123 | 2026-09-09 | §6.4, `Q-N01` | `font-mono`: **Source Code Pro**, terzo membro della stessa superfamiglia Adobe di `font-reading`/`font-ui` — coerenza tipografica sulle tre superfici di testo, sulla proposta del piano (Iosevka, gabbia più stretta) | Iosevka | Sì, un token e un pacchetto |
+| 124 | 2026-09-09 | §6.7 classe 5, `Q-N04` | `systemd-boot` **non tematizzato**, lasciato al default: costo di lavoro non giustificato da uno schermo visibile solo se si interrompe il boot, con l'identità già portata dallo splash Plymouth (S-53) | Tematizzare la voce di menu `systemd-boot` | Sì |
+| 125 | 2026-09-09 | §8.2.3 architettura, S-54 | Tema cursore **`whiteglass`** (pacchetto `xcursor-themes`) accettato **pur non conformando** alla descrizione "sottile, nero bordato di bianco" — `whiteglass` è bianco, non nero. Errore trovato e corretto prima dell'handoff (l'agent aveva inizialmente affermato erroneamente che conformasse); l'utente ha scelto di accettare la deviazione invece di far produrre un tema su misura | Tema su misura nero/bordo bianco (l'alternativa che il card dello step ammette esplicitamente) | Sì, un token e un pacchetto |
+| 126–133 *(delta D-01…D-08)* | 2026-09-09 | `phios-agente-delta.md`, recepite in `phios-agente.md` §16 | Rilavorazione dell'agente e del pannello: memoria a 3 livelli (sistema/personalità/progetto), cartelle di interesse in sola lettura per progetto, niente cartelle note/codice di sistema, metadati di progetto strutturati, specchio delle conversazioni lato client, pannello a 4 sezioni, superficie A2 via metadati posseduti da `phi`, personalità modificabile dal pannello. Traccia `Out-of-plan: agent-panel-rework` (OOP-26/OOP-27), merge il 2026-09-09, `phi` a `v0.13.0` | vedi `phios-agente-delta.md` §2 e `phios-agente.md` §16 | in gran parte Sì; D-01 (ADR 126) tocca §8.2 come ADR 094 |
  
 ---
  
