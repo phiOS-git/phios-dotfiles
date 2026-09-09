@@ -16,9 +16,15 @@ phi-code() {
 	local dir=${1:-$PWD}
 	dir=${dir:A}
 
+	# Resolve both sides the same way (:A = absolute, symlinks and .. gone)
+	# so the prefix test and the rel computation below agree. A project whose
+	# real path escapes the code root — e.g. reached through a symlink that
+	# points outside it — is refused here, which is correct: that path is not
+	# under the bind phi-agent-contain mounts at /home/agent/code, so it
+	# would not exist inside the container anyway.
 	local code_root=${PHI_AGENT_CODE_ROOT:-$HOME/code}
 	code_root=${code_root:A}
-	if [[ $dir != $code_root && $dir != $code_root/* ]]; then
+	if [[ $dir != "$code_root" && $dir != "$code_root"/* ]]; then
 		print -u2 "phi-code: $dir is not inside PHI_AGENT_CODE_ROOT ($code_root)"
 		print -u2 "phi-code: A2 can only write there — move the project or adjust ~/.config/phi-agent/env"
 		return 1
@@ -29,10 +35,15 @@ phi-code() {
 	fi
 
 	# The container sees the code root at /home/agent/code; translate the
-	# host path so opencode opens the right directory inside.
-	local rel=${dir#$code_root}
+	# host path so opencode opens the right directory inside. The in-container
+	# cd is FATAL, never a fallback: silently opening /home/agent/code would
+	# expose every project at once, the opposite of the §4.3 perimeter.
+	local rel=${dir#"$code_root"}
 	rel=${rel#/}
-	( cd "$dir" && phi-agent-contain a2 -- sh -c 'cd "/home/agent/code/$1" 2>/dev/null || cd /home/agent/code; exec opencode' phi-code "$rel" )
+	( cd "$dir" && phi-agent-contain a2 -- sh -c '
+		cd "/home/agent/code/$1" || { echo "phi-code: cannot enter code/$1 inside the container" >&2; exit 1; }
+		exec opencode
+	' phi-code "$rel" )
 }
 
 # `phi-ask` is just a shorter alias for the inline A1 question (§10.2).
