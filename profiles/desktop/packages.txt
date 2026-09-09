@@ -46,3 +46,8 @@ hyprsunset
 # (hypridle)" behaviour is the first place this step's own backlog actually
 # calls for hypridle to run something; its config is deferred there.
 hypridle
+
+# S-53: boot animation, pre-approved master plan §15.3 for M5. zotac and
+# razer only per master plan §9.1 ("non mini: headless, root non cifrata,
+# timeout 0") — both are in this `desktop` profile, `mini` is not.
+plymouth

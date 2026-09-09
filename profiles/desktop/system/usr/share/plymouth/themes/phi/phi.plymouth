@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=phi
+Description=phiOS boot splash -- Role A (static mark), master plan Sec6.6/Sec9.1
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/phi
+ScriptFile=/usr/share/plymouth/themes/phi/phi.script

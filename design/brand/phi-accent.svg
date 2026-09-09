@@ -1,0 +1,10 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- phiOS -- Role B (agent presence), Tier 1. Colour is PHI_ACCENT, dark
+       variant (#d3a0ac) -- literal, not a token: see design/brand/README.md.
+       Static reference only: phi-shell's own Bar/modules/PhiAgent.qml
+       renders Role B live, in QML text coloured by Config.Appearance.accent,
+       not from this file -- Role B is only ever accent WHILE the agent is
+       processing (§6.6), which a static asset cannot express on its own. -->
+  <ellipse cx="128" cy="128" rx="74.24" ry="64" fill="none" stroke="#d3a0ac" stroke-width="25.6"/>
+  <rect x="108.8" y="10.24" width="38.4" height="235.52" fill="#d3a0ac"/>
+</svg>

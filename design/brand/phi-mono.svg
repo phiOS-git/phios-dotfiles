@@ -1,0 +1,8 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- phiOS -- Role A (static mark), Tier 0. Colour is PHI_FG_0, dark
+       variant (#d6d1c9) -- literal, not a token: see design/brand/README.md
+       for why an SVG here cannot substitute one. Transparent background on
+       purpose, so this composites onto whatever Tier-0 surface uses it. -->
+  <ellipse cx="128" cy="128" rx="74.24" ry="64" fill="none" stroke="#d6d1c9" stroke-width="25.6"/>
+  <rect x="108.8" y="10.24" width="38.4" height="235.52" fill="#d6d1c9"/>
+</svg>
