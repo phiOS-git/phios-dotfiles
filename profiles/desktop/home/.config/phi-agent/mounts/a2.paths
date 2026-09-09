@@ -1,8 +1,11 @@
-# phi-agent — A2 (worker) perimeter (phios-agente.md §4.4).
+# phi-agent — A2 (worker) perimeter (phios-agente.md §4.4, revised by
+# phios-agente-delta.md §3.3).
 #
-# A2 has a shell, so the containment IS the boundary (§7.2): the code
-# projects root, its own XDG trees, and its own toolchain caches are
-# writable, and nothing else exists. Network is removed here
+# A2 has a shell, so the containment IS the boundary (§7.2): the ONE working
+# directory chosen for the session (mounted by phi-agent-contain --workdir at
+# /home/agent/work — there is no fixed code root any more), its own XDG
+# trees, and its own toolchain caches are writable, and nothing else exists.
+# Network is removed here
 # (--unshare-net, set by phi-agent-contain) and reintroduced as a
 # whitelist by S-72; there is no direct route out of this namespace.
 #
@@ -24,9 +27,10 @@ rw   @AGENT_CACHE@               @CONTAINER_HOME@/.cache
 # start but a bare `sh` in the container still can.
 ro?  @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/opencode.json
 
-# The code projects root — writable (§4.4 "radice dei progetti di codice in
-# scrittura"). Path from PHI_AGENT_CODE_ROOT.
-rw   @CODE_ROOT@                 @CONTAINER_HOME@/code
+# The single working directory is bound by phi-agent-contain (--workdir DIR,
+# normally from `phi agent code`) at @CONTAINER_HOME@/work — read-write, and
+# the only thing under $HOME the session can see. Not listed here because it
+# is chosen per session, not a fixed perimeter path.
 
 # Toolchain caches dedicated to A2 — writable, and separate from the user's
 # own (§4.4). Path from PHI_AGENT_A2_TOOLCHAIN_CACHE, default under the A2

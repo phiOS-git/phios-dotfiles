@@ -1555,6 +1555,15 @@ DONE WHEN
 The full specification is `phios-agente.md`. It is not restated here and is not
 negotiable. What follows is only the sequencing.
 
+**Out-of-plan `agent-panel-rework` (2026-09-09).** After M7 landed on `razer`, the
+user asked for a four-section panel, three-level memory, per-project read-only
+folder-of-interest, structured project metadata, a client-side transcript mirror, an
+A2 management surface, and a panel personality editor. These are decided in
+`docs/phios-agente-delta.md` (provisional ADRs D-01…D-08). Tracked as `OOP-NN` rows in
+`PROGRESS.md`, on a per-repo `agent-panel-rework` branch, merged only on the user's
+confirmation. The cards below (S-73, S-75, S-80) are **superseded in part** by that
+delta; the M7 step rows and verification ledger are not touched by the rework.
+
 ```
 S-70  [BLOCKING] Containment and its proof
 Depends on: G1, G4

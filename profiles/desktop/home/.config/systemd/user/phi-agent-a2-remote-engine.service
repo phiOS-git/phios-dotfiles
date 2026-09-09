@@ -11,6 +11,11 @@
 # remote session:  systemctl --user start phi-agent-a2-remote.service
 # (which pulls this in via Requires=), and stop it after.
 #
+# The remote session's working directory comes from PHI_AGENT_REMOTE_WORKDIR
+# (~/.config/phi-agent/env). Since phios-agente-delta.md D-03 there is no
+# fixed code root: a remote session, like a local one, opens exactly one
+# directory. The unit refuses to start while it is unset.
+#
 # UNVERIFIED: written from systemd.exec(5); not run.
 
 [Unit]
@@ -24,13 +29,15 @@ StartLimitBurst=4
 
 [Service]
 Type=simple
+EnvironmentFile=-%h/.config/phi-agent/env
 # The password: a systemd credential from a user-owned mode-600 file
 # OUTSIDE the repository. phi-agent-contain bind-mounts it into the
 # container and the wrapper reads it into the environment there — it is
 # never a --setenv value (that would put it in bwrap's argv). Never in
 # cleartext in the dotfiles (§10.3).
 LoadCredential=remote-password:%h/.config/phi-agent/a2/remote-password
-ExecStart=%h/.local/bin/phi-agent-contain a2 --remote -- opencode serve --hostname 127.0.0.1 --port 4299
+ExecStartPre=/usr/bin/sh -c 'test -n "${PHI_AGENT_REMOTE_WORKDIR}" || { echo "PHI_AGENT_REMOTE_WORKDIR is unset — set it in ~/.config/phi-agent/env to the directory the remote session should open"; exit 1; }'
+ExecStart=/usr/bin/sh -c 'exec "%h/.local/bin/phi-agent-contain" a2 --remote --workdir "$PHI_AGENT_REMOTE_WORKDIR" -- opencode serve --hostname 127.0.0.1 --port 4299'
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true

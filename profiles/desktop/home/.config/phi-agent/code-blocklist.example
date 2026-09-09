@@ -1,0 +1,31 @@
+# phi-agent — directories the coding agent (A2) and the A1 folder-of-interest
+# picker must refuse (phios-agente-delta.md §3.4).
+#
+# Copy to ~/.config/phi-agent/code-blocklist and edit. One glob per line;
+# '#' starts a comment; '~' expands to $HOME. A path that equals or is inside
+# a listed pattern is refused, with `phi agent code` (or the folder picker)
+# printing one line and starting nothing.
+#
+# This is a GUARD-RAIL on the picker, never the security boundary. The
+# boundary is phi-agent-contain's from-empty mount namespace: even a path
+# that slips past this list is still the ONLY directory the session sees.
+#
+# The always-denied set (never listed here, cannot be removed): ~/.ssh,
+# ~/.gnupg, the password store, ~/.config/phi-agent, keyrings, /etc, and —
+# for the A2 read-write mount — /usr /var /opt /srv /nix, $HOME itself, /.
+#
+# Also editable from Settings › AI Agent.
+
+# Your dotfiles and phiOS repositories — let A2 work on a checkout you made,
+# not on the live tree the installer applies.
+~/phios-dotfiles
+~/phi
+~/phi-shell
+~/phi-packages
+
+# The synced cloud root (ADR 045) — notes and documents, not code.
+~/cloud
+
+# System configuration you keep under version control elsewhere.
+~/.config/nvim
+~/.local/share/phi

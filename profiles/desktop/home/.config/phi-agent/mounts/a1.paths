@@ -1,19 +1,22 @@
-# phi-agent — A1 (assistant) perimeter (phios-agente.md §4.3).
+# phi-agent — A1 (assistant) perimeter (phios-agente.md §4.3, revised by
+# phios-agente-delta.md §3.1).
 #
 # Recomputed per active project: no other project is visible (§4.3). The
 # active project name comes from PHI_AGENT_PROJECT; when it is unset the
-# @PROJECT@ lines below expand to an empty path and are skipped by the "?"
-# suffix, so the container still starts for the V-01..V-04 proof without a
-# project selected. S-73 populates the real §8.2 tree and `phi agent
-# project` writes PHI_AGENT_PROJECT.
+# @PROJECT@ lines below expand to an empty path and are skipped, so the
+# container still starts for the V-01..V-04 proof without a project selected.
 #
-# Ordering: the project is bound read-only first; proposte/ and output/ are
-# re-bound writable underneath it afterwards. memoria.md, materiali/ and
-# archivio/ therefore stay read-only. The explicit memoria.md line below is
-# the visible form of the §8.4 / ADR 094 guarantee: the agent CANNOT write
-# its own memory, and that is enforced by this mount, not by the interface.
-# Only `phi agent memory accept` (the client, outside the containment)
-# promotes a proposte/ file into memoria.md.
+# Ordering: the writable XDG bind comes first; every memoria.md is then
+# re-bound read-only over it. memoria.md at ALL THREE levels (system,
+# personality, project — delta D-01) stays read-only: the agent CANNOT write
+# its own memory, and that is enforced by these mounts, not by the interface
+# (§8.4, ADR 094). Only `phi agent memory accept` (the client, outside the
+# containment) promotes a proposte/ file into a memoria.md.
+#
+# Two things are done in phi-agent-contain, not here, because the .paths
+# grammar has no globs or lists: (a) re-binding each personalita/<name>/
+# proposte/ writable, (b) the read-only folders of interest from
+# <project>/folders.list (delta D-02).
 
 # A1's own XDG trees — writable (§4.3 "albero XDG di A1: scrittura").
 # opencode keeps its sessions, auth and cache here.
@@ -21,16 +24,19 @@ rw   @AGENT_DATA@                @CONTAINER_HOME@/.local/share
 rw   @AGENT_STATE@               @CONTAINER_HOME@/.local/state
 rw   @AGENT_CACHE@               @CONTAINER_HOME@/.cache
 
+# System memory — read-only (delta D-01). Written only by
+# `phi agent memory accept --level system`. "?" so a machine that has never
+# run `phi agent init` still starts for the V-01..V-04 proof.
+ro?  @AGENT_DATA@/memoria.md     @CONTAINER_HOME@/.local/share/memoria.md
+
 # The engine config, read-only. A single file, not the whole .config dir.
-# "?" — you create it from opencode.example.json (it carries the model id,
-# §6). Absent, opencode cannot start, but a bare `sh` in the container
-# still can, so the V-01..V-04 proof runs before any provider setup.
+# "?" — you create it from opencode.example.json (it carries the model id).
 ro?  @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/opencode.json
 
-# Personalities — read-only (§4.3). "personalita/ scrive solo l'utente";
-# the agent never writes here. The writable @AGENT_DATA@ bind above already
-# exposes this dir at .local/share/personalita/ inside the container; this
-# line re-binds the SAME container path read-only. Created at S-73.
+# Personalities — read-only (§4.3). "personalita/ scrive solo l'utente"; the
+# agent never writes here. This re-binds the SAME container path (already
+# exposed writable via @AGENT_DATA@ above) read-only. phi-agent-contain then
+# re-binds each <name>/proposte/ writable underneath.
 ro?  @AGENT_DATA@/personalita    @CONTAINER_HOME@/.local/share/personalita
 
 # The active project. Everything read-only except the two write areas.
@@ -38,7 +44,3 @@ ro?  @PROJECT@                   @CONTAINER_HOME@/project
 ro?  @PROJECT@/memoria.md        @CONTAINER_HOME@/project/memoria.md
 rw?  @PROJECT@/proposte          @CONTAINER_HOME@/project/proposte
 rw?  @PROJECT@/output            @CONTAINER_HOME@/project/output
-
-# The note archive — read-only (§4.3). J3: "consultazione di un archivio di
-# appunti personali, sola lettura". Path from PHI_AGENT_NOTES_DIR.
-ro?  @NOTES@                     @CONTAINER_HOME@/notes

@@ -1,24 +1,26 @@
 # ~/.config/phi-agent/
 
-Configuration for the phiOS AI agent subsystem (`docs/phios-agente.md`,
-milestone 0). `zotac` and `razer` only — `mini` does not carry the `desktop`
-profile.
+Configuration for the phiOS AI agent subsystem (`docs/phios-agente.md` +
+`docs/phios-agente-delta.md`). `zotac` and `razer` only — `mini` does not
+carry the `desktop` profile.
 
 Two opencode instances, separated by capability and by containment:
 
 | | A1 — assistant | A2 — worker |
 |---|---|---|
 | shell | no | yes |
-| writes | `output/` and `proposte/` of the active project | the code projects root |
+| writes | `output/` + `proposte/` of the active project, and `proposte/` of every memory level | the one directory you open it in |
 | network | host namespace, fetch approved interactively | removed, then a whitelist (S-72) |
-| memory | proposes, never writes | none |
+| memory | proposes at three levels, never writes | none |
 
 ## Files
 
 | Path | What | Who edits |
 |---|---|---|
 | `env.example` | template for the local config | — |
-| `~/.config/phi-agent/env` | **you create this** from the example: notes path, code root, git identity | you |
+| `~/.config/phi-agent/env` | **you create this** from the example: git identity, optional A2 toolchain cache and remote address | you |
+| `code-blocklist.example` | template for the A2 / folder-of-interest blocklist | — |
+| `~/.config/phi-agent/code-blocklist` | **you create this** from the example: directories `phi agent code` and the folder picker refuse (a guard-rail, not the boundary) | you (also Settings › AI Agent) |
 | `mounts/common.paths` | read-only base for both instances (§4.2) | repo |
 | `mounts/a1.paths` | A1 perimeter (§4.3) | repo |
 | `mounts/a2.paths` | A2 perimeter (§4.4) | repo |
@@ -112,26 +114,34 @@ outside the containment (§4.7).
   outside the repository (S-74).
 - Personalities and projects: the §8.2 data model under
   `~/.local/share/phi-agent/a1/`. Bootstrapped by `phi agent init` (two
-  seed personalities, no projects). Managed with `phi agent project`.
+  seed personalities, no projects). Managed with `phi agent project` and
+  `phi agent personality`, or from the shell's agent panel.
 
-## The data model and the engine (S-73)
-
-```
-phi agent init                       # seed personalita/general.md + technical.md
-phi agent project new study          # create a project (materiali/ archivio/ proposte/ output/ + progetto.md + memoria.md)
-phi agent project use study          # set active + restart phi-agent-a1 so the containment is rebuilt for it
-phi agent project list               # projects, active one marked, personalities
-```
-
-`memoria.md` is mounted **read-only** into the containment (the agent
-cannot write its own memory — §8.4). The agent leaves durable-fact
-proposals in `proposte/` (mounted writable); you promote them:
+## The data model and the engine (S-73, revised by phios-agente-delta.md)
 
 ```
-phi agent memory list                # pending proposals for the active project
-phi agent memory show FILE           # the LITERAL text it would append, as a diff — never a summary (§8.6)
-phi agent memory accept FILE         # append it to memoria.md and remove the proposal
-phi agent memory reject FILE         # discard
+phi agent init                       # seed personalita/general/ + technical/ (migrates the old flat *.md)
+phi agent project new notes --folder ~/Notes --personality notes   # a project = a folder + metadata
+phi agent project use notes          # set active + restart phi-agent-a1 so the containment is rebuilt for it
+phi agent project folder add notes ~/Reference   # a read-only folder of interest (not copied)
+phi agent personality new notes --from-file ./notes-personality.md
+```
+
+A project owns `project.json` (title, description, instructions, default
+personality, folders of interest, pins); `progetto.md` and `folders.list`
+are regenerated from it. Materials are static copies; folders of interest
+are the real directory, mounted **read-only** (delta D-02).
+
+Memory has three levels — **system**, **personality**, **project** — each a
+`memoria.md` mounted **read-only** into the containment (the agent cannot
+write its own memory at any level — §8.4 / delta D-01) with its own writable
+`proposte/`. You promote a proposal:
+
+```
+phi agent memory list  --level system                         # or personality/project
+phi agent memory show FILE --level personality --personality notes
+phi agent memory accept FILE --level project                  # append to that level's memoria.md
+phi agent memory reject FILE --level system
 ```
 
 The `phi` MCP server (`phi agent mcp`, one read-only tool `phi_context`) is
@@ -193,14 +203,20 @@ locally, you publish.
    id, and uncomment the registries your projects need in
    `tinyproxy/whitelist`.
 
-2. Use `phi-code` for coding sessions instead of bare `opencode`:
+2. Use `phi-code` (or `phi agent code DIR`) for coding sessions instead of
+   bare `opencode`. It opens in **any** directory — that directory is the
+   only thing under `$HOME` the session sees, mounted read-write at
+   `/home/agent/work`; `~/.config/phi-agent/code-blocklist` guards the
+   picker.
    ```
-   cd ~/code/some-project
-   phi-code
+   cd ~/dev/some-project
+   phi-code                       # == phi agent code "$PWD"
    ```
    Run a **real** task and let it finish. Confirm from inside:
    `cat ~/.ssh/id_*` fails, `git push` fails (no route to a forge), and
    `git commit` works. Publish afterward from your normal shell.
+   The session is recorded under `~/.local/state/phi-agent/a2/sessions/`
+   for the shell panel's Coding-sessions view (delta D-07).
 
 3. Once a real session completes cleanly, retire the old config:
    ```

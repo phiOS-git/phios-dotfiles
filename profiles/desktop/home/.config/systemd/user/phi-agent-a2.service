@@ -12,6 +12,11 @@
 # is a SEPARATE pair of units (phi-agent-a2-remote*.service), started only
 # for a declared-remote session (§10.3).
 #
+# Since phios-agente-delta.md D-03 there is no code root: this server has NO
+# working directory mounted (only A2's own XDG trees are writable). To serve
+# a real project, set PHI_AGENT_A2_WORKDIR in ~/.config/phi-agent/env — the
+# ExecStart passes it through as --workdir when set.
+#
 # No fallback ExecStart — stays `failed` if bubblewrap is gone (V-04).
 # UNVERIFIED: written from systemd.exec(5); not run.
 
@@ -25,8 +30,11 @@ StartLimitBurst=4
 
 [Service]
 Type=simple
+EnvironmentFile=-%h/.config/phi-agent/env
 Environment=PHI_AGENT_A2_PORT=4299
-ExecStart=%h/.local/bin/phi-agent-contain a2 -- opencode serve --hostname 127.0.0.1 --port ${PHI_AGENT_A2_PORT}
+# ${PHI_AGENT_A2_WORKDIR:+...} adds --workdir only when the var is non-empty,
+# so an unset var yields a server with no project directory (delta D-03).
+ExecStart=/usr/bin/sh -c 'exec "%h/.local/bin/phi-agent-contain" a2 ${PHI_AGENT_A2_WORKDIR:+--workdir "$PHI_AGENT_A2_WORKDIR"} -- opencode serve --hostname 127.0.0.1 --port "$PHI_AGENT_A2_PORT"'
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
