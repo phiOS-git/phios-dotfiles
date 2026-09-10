@@ -1132,8 +1132,8 @@ for the next. **Nothing here has run on real hardware.**
   alphas, the rail thickness — and that `kind: "title"` reads as intended
   on the small mono `%` labels.
 
-**Round 2 (on branch, NOT yet merged).** Three requests, phi-shell +
-`hyprland.lua.tmpl` (no new tokens, no `phi`).
+**Round 2 (merged 2026-09-10; FC-7 later reverted — see below).** Three
+requests, phi-shell + `hyprland.lua.tmpl` (no new tokens, no `phi`).
 
 | # | Item | Files |
 |---|---|---|
@@ -1171,7 +1171,8 @@ for the next. **Nothing here has run on real hardware.**
   touch config exists to set. The stale comment claiming "Super+arrows"
   switched workspaces (it switches window focus) and that the built-in
   swipe "already owns left/right" (nothing enabled it) is corrected.
-- **FC-7.** `Background/Background.qml` — the texture `Image` was layer 2
+- **FC-7 (reverted — see the REVERTED note below).**
+  `Background/Background.qml` — the texture `Image` was layer 2
   (under the wallpaper image) and its `visible` gate required
   `textureApplies` (false whenever a cover/stretch image was set). It is a
   grain OVERLAY: moved to the top layer, gate is now just
@@ -1184,6 +1185,13 @@ for the next. **Nothing here has run on real hardware.**
   **Prerequisite:** the machine's `phi` must have `phi wallpaper texture`
   (shipped with the settings overhaul, OOP-40) — if the texture still does
   nothing after this, the error line says so.
+- **FC-7 REVERTED (2026-09-10, phi-shell `598c769`).** On the machine the
+  reworked overlay regressed the texture effect — it composited correctly
+  before round 2. `Background/Background.qml`, `Services/Background.qml`
+  and the `Theme.qml` texture row are restored to their pre-round-2 state
+  (`26c2a39`): texture back on layer 2 (under the image), gated on
+  `textureApplies`, and `_generateTexture` / `textureError` reverted with
+  it. FC-5 and FC-6 stay. The behaviour to keep is the pre-round-2 one.
 - Reaches machines: `phi-shell` `git pull` + `qs` restart; `phios-dotfiles`
   `git pull` + `hyprctl reload` (FC-6 changes `hyprland.lua`). No `phi
   theme set` needed this round.
