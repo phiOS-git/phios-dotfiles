@@ -28,3 +28,14 @@ resvg
 btop
 tesseract
 tesseract-data-eng
+
+# Out-of-plan: bugfixing. openresolv provides /usr/bin/resolvconf, which
+# wg-quick calls to install a tunnel's `DNS =` servers on `up` and remove
+# them on `down`. Without a resolvconf that actually manages
+# /etc/resolv.conf, `phi vpn up` needs a manual `sudo resolvconf -u` and
+# `phi vpn down` leaves /etc/resolv.conf pointing at the dead tunnel
+# resolver (looks like "no internet"). extra/T0. NOT in master plan §15
+# (only wireguard-tools is) — added on the user's explicit instruction;
+# §15.2 needs a matching line. Conflicts with systemd-resolvconf over
+# /usr/bin/resolvconf — pacman resolves it at install time.
+openresolv

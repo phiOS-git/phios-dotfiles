@@ -867,3 +867,83 @@ phi-shell.
   component loaded via a `Loader`. Caught on review.)
 - Reaches machines: phi-shell `git pull` + `qs` restart. `hyprland.lua`
   unchanged.
+
+### `bugfixing` — out of plan (2026-09-10)
+
+Four bugs the user hit on real hardware. Built on a local `bugfixing`
+branch per repo, then rebased onto and merged into `main` / `master`
+(`--no-ff`). Trailer `Out-of-plan: bugfixing`. **Nothing here has run on
+real hardware.** `phi` / `phi-packages` deliberately not touched (see
+BF-3).
+
+| # | Bug | Repos | Status |
+|---|---|---|---|
+| BF-1 | Notification ✕ / clear buttons have no hover state | phi-shell (`Panels/tabs/Notifications.qml`) | awaiting-verification |
+| BF-2 | Clearing notifications (one / group / all) doesn't refresh the panel until a Hyprland reload | phi-shell (`Panels/tabs/Notifications.qml`) | awaiting-verification |
+| BF-3 | `wg-quick up/down` needs a manual `resolvconf -u`; disabling the VPN kills DNS | phios-dotfiles (`profiles/base/packages.txt`) | awaiting-verification |
+| BF-4 | Lock screen stops accepting the password after the first unlock | phi-shell (`Lock/Lock.qml`) | awaiting-verification |
+
+**BF-1.** The active-notification "✕", the per-group "clear" and the
+per-row "✕" were bare `StyledText` + `TapHandler` — none of the seven
+transverse states, no pointer cursor. Swapped to `Widgets/SmallButton`
+(OOP-55, built for exactly this: a minor action inside a popout — muted at
+rest, full-contrast + wash on hover, inversion on press). Row
+`implicitHeight`s changed to `Math.max(text, button)` so the taller
+control can't clip; the history-row delegate gained `id: histRow` and its
+`modelData` reads are now explicit (the `SmallButton.onClicked` crosses a
+component boundary). "Clear all" was already a `StyledButton`, untouched.
+
+**BF-2.** Root cause found via the diagnostic (user, 2026-09-10): a
+`notify-send` entry appears in the panel live, so the data path
+(`groups` binding on `Services.Notifications.history`) is reactive — but
+**no** click in the tab works, "Clear all" (a plain `StyledButton`)
+included. `Panels/tabs/Notifications.qml` was rooted at a `Flickable`, and
+`Panels/Sidebar.qml` loads every tab through a single `Loader`: a
+`Flickable` that is a `Loader`'s root item does not deliver pointer events
+to its content. It is the only sidebar tab rooted at a `Flickable` —
+`Calendar` and `Clipboard` root at `Item`, and `Clipboard` (the other
+scrolling tab) nests its `Flickable` inside an `Item`. This tab's
+clickability had never been verified (OOP-06 and SF-4 both
+`awaiting-verification`). Fix: wrap the content in `Item { Flickable {
+… } }`, matching `Clipboard`. `clearAll`/`clearApp`/`clearEntry` were
+correct all along — the clicks just never reached them.
+
+**BF-3.** `wg-quick` hands the tunnel's `DNS =` line to `resolvconf` on
+`up` and removes it on `down`. Without an `openresolv` that actually
+manages `/etc/resolv.conf`, the file is not regenerated on `up` (hence the
+manual `sudo resolvconf -u`) and on `down` it is left pointing at the
+tunnel's now-unreachable resolver — the "no internet until I re-enable the
+VPN" symptom (DNS, not routing). Fix: `openresolv` added to
+`profiles/base/packages.txt`. Placed in `base` (not `desktop` beside
+`wireguard-tools`) on the user's explicit instruction — reaches `mini`
+too, harmless (pure-sh, no daemon). **Flags:**
+- Not in master plan §15 (only `wireguard-tools` is). Added on the user's
+  instruction; §15.2 needs a matching line — `docs/` not editable here,
+  same handling as OOP-40's wallpaper flag.
+- `openresolv` and `systemd-resolvconf` both own `/usr/bin/resolvconf`;
+  pacman resolves the conflict at install time. VERIFY asks which is
+  currently on `razer` before `pacman -S openresolv`.
+- **Not** done: no `sudo -n resolvconf -u` in `phi vpn`, no `resolvconf`
+  line in `sudoers.d/49-phi-vpn`. If `openresolv` set up properly,
+  `wg-quick`'s own `resolvconf -a`/`-d` handle both directions and that
+  code would be dead weight (plus a `phi` release). If the package alone
+  is not enough, that is the next step.
+
+**BF-4.** `Lock/Lock.qml` set `root.authenticated = true` on
+`PamResult.Success` and never reset it. The unlock is the *rising edge* of
+`authenticated` (`Connections.onAuthenticatedChanged` → `concealFade` →
+`onFinished: locked = false`). On the second lock of a session
+`authenticated` is still `true`, so `= true` fires no change signal, the
+conceal fade never runs, `locked` is never cleared — correct password,
+screen stays locked. (Same root cause froze the ambient lock effect from
+the 2nd lock on.) Fix: `root.authenticated = false` in `lockIpc.lock()`,
+next to the existing `attempts` / `errorText` resets. Fail-closed: writing
+`false` can only keep a screen locked, never open one; the single `= true`
+writer gated on Success is untouched.
+
+**Apply** (after `bugfixing` is merged to `main` / `master` and pushed)
+- `phios-dotfiles`: `git pull github master`; then, after the
+  `resolvconf`-ownership check, `pacman -S openresolv`.
+- `phi-shell`: `git pull github main`; `pkill -x qs && qs -p
+  ~/.config/quickshell/phi` (capture the log); no `hyprctl reload` needed
+  (`hyprland.lua` unchanged).
