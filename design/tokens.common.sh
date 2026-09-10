@@ -219,3 +219,14 @@ PHI_MOTION_C_EASING='linear'
 # D — ambient indicators. Animation is forbidden by default; an exception has
 # to be justified where it is taken.
 PHI_MOTION_D_DURATION='0ms'
+
+# --- Wallpaper texture catalogue (Out-of-plan: settings-overhaul) -----------
+# The procedural textures the shell's background layer can composite over the
+# solid wallpaper colour. The list is a design decision (I-05) — which
+# textures the system offers — so it lives here; `phi wallpaper texture`
+# (phi/internal/wallpaper) is the generator and also validates the mode, and
+# its own Modes slice MUST stay a superset of this list. Space-separated,
+# menu order. Not a colour/font/size, so no [PLACEHOLDER] provenance applies
+# beyond "this set was chosen, not measured".
+PHI_TEXTURE_MODES='grain noise paper leather rock fabric'
+PHI_TEXTURE_INTENSITY_DEFAULT='40'
