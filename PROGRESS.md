@@ -868,12 +868,15 @@ phi-shell.
 - Reaches machines: phi-shell `git pull` + `qs` restart. `hyprland.lua`
   unchanged.
 
-### `features-change` — out of plan (2026-09-10, on branch, NOT yet merged)
+### `features-change` — out of plan (2026-09-10, branch reused across rounds)
 
-Four shell-appearance requests, out of plan. Branch `features-change` in
-`phi-shell` and `phios-dotfiles` (dotfiles = two new design tokens; `phi`
-untouched). **Nothing here has run on real hardware.** Awaiting the user's
-verification, then a merge to `main`/`master` and a `phi theme set`.
+Rolling batch of shell UI/UX requests, out of plan, on the `features-change`
+branch in `phi-shell` and `phios-dotfiles` (`phi` untouched). Each round is
+verified by the user, merged to `main`/`master`, then the branch is reused
+for the next. **Nothing here has run on real hardware.**
+
+**Round 1 (merged 2026-09-10, phi-shell `b907ee4` · phios-dotfiles
+`15d880e`).** Four appearance requests: FC-1..FC-4 below.
 
 | # | Item | Files |
 |---|---|---|
@@ -913,3 +916,62 @@ verification, then a merge to `main`/`master` and a `phi theme set`.
   token defaults, the OSD pill proportions, the bar-button fill/border
   alphas, the rail thickness — and that `kind: "title"` reads as intended
   on the small mono `%` labels.
+
+**Round 2 (on branch, NOT yet merged).** Three requests, phi-shell +
+`hyprland.lua.tmpl` (no new tokens, no `phi`).
+
+| # | Item | Files |
+|---|---|---|
+| FC-5 | Settings: per-row "reset" moved from top-right to under the label (it displaced the control on first edit); + a scan for similar layout jumps | phi-shell `Settings/sections/SettingsRow.qml`, `Settings/Settings.qml`, `Settings/sections/{Devices,Security,AiAgent,Theme}.qml` |
+| FC-6 | Keyboard + 3-finger-swipe (touchpad & touchscreen) to change workspace left/right | `profiles/desktop/templates/.config/hypr/hyprland.lua.tmpl` |
+| FC-7 | Wallpaper texture fixed — it composited BEHIND the image and was gated off under any cover wallpaper, so it never showed | phi-shell `Background/Background.qml`, `Services/Background.qml`, `Settings/sections/Theme.qml` |
+
+- **FC-5.** `SettingsRow` — "reset" is now a `SmallButton` under the label
+  (left), the control slot no longer reserves room for it, so a control
+  never jumps sideways when a row first becomes resettable (the row grows
+  one line instead). Similar jumps fixed: `Devices` audio Volume/Input —
+  the `%` readout gets a fixed width and Mute keeps a constant label with
+  an `active` state (was "Mute"↔"Unmute", a width change on every toggle);
+  `Settings.qml` — a section keeps no scroll offset from the previous one,
+  and a thin non-interactive `ScrollHint` marks position on the two
+  Flickables; `AiAgent` blocklist `TextEdit` seeds once and only re-seeds
+  while unfocused (a plain `text:` binding discarded in-progress edits on
+  any refresh); `Security` rebuilt onto `SettingsGroup` — it was the last
+  section still using bare `sizeStep-3` headers and a different outer
+  spacing. No feature removed.
+  - Widget sizing (user follow-up): `Widgets/StyledButton` was a ~48px
+    slab — now `space3` side padding and a shared `WidgetStates.controlHeight`
+    (~30px, body font + one rhythm unit). `TextField` and `SmallButton`
+    floor at the same height, so a text field / `NumberField` / `ColorField`
+    and a button on one row line up instead of the button towering. The
+    VPN-tunnel row's Import/Forget/toggle get `verticalCenter` so the thin
+    switch aligns with the buttons.
+- **FC-6.** `hyprland.lua.tmpl` — `Super+Ctrl+left/right` → `hyprctl
+  dispatch workspace m-1/m+1` (monitor-relative, wraps, never spawns an
+  empty workspace). New `hl.gesture` left/right (3 fingers) → the same
+  dispatch, `pcall`-wrapped like the Super+wheel block so a rejected
+  horizontal direction token can't abort the reload. Hyprland 0.51+'s
+  unified gesture engine fires `hl.gesture` from the touchpad AND the
+  touchscreen (razer has both) — flagged for verification, no separate
+  touch config exists to set. The stale comment claiming "Super+arrows"
+  switched workspaces (it switches window focus) and that the built-in
+  swipe "already owns left/right" (nothing enabled it) is corrected.
+- **FC-7.** `Background/Background.qml` — the texture `Image` was layer 2
+  (under the wallpaper image) and its `visible` gate required
+  `textureApplies` (false whenever a cover/stretch image was set). It is a
+  grain OVERLAY: moved to the top layer, gate is now just
+  `texture && texturePath`. `Services/Background.qml` — `textureApplies`
+  removed; `_generateTexture()` writes atomically (temp file + rename),
+  treats a zero-byte file as absent, coalesces a mid-run change, and sets
+  a new `textureError` from stderr — a stale `phi` with no `wallpaper`
+  verb failed silently before. `Settings/sections/Theme.qml` — the row is
+  always enabled now, description updated, and `textureError` shown inline.
+  **Prerequisite:** the machine's `phi` must have `phi wallpaper texture`
+  (shipped with the settings overhaul, OOP-40) — if the texture still does
+  nothing after this, the error line says so.
+- Reaches machines: `phi-shell` `git pull` + `qs` restart; `phios-dotfiles`
+  `git pull` + `hyprctl reload` (FC-6 changes `hyprland.lua`). No `phi
+  theme set` needed this round.
+- Unverified (no compositor here): the `hl.gesture` horizontal direction
+  tokens and touchscreen coverage, `workspace m±1` wrap behaviour, the
+  `ScrollHint` geometry, and every settings-panel layout change.
