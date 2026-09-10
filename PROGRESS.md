@@ -699,7 +699,7 @@ clean; one semantic collision resolved:
 |---|---|---|---|
 | SF-1 | Keybindings + click-to-focus | dotfiles (`hyprland.lua.tmpl`), phi-shell (`Services/Keybinds.qml`) | awaiting-verification (Super+wheel workspace-scroll dropped at merge — magnifier owns it) |
 | SF-2 | WireGuard: custom-conf detection + import/manage | phi (`internal/vpn`, `internal/cli`), phi-shell (`Services/Vpn`, `Settings/sections/Connectivity`, `Panels/BarPopout`, `Config/Paths`), dotfiles (`profiles/desktop/manual.txt`) | awaiting-verification |
-| SF-3 | btop / Steam special-workspace rebuild | phi-shell (bar), dotfiles (`hyprland.lua.tmpl` comments only) | awaiting-verification |
+| SF-3 | btop / Steam special-workspace rebuild | phi-shell (bar), dotfiles (`hyprland.lua.tmpl` comments only) | **superseded by BF-5 / ADR 134** — the special-workspace model it built is removed; only its `Bar/glyphs.js` `steam` glyph survives |
 | SF-4 | Notifications: sound, test button, clean, groups, retention, bar blink | phi-shell + dotfiles (`profiles/desktop/packages.txt`) | awaiting-verification |
 | SF-5 | Cursor spotlight: effect picker, optimisation, top z-index | phi-shell | awaiting-verification |
 
@@ -1295,7 +1295,8 @@ requests, phi-shell + `hyprland.lua.tmpl` (no new tokens, no `phi`).
   tokens and touchscreen coverage, `workspace m±1` wrap behaviour, the
   `ScrollHint` geometry, and every settings-panel layout change.
 
-**Round 3 (on branch, NOT yet merged).** Style & layout pass over the three
+**Round 3 (merged 2026-09-10, phi-shell `424b4c5` · phios-dotfiles
+`ab60961`).** Style & layout pass over the three
 big panels — chat (`Panels/AgentPanel` + `Panels/tabs/agent/*`),
 notifications (`Panels/Sidebar` + `Panels/tabs/Notifications`), settings
 (`Settings/Settings` + a couple of sections). phi-shell only, no tokens, no
@@ -1321,3 +1322,103 @@ notifications (`Panels/Sidebar` + `Panels/tabs/Notifications`), settings
   bar geometry, the bubble alignment and 82% cap, the rail marker/hover,
   every re-tuned gap, and that `Widgets/TextField` drops cleanly into each
   Row it replaced a bare `TextInput` in.
+
+### `bugfix-btop-copy-network` — out of plan (2026-09-11)
+
+Three bugs the user hit on real hardware. Local `bugfix-btop-copy-network`
+branch per repo (`phios-dotfiles`, `phi-shell`), branched off `master` /
+`main`. Trailer `Out-of-plan: bugfix-btop-copy-network`. `phi` /
+`phi-packages` not touched. **Nothing here has run on real hardware.**
+
+| # | Bug | Repos | Status |
+|---|---|---|---|
+| BF-5 | btop never launches (runner, its bar icon); the bar "btop workspace" toggle flips state but reveals nothing; a numeric workspace and the btop special workspace could both read as active; Steam's `name:steam` workspace could not be returned to | phios-dotfiles (`profiles/desktop/templates/.config/hypr/hyprland.lua.tmpl`, `docs/phios-master-plan.md`), phi-shell (`Bar/Bar.qml`, `Bar/modules.json`, `Bar/modules/Workspaces.qml`, new `Bar/workspace-icons.json`, `Bar/glyphs.js`, deleted `Bar/modules/SpecialWorkspaces.qml` + `Bar/pinned-apps.json`) | awaiting-verification |
+| BF-6 | Terminal: no copy on Super+C or right-click | phios-dotfiles (`profiles/desktop/home/.config/kitty/kitty.conf`, `hyprland.lua.tmpl`) | awaiting-verification |
+| BF-7 | Bar's Tailscale+VPN element leaves a blank gap when both are off | phi-shell (`Bar/Bar.qml`) | awaiting-verification |
+
+**BF-5 — ADR 134, reversing ADR 122 (btop special workspace).** The user's
+call: "remove the old feature as it never worked, pick the simplest clean
+solution." The special-workspace model is gone entirely.
+- `hyprland.lua.tmpl`: `btop` and `Steam` are now plain numbered
+  workspaces. `workspace_rule` pins **btop to workspace 10, `persistent`**;
+  the `^phios-btop$` window rule sends it there `silent`. A new
+  `hyprland.start` hook starts btop with the session
+  (`pgrep -x btop >/dev/null || kitty --class phios-btop -e btop`), so it
+  is always there with nothing to launch — which also sidesteps the
+  runner's broken `Terminal=true` `.desktop` launch (a separate latent
+  issue, see below). **Steam → workspace 9** (was `name:steam`), not
+  persistent, not `silent`. The old `special:btop` `workspace_rule` +
+  `silent` window rule and their long REAL-HARDWARE-FIX comment are
+  removed.
+- phi-shell: `Bar/modules/SpecialWorkspaces.qml` and `Bar/pinned-apps.json`
+  **deleted**; the `specialWorkspaces` type removed from `Bar/modules.json`
+  and `Bar/Bar.qml`. `Bar/modules/Workspaces.qml` now reads the new
+  `Bar/workspace-icons.json` (`[{id:9,glyph:"steam"},{id:10,glyph:"monitor"}]`,
+  ADR 078 data-not-code) and renders a mapped workspace as that glyph
+  instead of its digit. The workspace model is sorted by id, so 9 and 10
+  land at the right end of the strip on their own; a click switches to the
+  workspace via the model's own `activate()`, same path as a digit.
+- Mutual exclusion is now automatic — one numbered workspace is active per
+  monitor, so a digit and the btop icon can never both read active.
+- `Bar/glyphs.js`: `gamepad` (only used by the deleted module) removed;
+  `monitor`/`steam` comments updated. Stale `SpecialWorkspaces` / btop
+  comments in `Bar/modules/Gpu.qml`, `Services/HyprlandBridge.qml`,
+  `Services/Agent.qml` updated.
+- `docs/phios-master-plan.md`: ADR 134 added to §19, ADR 122 marked
+  inverted, `Q-N03` row updated. Top-level `docs/` mirror synced (not a
+  repo). `btop`/`Steam su workspace dedicato` (§2, "non si riaprono")
+  stays closed — only the workspace *type* changed.
+- **Behaviour change to call out:** workspaces 9 and 10 are now btop/Steam.
+  Super+9 / Super+0 go to them; they are no longer free for general use.
+- **Not fixed (flagged):** the runner (`Launcher.qml`) still cannot launch
+  a `Terminal=true` `.desktop` entry (btop, and any other TUI — `Quickshell`
+  `DesktopEntry.execute()` on a session with no `$TERMINAL`). Out of scope
+  for "the simplest solution"; the always-on btop makes it moot for btop.
+- Unverified (no compositor here): that `hl.workspace_rule({ workspace =
+  "10", persistent = true })` and `workspace = "10 silent"` are the right
+  Lua shapes (C-06); that `Hyprland.workspaces` really is sorted by id (the
+  HyprlandBridge note says so) so the btop/Steam icons land rightmost
+  without an explicit sort; the `steam` / `monitor` Nerd-Font glyphs.
+- One open question, same root for the bar icon and the `Super+0` bind:
+  does a `persistent` workspace 10 get a monitor assigned (so it passes
+  `Workspaces.qml`'s `monitor !== null` filter, and `focus({ workspace =
+  10 })` reaches it) *before* btop's window maps? If it only binds a
+  monitor when the window appears, both paths work a second after login and
+  fail only in that gap. Check on `zotac` (two outputs) specifically.
+- `pgrep -x btop` in the autostart hook: fine at `hyprland.start` (a fresh
+  session has no btop yet); it is only insurance against a double-run.
+
+**BF-6 — terminal copy.** `kitty.conf` already had `map super+c
+copy_to_clipboard`, but `hyprland.lua` bound `Super+C` to `centerwindow`,
+so the compositor consumed the chord before kitty saw it.
+- `hyprland.lua.tmpl`: centre-window moved from `Super+C` to
+  `Super+Shift+C`; `Super+C` left unbound so it reaches the focused app.
+- `kitty.conf`: added `mouse_map right press ungrabbed copy_to_clipboard`
+  (right-click copies the selection; replaces kitty's default right-click
+  "extend selection"). File given a real header while there.
+- Unverified: that `Super+Shift+C` does not clash with anything on real
+  hardware, and that right-click-to-copy is the behaviour the user wants
+  (vs. also pasting when nothing is selected — not added).
+
+**BF-7 — bar blank gap.** `Bar/modules/Network.qml` is the only bar module
+that hides itself (`visible: false` when neither Tailscale nor a VPN is
+up). The `Loader` delegate in `Bar/Bar.qml`'s left/right `Repeater`s stayed
+visible at the hidden module's `implicitWidth`, so the isle's `Row`
+reserved a blank slot plus its spacing. Fixed by `visible: !item ||
+item.visible` on both Loaders — the `Row` now drops a self-hidden module
+entirely.
+- Unverified (no compositor here): the visual result; that no other module
+  relied on the old always-visible Loader behaviour (checked: none set
+  `visible`).
+
+**Apply** (after merge; order does not matter between repos)
+1. `phios-dotfiles`: `git pull github master`, `phi theme set <variant>`
+   (re-renders `hyprland.lua`), `hyprctl reload`. btop autostart takes
+   effect at the next login — for this session, run
+   `kitty --class phios-btop -e btop` once or re-login. Then: open kitty,
+   select text, Super+C and right-click both copy; Super+Shift+C centres a
+   floating window.
+2. `phi-shell`: `git pull github main`, restart `qs`. Check the workspace
+   strip: btop icon at the right end always, Steam icon when Steam runs,
+   clicking each switches to it; only one workspace boxed at a time. With
+   Tailscale and any VPN off, the network element leaves no gap.

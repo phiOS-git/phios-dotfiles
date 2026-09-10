@@ -130,6 +130,17 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("pgrep -x hyprsunset >/dev/null || hyprsunset")
 end)
 
+-- btop starts with the session (ADR 134, reversing ADR 122). It lives on
+-- persistent workspace 10 (see WINDOWS AND WORKSPACES) and the user wants
+-- it always there with nothing to launch — its bar icon just switches to
+-- that workspace. `--class phios-btop` is the app id the window rule below
+-- matches; the `pgrep` guard is the same free insurance as the qs and
+-- hyprsunset hooks above. `hyprland.start` does not refire on `hyprctl
+-- reload`, so editing this file never spawns a second btop.
+hl.on("hyprland.start", function ()
+    hl.exec_cmd("pgrep -x btop >/dev/null || " .. terminal .. " --class phios-btop -e btop")
+end)
+
 ---------------------
 ---- KEYBINDINGS ----
 ---------------------
@@ -187,7 +198,11 @@ hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.exec_cmd("hyprctl dispatch movewin
 hl.bind(mainMod .. " + F",         hl.dsp.exec_cmd("hyprctl dispatch fullscreen 0"), { description = "Toggle fullscreen" })
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }), { description = "Toggle floating" })
 hl.bind(mainMod .. " + J",         hl.dsp.layout("togglesplit"), { description = "Toggle the dwindle split direction" })
-hl.bind(mainMod .. " + C",         hl.dsp.exec_cmd("hyprctl dispatch centerwindow"), { description = "Centre the floating window" })
+-- Centre-window is on Super+Shift+C, not Super+C: Super+C is deliberately
+-- left unbound here so it reaches the focused application — kitty maps it
+-- to copy-to-clipboard (kitty.conf). A bare Super+C bind would be consumed
+-- by the compositor before the terminal ever saw it.
+hl.bind(mainMod .. " + SHIFT + C", hl.dsp.exec_cmd("hyprctl dispatch centerwindow"), { description = "Centre the floating window" })
 hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprctl dispatch pin"), { description = "Pin the floating window to every workspace" })
 
 -- numbered workspaces (Super+1..0), and send-to-workspace (Super+Shift+1..0).
@@ -216,9 +231,9 @@ hl.bind(mainMod .. " + CTRL + right", hl.dsp.exec_cmd("hyprctl dispatch workspac
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- a general-purpose scratchpad on its own special workspace (btop's
--- `special:btop` is separate and owned by the bar — see WINDOWS AND
--- WORKSPACES below).
+-- a general-purpose scratchpad on its own special workspace (btop is no
+-- longer a special workspace as of ADR 134 — it is plain workspace 10, see
+-- WINDOWS AND WORKSPACES below).
 hl.bind(mainMod .. " + A",         hl.dsp.workspace.toggle_special("scratch"), { description = "Toggle the scratchpad" })
 hl.bind(mainMod .. " + SHIFT + A", hl.dsp.window.move({ workspace = "special:scratch" }), { description = "Send the window to the scratchpad" })
 
@@ -551,36 +566,35 @@ end)
 -- all: Hyprland creates a workspace on first use and destroys it once empty
 -- by default, which already is "dynamic". What would violate the decision
 -- is a static monitor-pinned or `default = true` workspace assignment —
--- deliberately not added here. `btop`'s special workspace below is the one
--- intentional exception, kept alive on purpose rather than reclaimed the
--- moment it is hidden.
+-- deliberately not added here. The two dedicated workspaces below (btop,
+-- Steam) are the intentional exceptions.
 
--- btop workspace (ADR 122 / Q-N03, closed at S-22): a dedicated special
--- workspace, not a normal high-numbered one. `Bar/modules/SpecialWorkspaces.qml`
--- (phi-shell, SF-3) launches btop as `kitty --class phios-btop -e btop`
--- (from Bar/pinned-apps.json) specifically so this rule can match the
--- terminal's own Wayland app id — set once at launch and never touched
--- again — rather than its window title, which btop's own TUI can rewrite at
--- runtime.
+-- btop and Steam workspaces (ADR 134, reversing ADR 122 / Q-N03).
 --
--- REAL-HARDWARE FIX (razer, first verification round): the first version
--- of this rule assigned the window with a bare `workspace = "special:btop"`
--- — no `silent` suffix — which switches the monitor's active workspace to
--- it the moment the window opens, exactly like a normal (non-special)
--- workspace assignment does. Evidence: a `hyprctl clients` capture taken
--- right after testing this showed the user's own terminal AND Steam itself
--- both sitting on `special:btop`, because nothing (no keybinding exists
--- yet, S-38) could switch back out of it once btop's launch silently
--- dragged the whole session in. `silent` is exactly what suppresses that
--- forced switch (confirmed against real Hyprland source: the window-rule
--- `workspace` field "can be `unset` or suffixed with ` silent`") — the
--- window still lands on the special workspace, nothing else moves there
--- with it, and it is only actually seen once something calls
--- `togglespecialworkspace btop` — which the always-visible btop button in
--- Bar/modules/SpecialWorkspaces.qml (SF-3) now does, launching btop first
--- if it is not already running.
+-- ADR 122 put btop on a hidden `special:` workspace toggled from a bar
+-- button. On real hardware that never worked: btop would not launch from
+-- the button, the toggle flipped the bar state but revealed nothing, and a
+-- numbered workspace and the special one could both read as "active" at
+-- once. At the user's request the special-workspace model is dropped
+-- entirely — btop and Steam are now plain numbered workspaces:
+--
+--   * btop  -> workspace 10, `persistent` (so the workspace, and its bar
+--     icon, outlive btop being closed) and started with the session (see
+--     AUTOSTART). `silent` on the window rule so login does not follow it
+--     to workspace 10.
+--   * Steam -> workspace 9, not persistent, not `silent` (opening Steam is
+--     meant to take you there). Was a `name:steam` named workspace — the
+--     SF-3 "cannot get back to Steam's workspace" report; a numbered one is
+--     reachable by Super+9, the gestures and its bar icon like any other.
+--
+-- The phi-shell bar (Bar/modules/Workspaces.qml + Bar/workspace-icons.json)
+-- renders workspaces 9 and 10 as a Steam / monitor glyph instead of a
+-- digit, at the right end of the strip; clicking one switches to it. Both
+-- rules match the Wayland app id (btop's kitty is launched `--class
+-- phios-btop`), never the window title, which a TUI rewrites at runtime.
+-- The `steam` class is real, from `hyprctl clients` on razer (SF-3).
 hl.workspace_rule({
-    workspace  = "special:btop",
+    workspace  = "10",
     persistent = true,
 })
 
@@ -588,25 +602,14 @@ hl.window_rule({
     name  = "btop-workspace",
     match = { class = "^phios-btop$" },
 
-    workspace = "special:btop silent",
+    workspace = "10 silent",
 })
 
--- Steam (master plan §2.3: dedicated workspace, secondary windows
--- floating). The main-window rule below is real, not guessed: `hyprctl
--- clients` on razer (this step's VERIFY round-trip) showed Steam's actual
--- window as `class: steam, title: Steam, initialClass: steam` — used
--- directly, no placeholder. Given its own dedicated, always-visible
--- workspace (unlike btop's hidden special one) makes sense for something
--- you deliberately switch to, this is a plain named workspace, not special,
--- and not `silent` — opening Steam is meant to take you there. SF-3 adds a
--- bar button (Bar/modules/SpecialWorkspaces.qml, from Bar/pinned-apps.json)
--- that appears while a `^steam$` window exists and `focuswindow`s it — the
--- class this rule matches on is the same one that button matches on.
 hl.window_rule({
     name  = "steam-workspace",
     match = { class = "^steam$" },
 
-    workspace = "name:steam",
+    workspace = "9",
 })
 
 -- "Secondary windows floating" is still NOT written: the one real Steam
