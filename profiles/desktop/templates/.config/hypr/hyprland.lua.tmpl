@@ -325,6 +325,23 @@ hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")), { descrip
 -- named keys like "Return"/"Tab"/"Escape", which are capitalized.
 hl.bind(mainMod .. " + SHIFT + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle")), { description = "Toggle the cheat sheet" }) -- Super+? — common "show shortcuts" convention
 
+-- Magnifier loupe (OOP-50, revised OOP-57). SUPER+Z toggles it; the zoom
+-- and lens-size steppers work whether it is up or not (a step on a hidden
+-- loupe just moves the stored value — Services/Magnifier.qml). These live
+-- here with the other overlay toggles (spotlight, lock, cheatsheet) and,
+-- deliberately, BEFORE and clear of the SUPER+wheel binds further down:
+-- `mouse_up`/`mouse_down` are used nowhere else in this file, so if this
+-- Hyprland/Lua build rejects them the failure must not be able to take
+-- this toggle (or anything after it) down with it — the wheel block is
+-- pcall-wrapped for the same reason. SUPER+= / SUPER+- (US layout, the
+-- kb_layout default — no `kb_layout` is set anywhere in the profiles)
+-- are the plain-key path that always works.
+hl.bind(mainMod .. " + Z",             hl.dsp.exec_cmd(qsIpc("magnifier", "toggle")),  { description = "Magnifier: toggle the loupe" })
+hl.bind(mainMod .. " + equal",         hl.dsp.exec_cmd(qsIpc("magnifier", "zoomIn")),  { description = "Magnifier: zoom in" })
+hl.bind(mainMod .. " + minus",         hl.dsp.exec_cmd(qsIpc("magnifier", "zoomOut")), { description = "Magnifier: zoom out" })
+hl.bind(mainMod .. " + SHIFT + equal", hl.dsp.exec_cmd(qsIpc("magnifier", "grow")),    { description = "Magnifier: larger lens" })
+hl.bind(mainMod .. " + SHIFT + minus", hl.dsp.exec_cmd(qsIpc("magnifier", "shrink")),  { description = "Magnifier: smaller lens" })
+
 -- S-46: fixed volume/brightness keys (funzionalita §2.15, C-09). S-06's
 -- own diagnosis already found the kernel reports STANDARD, correctly-named
 -- codes for every one of these (KEY_MUTE, KEY_VOLUMEUP/DOWN,
@@ -356,31 +373,33 @@ hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(qsIpc("brightness", "down")), { repeating = true, locked = true })
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qsIpc("brightness", "up")), { repeating = true, locked = true })
 
--- Magnifier (S-54 / OOP-50, architettura §8.2.4 / master plan §8.3
--- surface 21). The earlier `hyprctl keyword cursor:zoom_factor` binds are
--- removed: they zoom the WHOLE output around the cursor, not a loupe, and
--- on real hardware SUPER+Z "did nothing" (OOP-50's card). Replaced by
--- phi-shell's Magnifier/ surface (Services/Magnifier + one "magnifier"
--- IpcHandler), a wlr-screencopy lens drawn just above the pointer.
+-- Magnifier — SUPER+wheel (S-54 / OOP-50 / OOP-57). The loupe toggle and
+-- the plain-key zoom / lens-size steppers are up with the other overlay
+-- toggles (search "Magnifier loupe" above). This is the extra wheel path:
+-- SUPER + wheel for zoom, SUPER+SHIFT + wheel for lens size. NOT bare
+-- CTRL+wheel (the reference's example): Hyprland consumes a modifier+wheel
+-- bind before the focused app, so CTRL+wheel there would break in-app zoom
+-- everywhere; SUPER+wheel is unclaimed in this config.
+--
+-- `mouse_up` / `mouse_down` are Hyprland's own wheel key names (the wiki's
+-- own `hl.bind("SUPER + mouse_down", ...)` example) but appear nowhere
+-- else here. The whole block is pcall-wrapped: if this Hyprland/Lua build
+-- rejects the wheel-key form, the wheel binds are simply skipped and the
+-- rest of this file — including the magnifier toggle and steppers above —
+-- still loads. Earlier this coupling is the leading suspect for SUPER+Z
+-- "doing nothing": a raised error partway through a Lua config reload
+-- discards the reload.
 --
 -- Why a shell overlay and not a compositor feature: Glasscope (the look
--- the card now references) is a Hyprland *plugin* — barred by Q-01 / I-01
--- — and `decoration:screen_shader` cannot see the cursor (Q-F07, closed).
--- The offset lens is phi-shell's own answer; see Services/Magnifier.qml.
---
--- SUPER+Z toggles. Scroll adjusts it while it is up — SUPER + wheel for
--- zoom, SUPER+SHIFT + wheel for lens size. NOT bare CTRL+wheel (the card's
--- example): Hyprland consumes a modifier+wheel bind before the focused
--- app, so CTRL+wheel there would break in-app zoom everywhere; SUPER+wheel
--- is unclaimed in this config. `mouse_up` / `mouse_down` are Hyprland's
--- own wheel key names (configuring/binds), used here for the first time in
--- this file — flagged for the hardware pass. A step on a hidden loupe
--- still moves the stored value, harmlessly.
-hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(qsIpc("magnifier", "toggle")), { description = "Magnifier: toggle the loupe" })
-hl.bind(mainMod .. " + mouse_up",   hl.dsp.exec_cmd(qsIpc("magnifier", "zoomIn")),  { description = "Magnifier: zoom in" })
-hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd(qsIpc("magnifier", "zoomOut")), { description = "Magnifier: zoom out" })
-hl.bind(mainMod .. " + SHIFT + mouse_up",   hl.dsp.exec_cmd(qsIpc("magnifier", "grow")),   { description = "Magnifier: larger lens" })
-hl.bind(mainMod .. " + SHIFT + mouse_down", hl.dsp.exec_cmd(qsIpc("magnifier", "shrink")), { description = "Magnifier: smaller lens" })
+-- the card references) is a Hyprland *plugin* — barred by Q-01 / I-01 —
+-- and `decoration:screen_shader` cannot see the cursor (Q-F07, closed).
+-- The lens is phi-shell's own answer; see Services/Magnifier.qml.
+pcall(function()
+    hl.bind(mainMod .. " + mouse_up",          hl.dsp.exec_cmd(qsIpc("magnifier", "zoomIn")),  { description = "Magnifier: zoom in (wheel)" })
+    hl.bind(mainMod .. " + mouse_down",         hl.dsp.exec_cmd(qsIpc("magnifier", "zoomOut")), { description = "Magnifier: zoom out (wheel)" })
+    hl.bind(mainMod .. " + SHIFT + mouse_up",   hl.dsp.exec_cmd(qsIpc("magnifier", "grow")),    { description = "Magnifier: larger lens (wheel)" })
+    hl.bind(mainMod .. " + SHIFT + mouse_down", hl.dsp.exec_cmd(qsIpc("magnifier", "shrink")),  { description = "Magnifier: smaller lens (wheel)" })
+end)
 
 -- Alt+Tab (S-37, architettura §8.2.2 S10): the one binding that genuinely
 -- fits "Alt for applications" — cycling BETWEEN running applications is
