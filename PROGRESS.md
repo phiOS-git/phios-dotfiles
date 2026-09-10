@@ -880,7 +880,7 @@ BF-3).
 |---|---|---|---|
 | BF-1 | Notification ✕ / clear buttons have no hover state | phi-shell (`Panels/tabs/Notifications.qml`) | awaiting-verification |
 | BF-2 | Clearing notifications (one / group / all) doesn't refresh the panel until a Hyprland reload | phi-shell (`Panels/tabs/Notifications.qml`) | awaiting-verification |
-| BF-3 | `wg-quick up/down` needs a manual `resolvconf -u`; disabling the VPN kills DNS | phios-dotfiles (`profiles/base/packages.txt`) | awaiting-verification |
+| BF-3 | `wg-quick up/down` needs a manual `resolvconf -u`; disabling the VPN kills DNS | phios-dotfiles (`profiles/base/packages.txt`, `profiles/laptop/system/etc/NetworkManager/conf.d/rc-manager.conf`) | awaiting-verification (round 2) |
 | BF-4 | Lock screen stops accepting the password after the first unlock | phi-shell (`Lock/Lock.qml`) | awaiting-verification |
 
 **BF-1.** The active-notification "✕", the per-group "clear" and the
@@ -929,6 +929,24 @@ too, harmless (pure-sh, no daemon). **Flags:**
   code would be dead weight (plus a `phi` release). If the package alone
   is not enough, that is the next step.
 
+**BF-3 round 2 (2026-09-10).** The user's diagnostic came back: `openresolv
+3.17.4-1` is **already installed** on `razer` and owns `/usr/bin/resolvconf`
+(no `systemd-resolvconf`). So the package line was a no-op there (kept — it
+is a correct declaration of a real dependency). The actual cause is that
+**NetworkManager writes `/etc/resolv.conf` itself** rather than through
+`resolvconf`, so `openresolv` only ever knows about the WireGuard interface:
+`wg-quick up`'s `resolvconf -a` is raced by NM (→ the manual `resolvconf
+-u`), and `wg-quick down`'s `resolvconf -d` leaves `openresolv` with nothing
+registered → an empty `/etc/resolv.conf` and no name resolution. Fix: ship
+`profiles/laptop/system/etc/NetworkManager/conf.d/rc-manager.conf` with
+`[main] rc-manager=resolvconf` (NM is a `laptop`-profile package — `razer`
+only). `/etc` material, never applied by the installer;
+`profiles/laptop/manual.txt` (new) carries the apply step. This is the
+documented Arch fix for NM + wg-quick + openresolv; it is a no-op if NM
+already uses resolvconf and cannot make anything worse. Confirm with the
+VERIFY: `phi vpn up`/`down` should need no manual `resolvconf -u`, and
+internet must keep working after `down`.
+
 **BF-4.** `Lock/Lock.qml` set `root.authenticated = true` on
 `PamResult.Success` and never reset it. The unlock is the *rising edge* of
 `authenticated` (`Connections.onAuthenticatedChanged` → `concealFade` →
@@ -947,3 +965,110 @@ writer gated on Success is untouched.
 - `phi-shell`: `git pull github main`; `pkill -x qs && qs -p
   ~/.config/quickshell/phi` (capture the log); no `hyprctl reload` needed
   (`hyprland.lua` unchanged).
+
+### `firewall` — out of plan (2026-09-10)
+
+architettura §6.6 (`[TBD]`) resolved: the user asked for "advanced firewall
+features, with a proper area in the connectivity section", chose the
+backend by "pick the best with safety in mind, no native GUI", and the
+scope: on/off + default-deny inbound + per-port allow rules, named
+presets, and a logging toggle + recent-blocked view. Backend chosen:
+**nftables directly** — core/T0, no daemon, no abstraction layer (ufw and
+firewalld would each add a package; firewalld's whole model assumes a
+GUI/D-Bus client). Built on a local `firewall` branch per repo (`phi`,
+`phi-packages`, `phi-shell`, `phios-dotfiles`), off the post-`bugfixing`
+HEADs. Trailer `Out-of-plan: firewall`. **Nothing here has run on real
+hardware.**
+
+| Repo | What |
+|---|---|
+| `phi` | `internal/firewall` + `phi firewall` verb; tagged `v0.16.0` at the merge |
+| `phi-packages` | `phi` PKGBUILD 0.15.0 → 0.16.0 |
+| `phi-shell` | `Services/Firewall.qml` + Connectivity → Firewall section |
+| `phios-dotfiles` | `nftables` package, `nftables.service`, `49-phi-firewall` sudoers, `nftables.conf` baseline, `manual.txt` |
+
+**Backend / model.** One `table inet phi` with a single `input` base chain,
+`policy drop`. In nftables an `accept` from any base chain is not final
+(evaluation continues to the next chain) but a `drop` is, and a chain's
+policy drop applies to every packet no rule in that chain accepted — so
+phi's default-drop covers *every* inbound packet on the input hook,
+including traffic a container/VM runtime's own nftables table would accept
+(a published container port needs a matching `phi firewall allow`). The
+scoped `add`/`delete table inet phi` (never `flush ruleset`) stops phi
+deleting those other tables' rules; it does not let their accepts bypass
+phi's chain. Desired state
+is `~/.config/phi/firewall.json` (nested JSON, not the closed `phi state`
+key set — same call `Services/Chroma` makes). Every verb re-renders and,
+while enabled, re-applies: `sudo -n nft -f -` (live, atomic) then `sudo -n
+tee /etc/nftables.conf` (persist; `nftables.service` loads it at boot). No
+`flush ruleset` anywhere — every statement is scoped to `table inet phi`
+with `add`/`delete table`, so docker/libvirt/podman tables are untouched.
+
+**Verbs.** `status [--json]` (enabled / preset / logging / rules + a live
+`enforced` probe of whether the table is loaded), `enable`, `disable`,
+`preset <home|public|paranoid>`, `allow PORT[/proto] [--from CIDR]`,
+`remove ID`, `log on|off`, `blocked [--json]`. Presets: **home** honours
+allow-rules and answers ping; **public** ignores allow-rules, silent, no
+ping; **paranoid** = public + no ICMP at all + a harder log rate limit +
+logs everything. `blocked` reads the `phi-fw:` kernel-log prefix via
+`sudo -n journalctl -k` (dmesg is root-only on Arch) and reports only a
+dropped packet's own SRC / PROTO / DPT — ADR 067 analog, never a phiOS
+address. `wallpaper`, `vpn` and `firewall` are now listed in `phi help` /
+completion / man — the `Commands` table had drifted behind the dispatch
+table (`vpn` and `wallpaper` were live but unlisted).
+
+**SSH lockout guard.** `enable`, `preset` and `remove` print a
+non-blocking `warning:` when `$SSH_CONNECTION` is set and the resulting
+ruleset would refuse a fresh connection on the SSH port (the live reload
+keeps the current session via `ct state established`, but a reconnect or a
+reboot would not). It names the `phi firewall allow …` fix. The shell
+never trips this — Quickshell has no `SSH_CONNECTION` — so toggling from
+the settings panel on the machine at the keyboard is unaffected.
+
+**Privilege.** `profiles/desktop/system/etc/sudoers.d/49-phi-firewall`
+pins exactly four commands: `nft -f -`, `nft list …` (×3 read forms),
+`tee /etc/nftables.conf`, and the fixed `journalctl -k …` invocation.
+Same "accepted risk on a single-user personal machine" stance as
+`49-phi-vpn` — a %wheel user can already `sudo nft` with a password; this
+removes the prompt. NEVER applied by the installer.
+
+**Hosts.** `desktop` profile (zotac + razer). `mini` (server) is
+deliberately out — it actually runs services and wants its own careful
+pass.
+
+**Flags.**
+- `nftables` is core/T0 but **not in master plan §15** — §6.6 names it as a
+  candidate "già nel sistema base" but declares no package. Added on the
+  user's instruction; §15.3 needs a matching line. Same handling as
+  BF-3/openresolv and OOP-40's wallpaper flag.
+- §6.6 is `[TBD]`; resolving it is owed an ADR ("firewall = nftables,
+  phi-managed `table inet phi`, default-drop inbound, three presets"). The
+  agent does not own `docs/architettura.md` — flagged, not edited.
+- `/etc/nftables.conf` is rewritten by `phi firewall` at runtime, so
+  `phios-install --system-diff` will report it as differing whenever the
+  firewall is enabled — expected (it means "the firewall is on"), like the
+  `crypttab` UUID placeholders (S-05). The shipped copy is the "firewall
+  off" baseline, byte-identical to `phi firewall`'s disabled render.
+- Not verified anywhere: no `nft` on this machine. `phi` builds / vets /
+  `go test ./...` clean (8 new firewall tests). The nft syntax
+  (`add rule inet phi input …`, the ICMPv6 essentials set, `limit rate …
+  log`) is written against the nftables wiki, unrun — the first
+  `nft -f -` on `razer` is the real check.
+- Shell: the preset and tcp/udp pickers use `Widgets/StyledButton`
+  (`active:`), matching the settings-panel precedent (Theme's "Effect" /
+  "Circle size"); `Widgets/Segment` is the bar's grammar. The "Not
+  enforced" drift row now fires both ways — "on but not loaded" and "off
+  but still loaded" — via `Services.Firewall.driftReason`.
+
+**Apply** (after `firewall` is merged and pushed; do `phi` first)
+1. `phi`: `git pull github main`, build + install (chroot or `go build`
+   onto PATH). `phi firewall status` should print `state off`.
+2. `phi-shell`: `git pull github main`, restart `qs`.
+3. `phios-dotfiles`: `git pull github master`, `pacman -S nftables` (likely
+   already present), then the `profiles/desktop/manual.txt` firewall block:
+   install `49-phi-firewall` + `/etc/nftables.conf`, `visudo -cf`,
+   `systemctl enable nftables.service`.
+4. In Settings → Connectivity → Firewall: toggle on, set a preset, add a
+   port (e.g. 22/tcp), toggle logging; check `phi firewall status` and
+   `sudo nft list table inet phi` agree, and that SSH / the network still
+   work. Toggle off; confirm the table is gone.

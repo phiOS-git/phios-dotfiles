@@ -33,3 +33,18 @@ grep -q '\bplymouth\b' /etc/mkinitcpio.conf || echo 'ADD plymouth to HOOKS in /e
 # it. `%wheel` form assumes the desktop user is in the wheel group.
 sudo install -m 0440 -o root -g root profiles/desktop/system/etc/sudoers.d/49-phi-vpn /etc/sudoers.d/49-phi-vpn
 sudo visudo -cf /etc/sudoers.d/49-phi-vpn
+
+# --- nftables firewall for `phi firewall` (Out-of-plan: firewall) ----------
+# The sudoers drop-in lets the desktop user load and read the phiOS firewall
+# without a password (`phi firewall` and the Connectivity > Firewall
+# section). Read the file first (it documents its own tight scope and the
+# accepted single-user risk). The nftables.conf below is the "firewall off"
+# baseline phi manages from then on; `phi firewall enable` takes over.
+sudo install -m 0440 -o root -g root profiles/desktop/system/etc/sudoers.d/49-phi-firewall /etc/sudoers.d/49-phi-firewall
+sudo visudo -cf /etc/sudoers.d/49-phi-firewall
+sudo install -Dm644 profiles/desktop/system/etc/nftables.conf /etc/nftables.conf
+sudo systemctl enable nftables.service
+# From here /etc/nftables.conf is rewritten by `phi firewall` on every
+# command, so `phios-install --system-diff` will report it as differing
+# whenever the firewall is enabled — that is expected, it means "the
+# firewall is on", not "config drift".
