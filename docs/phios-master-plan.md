@@ -1076,6 +1076,7 @@ Elencati nei `packages.txt` attuali. Nessuna azione salvo le correzioni indicate
 | `tinyproxy` | extra | Lista bianca d'uscita di A2 | M7 |
 | `wiremix` *(o `pulsemixer`)* | extra | Vista estesa audio dal deep-link Tier 3 | M4 |
 | `bluetuith` | extra/AUR — **verificare** | Vista estesa Bluetooth. Se AUR, il deep-link punta altrove | M4 |
+| `wireguard-tools` | extra | VPN WireGuard, guidata da `phi vpn` e dalla sezione Connectivity. I `.conf` dei tunnel sono dell'utente, in `~/.config/phi/wireguard/` — mai nel repo. `up`/`down` via `sudo -n` (drop-in `sudoers.d/49-phi-vpn`, mai applicato). Aggiunto da `Out-of-plan: settings-overhaul` | OOP |
  
 **Da rimuovere:** `cliphist` allo step S-32 (C-07). `wl-clipboard` **resta**.
  
