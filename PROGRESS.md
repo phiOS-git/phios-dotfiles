@@ -256,6 +256,164 @@ follows the same `awaiting-verification` → `verified` discipline as a step.
 | OOP-34 | Settings overhaul — G: Devices section + audio device selection + Chroma per-key + integrations | awaiting-verification | phi-shell `settings-overhaul` `4b5ce3a` · phios-dotfiles `settings-overhaul` (this row) | 2026-09-11 | **`Out-of-plan: settings-overhaul`** batch G, phi-shell + dotfiles (`phi` untouched). The user's directive: more input/output device options coherent with the new style; Chroma gets per-key override colours (solid only, no animation), a toggleable integrations list each with an accordion of settings, and all three integrations (battery / notifications / neovim) actually working — "per-key addressability is verified and working, power key as well". **`phi-shell`:** `Settings/sections/Devices.qml` rebuilt onto `SettingsGroup`/`SettingsRow` — Audio output + Audio **input** (device lists from the new `Services/AudioBridge` surface, `−10/+10/mute`), Monitors (read-only, restyled), Pointer (read-only), Chroma. `Services/AudioBridge.qml` +`sinks`/`sources` (filtered `Pipewire.nodes`, monitor loopbacks dropped), `setDefaultSink`/`setDefaultSource` (writes `Pipewire.preferredDefaultAudioSink/Source` — no `wpctl`), the input side (`inputVolume`/`inputMuted`/setters), and a `PwObjectTracker` over every listed node so `.description` is real not the unbound placeholder. **`Services/Chroma.qml` rewritten as a single-frame compositor:** five drivers (static colour, per-key map, battery power-key, notification blink, neovim mode) all only set state; one `_render()` composes the current state into one frame; one `Process` pushes it as a single `sh -c "busctl … && busctl … && …"` (assigning `Process.command` in a loop would clobber each call — Quickshell does not queue). A frame is either one `setStatic` or N `setKeyRow` + one `setCustom`; bursts (blink/pulse/drag) coalesce — a push while the Process is running is held and replayed once on exit. Matrix size comes from `getMatrixDimensions`. The old whole-keyboard `setBlinking` is **gone** — the notification blink now paints the configured function row through the same custom-frame path the user confirmed works. **Every org.razer interface/method is a named constant at the top of the file** so a correction after `busctl --user introspect` is one line (the OOP-26 `phi agent use` lesson). Storage: the two scalars stay in `phi state` (`toggle.chroma`, `chroma.color`); the open-ended data (per-key map, integration enables + settings) is one JSON object at `$XDG_STATE_HOME/phi/chroma.json` (`Config.Paths.chromaConfigFile`, `Config/ThemeOverrides` shape). Integrations: **battery** — one key coloured by `Services.PowerBridge.percentage` (green/amber, slow red pulse below a configurable threshold; the pulse `Timer` is `running: false` in every normal state, so not a category-C-on-frequent-event); **notifications** — `Services/Notifications.qml onNotification` → `Services.Chroma.notifyBlink()` inside the existing `!dnd` branch, flashes the configured row ~3×; **neovim** — new `IpcHandler { target: "chroma"; function nvimMode(mode: string) }`, whole-keyboard tint by mode letter (insert=success, visual=warn, replace=error, command=info, normal=base). New `Widgets/KeyboardMap.qml` (device-sized cell grid — no guessed keycap layout; doubles as the row/col discovery tool for the battery/notification settings), `Widgets/Accordion.qml` (inline disclosure, category-B height). `Settings/sections/Notifications.qml` chroma-blink row turned from a stale readout into the live integration toggle (rest of that section is batch I). **`phios-dotfiles`:** new `profiles/base/home/.config/nvim/lua/phi_chroma.lua` — a `ModeChanged` / `FocusLost` / `VimLeavePre` autocmd calling `qs -p ~/.config/quickshell/phi ipc call chroma nvimMode <letter>`, non-blocking (`vim.system`, `jobstart` fallback), dedupes on the mode letter, sets up nothing if `qs` is absent. **No colour in the lua** — only the mode letter crosses; the shell maps it to a token (I-05). `init.lua` +`require("phi_chroma")`. **Not verified — screenshot + real-hardware pass (razer only for Chroma):** every `busctl` name and signature (`setKeyRow` `ay` payload `[row,0,cols-1, rgb…]`, `setCustom`, `getMatrixDimensions` output shape), the `Pipewire.preferredDefaultAudioSink` write + `nodes.values` reactivity, the KeyboardMap grid, the accordion, the nvim autocmd firing, and that the blink restores the underlying frame. **Cosmetic, noted not fixed:** `SettingsRow._first` (top-hairline suppression) misfires when the first sibling is a `Repeater` (Monitors, the integrations list) — belongs in a `SettingsRow` fix in batch K, not a per-section restructure. **Correction folded in (phi-shell `696190c`):** `_render()` / `notifyBlink()` could run before the async `Config.Capabilities.chroma` probe resolved, so a restored per-key map / integration would not paint until the first user action and an early notification blink was lost — `onPresentChanged` now re-renders. |
 | OOP-35 | Settings overhaul — H: keybinding context grouping (panel + cheatsheet) + cheatsheet padding | awaiting-verification | phi-shell `settings-overhaul` `36113b9` · phios-dotfiles `settings-overhaul` (this row — dotfiles n/a) | 2026-09-11 | **`Out-of-plan: settings-overhaul`** batch H, **phi-shell only** (no design-token or template change needed — the cheatsheet padding reuses the existing `space3` token). The user's directive: Keybindings and the Cheatsheet render the same content, both grouped by context and visually separated coherently; the Cheatsheet gets more padding, the same as the runner bar. **`Services/Keybinds.qml`:** `context(bind)` — classifies one binding into a group label from, in priority order, its `description` string (every phi-shell bind sets one, per `hyprland.lua.tmpl`'s own note), then dispatcher + arg (`ipc call <target>`, window dispatchers, `wpctl`, `cursor:zoom`), then `submap`, then the raw keysym (`XF86*`). `groups(list)` buckets the live list into an ordered set (Window management · Window switching · Shell surfaces · Applications · Media & display · Session · Other), emitting only non-empty groups; unclassifiable → "Other". **Derivation over the one live `hyprctl binds -j` query — nothing stored, S-37's read-only / no-second-copy decision intact.** **`Settings/sections/Keybindings.qml`:** rebuilt — a search `SettingsGroup` (`optionId: keybindings.reference`, `Widgets.TextField`) then one `SettingsGroup` card per context, `Widgets.ListRow` per binding; search filters by key / action / group. **`Cheatsheet/Cheatsheet.qml`:** the same `groups()` under small-caps headers + a hairline, keeping the 3-column aligned row layout; `Widgets.Panel.padding` bumped to `Config.Appearance.space3 · chWidth` (matches `Launcher/Launcher.qml:402`, "the runner carries more inner padding than a normal panel"). **Not verified — screenshot pass, and the context table against the real bind set:** `hyprctl binds -j` returns `_lua N` for any callback bind whose `description` is unset, so an undescribed bind classifies by dispatcher/arg or falls to "Other" — confirm the real machine's binds land in sensible groups. |
 | OOP-36 | Settings overhaul — I: per-app notification rules | awaiting-verification | phi-shell `settings-overhaul` `a83ab16` · phios-dotfiles `settings-overhaul` (this row — dotfiles n/a) | 2026-09-11 | **`Out-of-plan: settings-overhaul`** batch I, **phi-shell only**. The user's directive: add the per-app rules section. **`Services/Notifications.qml`:** a per-app rule store — `{ "<appName>": { mute, hide, priority } }` at `$XDG_STATE_HOME/phi/notification-rules.json` (`Config.Paths.notificationRulesFile`), a collection so a JSON file not a `phi state` scalar (S-13), same shape as `theme-overrides.json` / `chroma.json`. Applied in `onNotification` next to the DND check: **`hide`** returns before `tracked = true` so the notification never enters history and the server drops it on its own timeout; **`mute`** records history but suppresses the toast (and the Chroma blink); **`priority`** toasts even while DND is on. `knownApps` is derived (history app names ∪ rule keys, sorted) for the picker — not separately persisted. **`Settings/sections/Notifications.qml`:** rebuilt onto `SettingsGroup`/`SettingsRow` — DND group (toggle + 30m/1h/4h), Per-app rules group (a `SettingsRow` per known app with Mute / Priority / Hide buttons), Chroma group (the blink toggle, mirroring the Devices integration — one value). **Not verified — screenshot pass:** the rule round-trip through the JSON file, `knownApps` populating from real history, and that `hide` genuinely stops a notification without a stuck tracked entry. |
+| OOP-37 | Settings overhaul — J: Update section rebuild + AI Agent layout pass | awaiting-verification | phi `settings-overhaul` `8b0274c` · phi-shell `settings-overhaul` `706e843` · phios-dotfiles `settings-overhaul` (this row) | 2026-09-11 | **`Out-of-plan: settings-overhaul`** batch J, phi + phi-shell (no dotfiles change). The user's directive: divide Update into **System state** (versions of phiOS / phi / phi-packages) and **Packages** (a scrollable list per manager: phi / pacman / AUR / npm / flatpak / AppImage; AppImage from `~/Applications`; unimplemented tabs as placeholders). Improve the AI Agent layout, no functional change. **`phi`:** `internal/pkg` +`SystemState()` (phi = `build.Version`; phios-dotfiles = `git describe` of `tokens.Root()`; each installed `phi-*` package = `pacman -Q`; every lookup best-effort, an unreadable component omitted not guessed) and +`ListManager(m)` (pacman/aur/phi filtered out of the existing pacman-backed `List`; `appimage` scans `~/Applications/*.AppImage`; `npm`/`flatpak` return `Implemented:false` + a note). New verbs `phi pkg state [--json]` and `phi pkg list --manager NAME [--json]` (+ `phi pkg list --json`). `internal/pkg` now imports `internal/build` + `internal/tokens` — no cycle (`tokens` has no phi/internal deps). `go build`/`test ./...`/`gofmt` clean; smoke-tested (`pkg state` → `phi dev (build)`; `list --manager appimage` → dir + none; `--manager npm` → placeholder line). **`phi-shell`:** `Settings/sections/Updates.qml` rebuilt — **System state** `SettingsGroup` (`Repeater` over `phi pkg state --json`) + **Packages** `SettingsGroup` with one `Widgets.Accordion` per manager (phi/pacman/AUR bucketed from `phi pkg list --json` by `Category`; AppImage from `phi pkg list --manager appimage --json`; npm/flatpak placeholder text). Still read-only — `phi pkg check` / `phi update` stay in a terminal. `Settings/sections/AiAgent.qml` moved onto `SettingsGroup`/`SettingsRow` (Activation · Coding-agent blocklist · Services · Broker & engine) — **every `Services.*` call, binding, `Process` and validator byte-for-byte unchanged**, only the containers changed. `Security.qml` untouched. **Not verified — screenshot pass:** the three `phi pkg` `Process` calls resolving, the accordions, the AI Agent groups laying out with no behavioural drift. |
+| OOP-38 | Settings overhaul — K: consolidation + I-05 / motion audit | awaiting-verification | phi-shell `settings-overhaul` `31bea3f` · phios-dotfiles `settings-overhaul` (this row) | 2026-09-11 | **`Out-of-plan: settings-overhaul`** batch K. **`phi-shell` (`31bea3f`):** the last bare pixel numbers in the batch-G widgets token-derived — `Widgets/KeyboardMap.qml`'s cell gap / minimum cell / override-marker dot now off `borderWidthStrong` / `fontSize1` / a cell fraction, and the two inline `Devices.qml` components' spacings off `space1` (I-05). **Motion audit:** no `ScrambleText`/`TypingText` (category C) added anywhere this round; the only new timed loops are `Services/Chroma.qml`'s one-shot notification blink (6 ticks then stops) and the battery under-threshold pulse (`running:` false in every normal state — gated on the integration being on AND the charge genuinely below the user's threshold), neither a category-C-on-a-frequent-event. **`phios-dotfiles` (this row):** the consolidated `settings-overhaul` status block below, with the combined apply path + verification and the wallpaper doc-disagreement flag. |
+
+### `settings-overhaul` — consolidated status (2026-09-11)
+
+A drastic rebuild of the settings panel (`phi-shell/Settings/`) + the
+features attached to it, requested out of plan (same category as
+`shell-restyle`), run as batches A–K on a `settings-overhaul` branch in
+`phi`, `phi-shell` and `phios-dotfiles`. **Every row OOP-28 … OOP-38 is
+`awaiting-verification`** — nothing here has run: no shell renders from this
+machine, no `org.razer` service is reachable, no real WireGuard tunnel
+exists. **Nothing is pushed or merged** until the user confirms.
+
+**Batches**
+
+- **A — OOP-28** (phi-shell `8525fe1`): the option catalogue
+  (`Settings/sections/options.js`), highlight-not-filter search, `reveal(id)`
+  + `qs ipc call settings reveal <id>`, and the base widgets — `SettingsGroup`,
+  `SettingsRow` (self-registering, category-B highlight + `pulse()`),
+  `TextField`, `ColorPicker`, `ColorField`, `ListRow.highlighted`.
+- **B — OOP-29** (phi-shell `b97ebe2`): General rebuilt as compact
+  responsive key/value tiles.
+- **C — OOP-30** (phi `7a0d3c8` · phi-shell `26c3c35`, correction `1097061`):
+  `phi theme contrast`; Theme split into Colours (first) / Colour preview /
+  Typography / Shape — `ColorField` per token, live `ContrastBadge`,
+  `NumberField` steppers (no sliders). `Widgets/NumberField`.
+- **D — OOP-31** (phi `d2de733` · phi-shell `5cb5459` · dotfiles `17d52dd`):
+  `phi wallpaper texture` (`internal/wallpaper`, Go stdlib, deterministic);
+  full Wallpaper section — solid colour, image grid + add-from-path, fit
+  modes, scale, texture + intensity; `Background/Background.qml` composites
+  three layers. `internal/state` +5 `wallpaper.*` keys, texture tokens.
+- **E — OOP-32** (phi-shell `b53957c` · dotfiles `dd451c6`): motion made
+  editable through the four style-plan categories — `motionBCurve` as an
+  `easing.bezierCurve`, all 42 easing sites migrated, `Widgets/BezierEditor`
+  (cubic-bezier.com-style). `PHI_MOTION_B_BEZIER` token.
+- **F — OOP-33** (phi `c20b4fd`+`902e254` · phi-shell `b6838bf`+`cc491dc` ·
+  dotfiles `a31c794`): `internal/vpn` + `phi vpn`; `Services/{NetStats,Vpn}`;
+  `Widgets/AreaChart`; Connectivity rebuilt (Bluetooth / Wi-Fi + speed graph
+  / VPN / Tailscale); the bar-popout overlays get the info + a "Show in
+  settings" button; `Bar/modules/Network.qml` → tailscale **+** vpn. Adds
+  `wireguard-tools` (§15.3) + an **unapplied** `sudoers.d/49-phi-vpn`.
+  Corrections: route resolution without DNS; VPN detail poll backs off on a
+  sudo denial.
+- **G — OOP-34** (phi-shell `4b5ce3a`+`696190c` · dotfiles `699d53f`):
+  Devices rebuilt — audio output **+ input** device selection
+  (`AudioBridge` writes `Pipewire.preferredDefault*`), Monitors / Pointer
+  restyled read-only, Chroma. `Services/Chroma.qml` rewritten as a
+  single-frame compositor (static colour · per-key map · battery · blink ·
+  neovim, one `_render()`, one `sh -c` of `busctl` calls); `setBlinking`
+  dropped. `Widgets/{KeyboardMap,Accordion}`. nvim `phi_chroma.lua` autocmd
+  → `qs ipc call chroma nvimMode`. Per-key + integration config in
+  `chroma.json`.
+- **H — OOP-35** (phi-shell `36113b9`): `Services/Keybinds.qml`
+  `context(bind)` + `groups()`; Keybindings and the Cheatsheet both render
+  the bindings grouped by context; the Cheatsheet's inner padding bumped to
+  the runner's value.
+- **I — OOP-36** (phi-shell `a83ab16`): per-app notification rules
+  (`notification-rules.json`, `mute`/`hide`/`priority`), applied in
+  `onNotification`; Notifications section rebuilt.
+- **J — OOP-37** (phi `8b0274c` · phi-shell `706e843`): `phi pkg state` +
+  `phi pkg list --manager`; Updates section → System state + per-manager
+  package lists; AI Agent layout-only pass.
+- **K — OOP-38** (phi-shell `31bea3f` · this block): I-05 / motion audit +
+  this consolidation.
+
+**Wallpaper — a shipped doc disagreement (needs a follow-up ADR)**
+
+OOP-31 ships arbitrary wallpaper images (the user's explicit call, and the
+style-plan "wireframe/gradient only, never photographic" warning text was
+**deleted**). This contradicts **S-44**, the **style plan**, and **I-01**
+as written. `docs/` was left untouched — this is the flag. A follow-up ADR
+recording "arbitrary wallpaper images are allowed" is owed (same flag
+OOP-31's own row raised).
+
+**Apply path (whole track — do this in order)**
+
+1. `git -C ~/phios-dotfiles fetch github && git -C ~/phios-dotfiles checkout settings-overhaul && git -C ~/phios-dotfiles pull`
+2. `git -C ~/phi fetch github && git -C ~/phi checkout settings-overhaul && git -C ~/phi pull`
+3. **Rebuild and install `phi`** from the branch (the usual chroot / `makepkg`
+   flow, or `go build` and put it on `PATH`). **This is step one, not
+   optional:** the shell calls `phi theme contrast`, `phi wallpaper texture`,
+   `phi vpn status` and `phi pkg state/list` — without the new binary the
+   Colours contrast badges read "checking…" forever, textures never
+   generate, and the VPN / Updates groups are empty, and none of that looks
+   like what it is.
+4. `git -C ~/phi-shell fetch github && git -C ~/phi-shell checkout settings-overhaul && git -C ~/phi-shell pull`
+5. **`phi theme set <active variant>`** — **required**: `Config/Tokens.qml`
+   is git-ignored and only regenerated here, and the new
+   `PHI_MOTION_B_BEZIER`, `PHI_TEXTURE_MODES` and
+   `PHI_TEXTURE_INTENSITY_DEFAULT` tokens reach the shell only through it.
+   Without it the Animations and Texture controls silently show
+   `Config/Appearance.qml`'s built-in fallbacks instead of the tokens.
+6. `pkill -x qs && qs -p ~/.config/quickshell/phi` — capture the full log.
+   Most likely to need a one-line fix: the typed-param IPC handlers
+   (`settings reveal`, `chroma nvimMode`), the `Services/Chroma.qml`
+   `import qs.Services` self-import, `Pipewire.preferredDefaultAudioSink`,
+   `easing.bezierCurve`, the `Widgets/Canvas` charts.
+7. `(cp / install)` the nvim change is a plain file — `git pull` in dotfiles
+   already placed `~/.config/nvim/lua/phi_chroma.lua`; restart nvim.
+8. **WireGuard (optional, to test VPN):** `pacman -S wireguard-tools`; drop a
+   `.conf` in `~/.config/phi/wireguard/`; to test up/down, install the
+   drop-in: `sudo install -m 0440 ~/phios-dotfiles/profiles/desktop/system/etc/sudoers.d/49-phi-vpn /etc/sudoers.d/49-phi-vpn && sudo visudo -cf /etc/sudoers.d/49-phi-vpn`.
+
+**Verification (paste back)**
+
+```
+# phi — on any host
+(cd ~/phi && go test ./...)                              → all pass
+phi pkg state                                            → phi + phios-dotfiles + phi-* versions
+phi pkg state ; pacman -Q phi phi-shell                  → the `phi` line should agree with `pacman -Q phi` (a stale on-PATH binary is what step 3 guards against)
+phi pkg list --manager appimage                          → ~/Applications/*.AppImage (or "none")
+phi pkg list --manager npm                               → "not implemented" line
+phi theme contrast '#d3a0ac' on '#1a1918'                → "7.85 pass"
+phi wallpaper texture grain --intensity 40 --out /tmp/t.png && file /tmp/t.png   → PNG
+phi vpn list                                             → tunnels in ~/.config/phi/wireguard (or nothing)
+phi vpn status --json                                    → [] or a JSON array, no address field
+
+# phi-shell — razer first, then zotac
+qs -p ~/.config/quickshell/phi                           → starts, paste every QML warning/error
+Super+S                                                  → panel opens
+  search "accent"                                        → highlights (does NOT filter); Enter → Theme→Colours, pulsed
+  search "wifi speed"  then Enter                        → Connectivity, pulsed on the speed graph
+qs ipc call settings reveal devices.chroma.integrations  → panel opens on the Chroma integrations, pulsed
+
+# Chroma — razer only. These settle every org.razer name in Services/Chroma.qml at once.
+busctl --user call org.razer /org/razer razer.devices getDevices     → note the serial (first quoted string)
+busctl --user introspect org.razer /org/razer/device/<serial>        → confirm setStatic / setKeyRow / setCustom names + signatures
+busctl --user call org.razer /org/razer/device/<serial> razer.device.misc getMatrixDimensions   → the real matrix rows × cols
+# in the panel: Devices → Chroma → toggle an integration, set a key colour
+cat ~/.local/state/phi/chroma.json                       → the change is persisted
+
+# nvim — razer
+open nvim, switch modes                                  → keyboard tints (needs the "neovim" integration on + Chroma on)
+
+screenshots: every settings section (General, Theme incl. Colours/Animations/Wallpaper,
+  Connectivity, Devices, Keybindings, Notifications, Security, AI Agent, Updates),
+  the cheatsheet, and the wifi / bluetooth / network bar overlays.
+```
+
+**Screenshot-pass checklist (known-fragile, not blockers)**
+
+- `Updates.qml` / `AiAgent.qml`: five new `Repeater` delegates size off
+  `parent.width` (the `SettingsGroup` `body` Column) — the same shape as the
+  OOP-27 zero-width bug. If a list renders zero-width, that's the cause.
+- `SettingsRow._first` (top-hairline suppression) misfires when the first
+  child of a `SettingsGroup` body is a `Repeater` (Monitors, the Chroma
+  integrations list, the per-app rules, the keybinding groups) — a spurious
+  top hairline, cosmetic; the fix belongs in `SettingsRow` itself.
+- `phi pkg state` shows only the `build` version of `phi`; if it disagrees
+  with `pacman -Q phi` the mismatch is currently hidden (see the VERIFY
+  line above).
+
+**DONE WHEN** the user confirms each section is coherent with the system
+style; the search highlights + reveals correctly (including from an
+overlay's "Show in settings" button and via IPC); and the new features —
+wallpaper compositing, editable motion, the WireGuard control, the Wi-Fi
+graph, the Chroma per-key grid + all three integrations, the keybinding
+grouping, the per-app rules, the Updates lists — behave on real hardware.
 
 ### `shell-restyle` — consolidated status (2026-09-10, verified 2026-09-11)
 
