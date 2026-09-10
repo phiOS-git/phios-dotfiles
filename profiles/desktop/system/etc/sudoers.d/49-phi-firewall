@@ -23,8 +23,11 @@
 #   - the `nft list …` and the fixed `journalctl -k …` forms are read-only.
 #   - replace `phi` below with the real desktop username, or keep the
 #     %wheel group form if that user is in wheel.
+#   - the journalctl grep is `phi-fw`, not `phi-fw:`: a literal ':' in a
+#     sudoers command argument is a metacharacter and an unescaped one is a
+#     parse error. `phi firewall` greps the exact `phi-fw:` prefix itself.
 
 %wheel ALL=(root) NOPASSWD: /usr/bin/nft -f -
 %wheel ALL=(root) NOPASSWD: /usr/bin/nft list ruleset, /usr/bin/nft -j list ruleset, /usr/bin/nft list table inet phi
 %wheel ALL=(root) NOPASSWD: /usr/bin/tee /etc/nftables.conf
-%wheel ALL=(root) NOPASSWD: /usr/bin/journalctl -k --no-pager -o json -g phi-fw: -n 200
+%wheel ALL=(root) NOPASSWD: /usr/bin/journalctl -k --no-pager -o json -g phi-fw -n 200

@@ -1032,6 +1032,16 @@ Same "accepted risk on a single-user personal machine" stance as
 `49-phi-vpn` — a %wheel user can already `sudo nft` with a password; this
 removes the prompt. NEVER applied by the installer.
 
+**Firewall fix (2026-09-10, post-merge).** First install on razer:
+`visudo -cf /etc/sudoers.d/49-phi-firewall` → `syntax error` on the
+`journalctl` line. An unescaped `:` in a sudoers command argument is a
+metacharacter, so `-g phi-fw:` broke the parse and sudo ignored the whole
+drop-in. Fixed by dropping the colon — the pinned command is now
+`journalctl … -g phi-fw -n 200`, and `phi firewall blocked` (phi 0.16.1,
+`b82b62a` / tag `v0.16.1`; phi-packages `00722b8`) greps the exact
+`phi-fw:` prefix in-process instead. Re-install the drop-in and re-run
+`visudo -cf`.
+
 **Hosts.** `desktop` profile (zotac + razer). `mini` (server) is
 deliberately out — it actually runs services and wants its own careful
 pass.
