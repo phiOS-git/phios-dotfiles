@@ -596,7 +596,7 @@ real hardware.
 |---|---|---|---|
 | SF-1 | Keybindings + click-to-focus | dotfiles (`hyprland.lua.tmpl`), phi-shell (`Services/Keybinds.qml`) | awaiting-verification |
 | SF-2 | WireGuard: custom-conf detection + import/manage | phi (`internal/vpn`, `internal/cli`), phi-shell (`Services/Vpn`, `Settings/sections/Connectivity`, `Panels/BarPopout`, `Config/Paths`), dotfiles (`profiles/desktop/manual.txt`) | awaiting-verification |
-| SF-3 | btop / Steam special-workspace rebuild | phi-shell (bar), dotfiles (`hyprland.lua.tmpl`) | todo |
+| SF-3 | btop / Steam special-workspace rebuild | phi-shell (bar), dotfiles (`hyprland.lua.tmpl` comments only) | awaiting-verification |
 | SF-4 | Notifications: sound, test button, clean, groups, retention, bar blink | phi-shell, dotfiles (packages — pending user OK on `sound-theme-freedesktop`) | todo |
 | SF-5 | Cursor spotlight: effect picker, optimisation, top z-index | phi-shell | todo |
 
@@ -663,3 +663,35 @@ scanned `~/.config/phi/wireguard` — showed nothing.
   (plain + `--json`) / forget, dup-refusal, junk-refusal,
   forget-non-managed-refusal all behave. `ip link` path unexercised (no
   Linux host); `go build` / `vet` / `gofmt` clean.
+
+**SF-3 (btop / Steam special-workspace rebuild).** `Bar/modules/Btop.qml`
+deleted; new `Bar/modules/SpecialWorkspaces.qml` (type `specialWorkspaces`,
+`modules.json` position 15 — right after `workspaces`, so its buttons
+always sit to the right of the numbered strip). Driven by the new
+`Bar/pinned-apps.json` (ADR 078):
+- `alwaysShow` entries (btop): button always present; click toggles the
+  app's dedicated *special* workspace via
+  `HyprlandBridge.dispatch("togglespecialworkspace <name>")`, launching the
+  app first (`Bar/pinned-apps.json` `launch` array, dropped onto
+  `special:<name> silent` by the unchanged hyprland.lua rule) with a 700 ms
+  reveal delay. Boxed (`active`) while shown — a local bool, same accepted
+  limitation the old module had (nothing else toggles `special:btop`).
+- workspace-backed entries (steam): button visible only while a `^steam$`
+  window exists; click `focuswindow class:^steam$` (also pulls the
+  workspace into view). Boxed while that window is the active toplevel.
+- "running" detection uses `Services/ToplevelBridge` (wlr `.appId`), the
+  same source Overview/Idle use; actions go through the new thin
+  `HyprlandBridge.dispatch()` passthrough (`Hyprland.dispatch`, confirmed
+  against the real type). No `Quickshell.Hyprland` import in the module.
+- `hyprland.lua.tmpl`: comment-only — the `special:btop` and `name:steam`
+  rules are unchanged (they already work; the user's report was that the
+  *bar* had no way to reach them). Steam class `^steam$` matched in one
+  place now (rule + button + json).
+- `Bar/glyphs.js`: `steam` (`nf-md-steam`) + `gamepad` fallback added,
+  unverified against the font like every other glyph there.
+- Reaches machines: phi-shell `git pull` + `qs` restart. dotfiles side is
+  comment-only, still needs `git pull` + `phi theme set` for the render but
+  changes no behaviour.
+- Unverified: the reveal-delay value, `Hyprland.dispatch` string forms, the
+  `nf-md-steam` glyph, and whether `focuswindow class:` reliably switches
+  workspace on this Hyprland.

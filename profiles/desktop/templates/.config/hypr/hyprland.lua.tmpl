@@ -520,11 +520,12 @@ end)
 -- moment it is hidden.
 
 -- btop workspace (ADR 122 / Q-N03, closed at S-22): a dedicated special
--- workspace, not a normal high-numbered one. `Bar/modules/Gpu.qml`
--- (phi-shell, S-23/S-24) launches btop as `kitty --class phios-btop -e
--- btop` specifically so this rule can match the terminal's own Wayland app
--- id — set once at launch and never touched again — rather than its
--- window title, which btop's own TUI can rewrite at runtime.
+-- workspace, not a normal high-numbered one. `Bar/modules/SpecialWorkspaces.qml`
+-- (phi-shell, SF-3) launches btop as `kitty --class phios-btop -e btop`
+-- (from Bar/pinned-apps.json) specifically so this rule can match the
+-- terminal's own Wayland app id — set once at launch and never touched
+-- again — rather than its window title, which btop's own TUI can rewrite at
+-- runtime.
 --
 -- REAL-HARDWARE FIX (razer, first verification round): the first version
 -- of this rule assigned the window with a bare `workspace = "special:btop"`
@@ -539,9 +540,9 @@ end)
 -- `workspace` field "can be `unset` or suffixed with ` silent`") — the
 -- window still lands on the special workspace, nothing else moves there
 -- with it, and it is only actually seen once something calls
--- `togglespecialworkspace btop` (still no bar toggle wired for that,
--- flagged in S-22's own PROGRESS row and left alone here per the user's
--- own instruction not to build it as a side effect of this fix).
+-- `togglespecialworkspace btop` — which the always-visible btop button in
+-- Bar/modules/SpecialWorkspaces.qml (SF-3) now does, launching btop first
+-- if it is not already running.
 hl.workspace_rule({
     workspace  = "special:btop",
     persistent = true,
@@ -561,7 +562,10 @@ hl.window_rule({
 -- directly, no placeholder. Given its own dedicated, always-visible
 -- workspace (unlike btop's hidden special one) makes sense for something
 -- you deliberately switch to, this is a plain named workspace, not special,
--- and not `silent` — opening Steam is meant to take you there.
+-- and not `silent` — opening Steam is meant to take you there. SF-3 adds a
+-- bar button (Bar/modules/SpecialWorkspaces.qml, from Bar/pinned-apps.json)
+-- that appears while a `^steam$` window exists and `focuswindow`s it — the
+-- class this rule matches on is the same one that button matches on.
 hl.window_rule({
     name  = "steam-workspace",
     match = { class = "^steam$" },
