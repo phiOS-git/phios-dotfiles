@@ -1,1 +1,11 @@
+# phiOS — system units this profile DECLARES. The installer prints them and
+# stops; enabling a unit is a user action (bin/lib/system.sh
+# phios_services_report).
+
 bluetooth.service
+
+# Out-of-plan: firewall. Loads /etc/nftables.conf at boot so the firewall
+# `phi firewall` set survives a reboot. Harmless while the firewall is off
+# (the shipped nftables.conf just creates and deletes an empty table).
+#   sudo systemctl enable nftables.service
+nftables.service

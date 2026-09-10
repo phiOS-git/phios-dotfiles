@@ -89,3 +89,13 @@ tinyproxy
 # up/down go through sudo -n via profiles/desktop/system/etc/sudoers.d/
 # 49-phi-vpn (that drop-in is NEVER applied by the installer).
 wireguard-tools
+
+# Out-of-plan: firewall. architettura §6.6 was [TBD] between nftables, ufw
+# and firewalld — the user chose nftables directly. core/T0, provides
+# /usr/bin/nft and nftables.service. NOT in master plan §15 (the doc names
+# it as a candidate "già nel sistema base" but declares no package) —
+# added on the user's instruction; §15.3 needs a matching line. `phi
+# firewall` owns `table inet phi` in /etc/nftables.conf; the control calls
+# go through sudo -n via profiles/desktop/system/etc/sudoers.d/
+# 49-phi-firewall (NEVER applied by the installer).
+nftables
