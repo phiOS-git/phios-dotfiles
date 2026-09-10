@@ -598,7 +598,7 @@ real hardware.
 | SF-2 | WireGuard: custom-conf detection + import/manage | phi (`internal/vpn`, `internal/cli`), phi-shell (`Services/Vpn`, `Settings/sections/Connectivity`, `Panels/BarPopout`, `Config/Paths`), dotfiles (`profiles/desktop/manual.txt`) | awaiting-verification |
 | SF-3 | btop / Steam special-workspace rebuild | phi-shell (bar), dotfiles (`hyprland.lua.tmpl` comments only) | awaiting-verification |
 | SF-4 | Notifications: sound, test button, clean, groups, retention, bar blink | phi-shell (+ dotfiles PROGRESS) | awaiting-verification |
-| SF-5 | Cursor spotlight: effect picker, optimisation, top z-index | phi-shell | todo |
+| SF-5 | Cursor spotlight: effect picker, optimisation, top z-index | phi-shell | awaiting-verification |
 
 **QUESTION FOR THE USER (SF-4):** notification sound defaults to
 `/usr/share/sounds/freedesktop/stereo/message.oga`, which needs
@@ -734,3 +734,32 @@ All phi-shell.
   path is set.
 - Unverified: `pw-play --volume=` flag form, `notify-send -a` availability,
   the freedesktop `.oga` path, and every layout in the rebuilt panel tab.
+
+**SF-5 (cursor spotlight: effect picker, optimisation, top z-index).** All
+phi-shell.
+- OPTIMISATION. `Spotlight/Spotlight.qml` no longer repaints a full-screen
+  Canvas on every cursor poll. The dim/flashlight vignette is a small Canvas
+  "sprite" (radial gradient, transparent → solid scrim) painted once and
+  re-painted only on an option change; the rest of the screen is four plain
+  scrim `Rectangle`s that resize to tile around the sprite square. Cursor
+  movement now only moves GPU-composited items — no CPU repaint. The
+  `hyprctl cursorpos` poll stays (no cursor-move event exists), bumped 60→55
+  ms.
+- EFFECTS. `Services/Spotlight` owns `effect` (dim | flashlight | crosshair
+  | ring) + per-effect options (size, dim strength; line thickness/opacity;
+  ring radius/thickness) in a new `spotlight.json` (nested — not the closed
+  `phi state` set; `spotlight.size` read once as a seed). Picker + the
+  conditional option rows are in `Settings/sections/Theme` "Cursor
+  spotlight". Crosshair = two hairlines, ring = a stroked circle, neither
+  dims.
+- Z-INDEX. The overlay now sets `WlrLayer.Overlay` and is declared last in
+  `shell.qml`; it maps its surface only while shown (the fade gates
+  `visible`), so it comes up above an already-open settings / notification
+  / chat panel. `mask: Region {}` makes it fully click-through.
+- **Key risk to verify:** that a layer-shell surface mapped *later* stacks
+  above an earlier one in the same `Overlay` layer on this Hyprland — that
+  is the mechanism the z-index fix relies on. Also `mask: Region {}` as
+  the click-through form, and the inline-`component` + `Loader` nesting
+  rendering at all (no compositor here).
+- Reaches machines: phi-shell `git pull` + `qs` restart. `hyprland.lua`
+  unchanged.
