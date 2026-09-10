@@ -22,3 +22,14 @@ sudo plymouth-set-default-theme -R phi
 # `base udev`, before `autodetect`); add it there first if it is missing,
 # then re-run the command above.
 grep -q '\bplymouth\b' /etc/mkinitcpio.conf || echo 'ADD plymouth to HOOKS in /etc/mkinitcpio.conf, then re-run plymouth-set-default-theme -R phi'
+
+# --- WireGuard control for `phi vpn` (settings-overhaul / shell-features) ---
+# Lets the desktop user bring the phiOS WireGuard tunnels up and down
+# without a password, so the Connectivity section's VPN toggle and
+# `phi vpn up/down` work non-interactively. Without it, up/down fail with a
+# clear "is 49-phi-vpn installed?" message (never a silent no-op). Read the
+# file first (it documents its own scope and the accepted single-user risk),
+# then install it 0440 root:root and verify it with visudo before trusting
+# it. `%wheel` form assumes the desktop user is in the wheel group.
+sudo install -m 0440 -o root -g root profiles/desktop/system/etc/sudoers.d/49-phi-vpn /etc/sudoers.d/49-phi-vpn
+sudo visudo -cf /etc/sudoers.d/49-phi-vpn

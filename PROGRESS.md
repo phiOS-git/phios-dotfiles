@@ -595,7 +595,7 @@ real hardware.
 | # | Feature | Repos | Status |
 |---|---|---|---|
 | SF-1 | Keybindings + click-to-focus | dotfiles (`hyprland.lua.tmpl`), phi-shell (`Services/Keybinds.qml`) | awaiting-verification |
-| SF-2 | WireGuard: custom-conf detection + import/manage | phi (`internal/vpn`, `internal/cli`), phi-shell (`Services/Vpn`, `Settings/sections/Connectivity`, `Panels/BarPopout`), dotfiles (`profiles/desktop/manual.txt`) | todo |
+| SF-2 | WireGuard: custom-conf detection + import/manage | phi (`internal/vpn`, `internal/cli`), phi-shell (`Services/Vpn`, `Settings/sections/Connectivity`, `Panels/BarPopout`, `Config/Paths`), dotfiles (`profiles/desktop/manual.txt`) | awaiting-verification |
 | SF-3 | btop / Steam special-workspace rebuild | phi-shell (bar), dotfiles (`hyprland.lua.tmpl`) | todo |
 | SF-4 | Notifications: sound, test button, clean, groups, retention, bar blink | phi-shell, dotfiles (packages — pending user OK on `sound-theme-freedesktop`) | todo |
 | SF-5 | Cursor spotlight: effect picker, optimisation, top z-index | phi-shell | todo |
@@ -627,3 +627,39 @@ real hardware.
   than "Other".
 - Reaches machines with `git pull` + `phi theme set <variant>` (re-renders
   the template) + `hyprctl reload`. No `phi` rebuild.
+
+**SF-2 (WireGuard custom-conf + import/manage).** The user's tunnel was in
+`/etc/wireguard` (root-only) and up already, so `phi vpn` — which only
+scanned `~/.config/phi/wireguard` — showed nothing.
+- `phi/internal/vpn`: `List()`/`Status()` now union three sources — the
+  managed dir, `/etc/wireguard` (best-effort `os.ReadDir`, silent on the
+  usual permission denial), and `ip link show type wireguard` (unprivileged,
+  so it never trips the `sudo -n wg show` detail backoff). `TunnelStatus`
+  gains `Managed` + `Origin` ("managed" | "etc" | "external"). New
+  `Import(src, name)` (validates `[Interface]`, copies 0600 into the managed
+  dir, refuses a dup) and `Forget(name)` (managed dir only — refuses an
+  `/etc` or interface-only tunnel). `Up()` uses the full managed path when
+  it has one, else the bare name for wg-quick to resolve against
+  `/etc/wireguard`.
+- `phi/internal/cli/vpn`: `import PATH [NAME]` and `forget NAME` verbs;
+  `status` plain output gains the origin column; `--json` gains the two
+  fields.
+- phi-shell: `Services/Vpn` parses the new fields and adds
+  `importConfig(path)` / `forget(name)`. `Settings/sections/Connectivity`'s
+  VPN group is always shown with disabled placeholder controls when empty
+  (not a collapsed prose line), a per-tunnel origin readout, a Forget button
+  for managed tunnels, an Import-for-`/etc`-tunnels button, and an
+  import-a-path row + "Open folder". `Panels/BarPopout` shows a disabled
+  "no tunnels" toggle instead of a bare line. `Config/Paths` gains
+  `vpnConfigDir`.
+- dotfiles: `profiles/desktop/manual.txt` finally carries the
+  `sudoers.d/49-phi-vpn` install + `visudo -c` lines (they only ever
+  existed as a comment inside the sudoers file itself).
+- Reaches machines: dotfiles side is `git pull` only (manual.txt). The
+  `phi` side needs the rebuild-in-chroot + `pkgver` bump + tag + reinstall
+  cycle (§3.1) — **that is deferred to after merge**; the branch does not
+  touch `phi-packages` or create a tag.
+- Verified off-machine (macOS, native build): import / list / status
+  (plain + `--json`) / forget, dup-refusal, junk-refusal,
+  forget-non-managed-refusal all behave. `ip link` path unexercised (no
+  Linux host); `go build` / `vet` / `gofmt` clean.
