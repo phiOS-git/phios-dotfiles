@@ -867,3 +867,49 @@ phi-shell.
   component loaded via a `Loader`. Caught on review.)
 - Reaches machines: phi-shell `git pull` + `qs` restart. `hyprland.lua`
   unchanged.
+
+### `features-change` — out of plan (2026-09-10, on branch, NOT yet merged)
+
+Four shell-appearance requests, out of plan. Branch `features-change` in
+`phi-shell` and `phios-dotfiles` (dotfiles = two new design tokens; `phi`
+untouched). **Nothing here has run on real hardware.** Awaiting the user's
+verification, then a merge to `main`/`master` and a `phi theme set`.
+
+| # | Item | Files |
+|---|---|---|
+| FC-1 | Bar overlays sit right under the bar (minimal gap, like the docks) | phi-shell `Panels/BarPopout.qml`, `Panels/Calendar.qml` |
+| FC-2 | Chat + notification docks: equal `panelGap` on all four sides + a `panelRadius` corner; both settings-editable | phi-shell `Panels/Sidebar.qml`, `Panels/AgentPanel.qml`, `Settings/sections/Theme.qml`, `Settings/sections/options.js`; dotfiles tokens |
+| FC-3 | Each bar button gets a resting background + hairline (reverses OOP-21's bare-glyph rest state) | phi-shell `Config/Appearance.qml`, `Widgets/WidgetStates.js` |
+| FC-4 | Volume/brightness OSD + every `Widgets/Meter` slider restyled to `references/overlay-reference.png` — thin rail, ink not accent, asymmetric pill padding, bolder readout | phi-shell `Widgets/Meter.qml`, `Widgets/Panel.qml`, `Osd/Osd.qml`, `Panels/BarPopout.qml` |
+
+- **Two new design tokens** (`design/tokens.common.sh` +
+  `Config/Tokens.qml.tmpl`): `PHI_PANEL_GAP` (`4px`) and `PHI_PANEL_RADIUS`
+  (`6px`) — the inset and corner radius of every below-the-bar surface
+  (the two docks, the bar popouts, the calendar), per-user editable in
+  Theme › Shape & spacing. Plus `PHI_SLIDER_THICKNESS` (`4px`), not
+  settings-exposed — the visible track height of `Widgets/Meter`.
+  `Config/Appearance.qml` reads all three with a `_pxOr` fallback so the
+  shell renders correctly on a `git pull` alone, before `phi theme set`
+  has regenerated `Config/Tokens.qml`.
+- **FC-3** adds `Appearance.barButtonBackground` (translucent `colorMain`,
+  0.72) and `barButtonBorder` (translucent `colorOpposite`, 0.22); the
+  `ambient: "isle"` branch of `WidgetStates.surfaceColors()` now paints
+  them at rest / focus / invalid, hover steps to `panelHover`. Selected
+  (`active`) is unchanged — still the full opposite/main inversion. The
+  centre isle (window-title `StyledText`) is not a Segment, so it stays
+  bare, as asked. `Appearance.barButtonHover` removed (was OOP-21-only).
+- **FC-4** `Widgets/Panel` gains `paddingV` / `paddingH` (both default to
+  `padding`, every existing caller unchanged); the OSD uses `space1` /
+  `space3` for them and `panelRadius` for its corner. `Widgets/Meter`
+  default `fillColor` is now `textPrimary` (was `accent`), the track a
+  0.15 wash of it, and the visible rail is `sliderThickness` tall, centred
+  in a full text-line hit area. `BarPopout`'s two meters drop their
+  explicit `accent` fill; the `%` readouts go `kind: "title"` (DemiBold).
+- Reaches machines: `phios-dotfiles` `git pull` + `phi theme set <variant>`
+  (renders the three new tokens into `Config/Tokens.qml`; needed for the
+  settings defaults/reset to read true, not for the visual result);
+  `phi-shell` `git pull` + `qs` restart. `hyprland.lua` unchanged.
+- Unverified (no compositor here): every pixel value — the `4px`/`6px`
+  token defaults, the OSD pill proportions, the bar-button fill/border
+  alphas, the rail thickness — and that `kind: "title"` reads as intended
+  on the small mono `%` labels.

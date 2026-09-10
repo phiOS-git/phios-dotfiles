@@ -171,6 +171,21 @@ PHI_BORDER_WIDTH_STRONG='1px'
 # font's cell width). Exact value is a judgment call — flagged.
 PHI_PANEL_PADDING='8px'
 
+# panel-gap / panel-radius — Out-of-plan: features-change. The inset the
+# below-the-bar surfaces keep from the bar and the screen edges (the
+# notification and chat docks, the bar popouts, the calendar), and the
+# corner radius those surfaces round at. Both per-user editable
+# (settings › Theme › Shape & spacing). Same fractional-HiDPI [PLACEHOLDER]
+# caveat as radius-base.
+PHI_PANEL_GAP='4px'
+PHI_PANEL_RADIUS='6px'
+
+# slider-thickness — Out-of-plan: features-change. The visible track height
+# of Widgets/Meter — the volume/brightness OSD and every in-shell slider —
+# a thin rail, per references/overlay-reference.png. [PLACEHOLDER], same
+# fractional-HiDPI caveat as radius-base.
+PHI_SLIDER_THICKNESS='4px'
+
 # --- User-tunable scale (OOP-02) ------------------------------------------
 # Identity by default. The settings panel's Theme section (OOP-07) writes a
 # per-user override for these into $XDG_STATE_HOME/phi/theme-overrides.json
