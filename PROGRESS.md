@@ -597,8 +597,16 @@ real hardware.
 | SF-1 | Keybindings + click-to-focus | dotfiles (`hyprland.lua.tmpl`), phi-shell (`Services/Keybinds.qml`) | awaiting-verification |
 | SF-2 | WireGuard: custom-conf detection + import/manage | phi (`internal/vpn`, `internal/cli`), phi-shell (`Services/Vpn`, `Settings/sections/Connectivity`, `Panels/BarPopout`, `Config/Paths`), dotfiles (`profiles/desktop/manual.txt`) | awaiting-verification |
 | SF-3 | btop / Steam special-workspace rebuild | phi-shell (bar), dotfiles (`hyprland.lua.tmpl` comments only) | awaiting-verification |
-| SF-4 | Notifications: sound, test button, clean, groups, retention, bar blink | phi-shell, dotfiles (packages — pending user OK on `sound-theme-freedesktop`) | todo |
+| SF-4 | Notifications: sound, test button, clean, groups, retention, bar blink | phi-shell (+ dotfiles PROGRESS) | awaiting-verification |
 | SF-5 | Cursor spotlight: effect picker, optimisation, top z-index | phi-shell | todo |
+
+**QUESTION FOR THE USER (SF-4):** notification sound defaults to
+`/usr/share/sounds/freedesktop/stereo/message.oga`, which needs
+`sound-theme-freedesktop` (extra/T0, not in master plan §15). It is NOT
+added to `profiles/desktop/packages.txt` on this branch — CLAUDE.md rule 7.
+Sound is off by default and the path is configurable (any absolute path
+works), so the feature is inert without it. Say the word and it goes in as
+a one-line packages.txt commit.
 
 **SF-1 (keybindings + click-to-focus).** `hyprland.lua.tmpl`:
 - `hl.config({ input = { follow_mouse = 0 } })` — first `hl.config` call in
@@ -695,3 +703,34 @@ always sit to the right of the numbered strip). Driven by the new
 - Unverified: the reveal-delay value, `Hyprland.dispatch` string forms, the
   `nf-md-steam` glyph, and whether `focuswindow class:` reliably switches
   workspace on this Hyprland.
+
+**SF-4 (notifications: sound, test, clean, groups, retention, bar blink).**
+All phi-shell.
+- `Services/Notifications`: new prefs (`retentionDays` = 7, `soundEnabled`
+  = false, `soundName` = "message", `soundVolume`) in a new
+  `notification-prefs.json` (`Config/Paths`, nested JSON like
+  chroma.json — not the closed `phi state` key set). `playSound()` via
+  `pw-play --volume=` (pipewire, always present); `soundName` is a
+  freedesktop basename or an absolute path; overlapping calls dropped;
+  failures land in `soundError`. `testNotification()` fires `notify-send`
+  (libnotify, declared). `clearAll()` / `clearApp(name)` / `clearEntry()`.
+  `_pruneOld()` drops history past `retentionDays` on load and hourly (0 =
+  keep forever). New `arrived(entry)` signal for the bar blink, fired for
+  every recorded non-muted notification (DND or not).
+- `Bar/modules/Notifications`: a child flash `Rectangle` (own unbound
+  opacity, so it never fights Segment's `Behavior on opacity`) pulses
+  three times on `arrived`.
+- `Panels/tabs/Notifications`: "Clear all" button; history groups are now
+  collapsible headers (caret + app + count, tap to collapse — session-local
+  map, not persisted) with a "clear" per group and a "✕" per row; active
+  notifications get a "✕" dismiss too; a footer line states the retention
+  window.
+- `Settings/sections/Notifications`: new "Sound & testing" group
+  (enable / sound name / volume / Test sound / Test notification, with
+  `soundError` surfaced in the caption) and a "History" group (retention
+  days + Clear all). `options.js` / `sections.json` keywords updated.
+- Reaches machines: phi-shell `git pull` + `qs` restart. **Sound needs
+  `sound-theme-freedesktop`** (see the question above) unless an absolute
+  path is set.
+- Unverified: `pw-play --volume=` flag form, `notify-send -a` availability,
+  the freedesktop `.oga` path, and every layout in the rebuilt panel tab.
