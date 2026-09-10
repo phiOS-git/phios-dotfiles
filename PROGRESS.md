@@ -626,10 +626,12 @@ a one-line packages.txt commit.
   workspace = N })`, `hl.dsp.window.float`, `hl.dsp.layout("togglesplit")`,
   `hl.dsp.workspace.toggle_special`, the mouse binds and the scroll pair are
   all verbatim from `hyprwm/Hyprland`'s `example/hyprland.lua` (fetched this
-  session). `hl.dsp.window.move({ direction })`, `window.center/pin/resize`
-  and `focus({ monitor })` are from the hl.* API reference only — flagged in
-  the file as the most likely to need a real-hardware fix; each has a
-  `hyprctl dispatch` fallback noted inline. C-06 (Lua API in motion) applies.
+  session) — used natively. Everything the example did NOT show (direction
+  moves, centre, pin, per-key resize, monitor focus/move, fullscreen) goes
+  through `hl.dsp.exec_cmd("hyprctl dispatch …")` deliberately: a wrong
+  `hl.dsp.*` shape can abort the whole Lua script on load, and `hyprctl
+  dispatch` is stable. They can move to native forms once confirmed on
+  hardware. C-06 (Lua API in motion) applies.
 - `Services/Keybinds.qml` `context()` classifier updated so the new binds
   land in "Window management" in the settings/cheatsheet reference rather
   than "Other".
@@ -759,7 +761,9 @@ phi-shell.
 - **Key risk to verify:** that a layer-shell surface mapped *later* stacks
   above an earlier one in the same `Overlay` layer on this Hyprland — that
   is the mechanism the z-index fix relies on. Also `mask: Region {}` as
-  the click-through form, and the inline-`component` + `Loader` nesting
-  rendering at all (no compositor here).
+  the click-through form. (The inline `component Vignette` gets its own id
+  scope — `cx`/`cy` are passed in at instantiation rather than read off the
+  window's `root` id, which is not resolvable from inside an inline
+  component loaded via a `Loader`. Caught on review.)
 - Reaches machines: phi-shell `git pull` + `qs` restart. `hyprland.lua`
   unchanged.

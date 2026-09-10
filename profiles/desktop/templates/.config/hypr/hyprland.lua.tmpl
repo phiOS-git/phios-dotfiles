@@ -157,30 +157,32 @@ hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }),  { descript
 -- universal tiling-WM convention and Hyprland's own example/hyprland.lua.
 --
 -- API forms confirmed against hyprwm/Hyprland's example/hyprland.lua this
--- session: `hl.dsp.focus({ workspace = N })`, `hl.dsp.window.move({ workspace
--- = N })`, `hl.dsp.window.float({ action = "toggle" })`, `hl.dsp.layout(
--- "togglesplit")`, `hl.dsp.workspace.toggle_special(name)`, the
--- `mouse:272/273` + `{ mouse = true }` drag/resize pair, and the
--- `mouse_down/mouse_up` + `focus({ workspace = "e+1"/"e-1" })` scroll pair
--- are all verbatim from that file. `hl.dsp.window.move({ direction = ... })`,
--- `hl.dsp.window.center/pin/resize`, and `focus({ monitor = ... })` are from
--- the hl.* API reference (alejandrominaya.github.io/hyprland-lua-docs) but
--- not in the example — flagged as the ones most likely to need a fix on
--- real hardware; the reliable fallback for each is the matching
--- `hl.dsp.exec_cmd("hyprctl dispatch <d> <args>")`.
+-- session and used natively below: `hl.dsp.focus({ workspace = N })`,
+-- `hl.dsp.window.move({ workspace = N })`, `hl.dsp.window.float({ action =
+-- "toggle" })`, `hl.dsp.layout("togglesplit")`,
+-- `hl.dsp.workspace.toggle_special(name)`, the `mouse:272/273` + `{ mouse =
+-- true }` drag/resize pair, and the `mouse_down/mouse_up` + `focus({
+-- workspace = "e+1"/"e-1" })` scroll pair.
+--
+-- Everything the example did NOT show — direction-based window moves,
+-- centre/pin, per-key resize, monitor focus/move, fullscreen — goes through
+-- `hl.dsp.exec_cmd("hyprctl dispatch ...")` on purpose: `hyprctl dispatch`
+-- is a stable interface, and a wrong `hl.dsp.*` shape can abort the whole
+-- Lua script on load (taking out every bind, not just the bad one). Once
+-- the native forms are confirmed on real hardware these can move over. C-06.
 
 -- move the active window in a direction (opposite of the focus binds above)
-hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.window.move({ direction = "left" }),  { description = "Move the window left" })
-hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" }), { description = "Move the window right" })
-hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "up" }),    { description = "Move the window up" })
-hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "down" }),  { description = "Move the window down" })
+hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.exec_cmd("hyprctl dispatch movewindow l"), { description = "Move the window left" })
+hl.bind(mainMod .. " + SHIFT + right", hl.dsp.exec_cmd("hyprctl dispatch movewindow r"), { description = "Move the window right" })
+hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.exec_cmd("hyprctl dispatch movewindow u"), { description = "Move the window up" })
+hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.exec_cmd("hyprctl dispatch movewindow d"), { description = "Move the window down" })
 
 -- layout / floating state
 hl.bind(mainMod .. " + F",         hl.dsp.exec_cmd("hyprctl dispatch fullscreen 0"), { description = "Toggle fullscreen" })
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }), { description = "Toggle floating" })
 hl.bind(mainMod .. " + J",         hl.dsp.layout("togglesplit"), { description = "Toggle the dwindle split direction" })
-hl.bind(mainMod .. " + C",         hl.dsp.window.center(), { description = "Centre the floating window" })
-hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pin(), { description = "Pin the floating window to every workspace" })
+hl.bind(mainMod .. " + C",         hl.dsp.exec_cmd("hyprctl dispatch centerwindow"), { description = "Centre the floating window" })
+hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprctl dispatch pin"), { description = "Pin the floating window to every workspace" })
 
 -- numbered workspaces (Super+1..0), and send-to-workspace (Super+Shift+1..0).
 -- Loop taken verbatim from example/hyprland.lua, including `i % 10` mapping
@@ -221,15 +223,14 @@ hl.bind(mainMod .. " + SHIFT + period", hl.dsp.exec_cmd("hyprctl dispatch movewi
 -- pattern as the screenshot submap further down.
 hl.bind(mainMod .. " + R", hl.dsp.submap("resize"), { description = "Enter resize mode" })
 hl.define_submap("resize", function()
-    local step = 40
-    hl.bind("left",  hl.dsp.window.resize({ x = -step, y = 0 }))
-    hl.bind("right", hl.dsp.window.resize({ x = step,  y = 0 }))
-    hl.bind("up",    hl.dsp.window.resize({ x = 0, y = -step }))
-    hl.bind("down",  hl.dsp.window.resize({ x = 0, y = step }))
-    hl.bind("h",     hl.dsp.window.resize({ x = -step, y = 0 }))
-    hl.bind("l",     hl.dsp.window.resize({ x = step,  y = 0 }))
-    hl.bind("k",     hl.dsp.window.resize({ x = 0, y = -step }))
-    hl.bind("j",     hl.dsp.window.resize({ x = 0, y = step }))
+    hl.bind("left",  hl.dsp.exec_cmd("hyprctl dispatch resizeactive -40 0"))
+    hl.bind("right", hl.dsp.exec_cmd("hyprctl dispatch resizeactive 40 0"))
+    hl.bind("up",    hl.dsp.exec_cmd("hyprctl dispatch resizeactive 0 -40"))
+    hl.bind("down",  hl.dsp.exec_cmd("hyprctl dispatch resizeactive 0 40"))
+    hl.bind("h",     hl.dsp.exec_cmd("hyprctl dispatch resizeactive -40 0"))
+    hl.bind("l",     hl.dsp.exec_cmd("hyprctl dispatch resizeactive 40 0"))
+    hl.bind("k",     hl.dsp.exec_cmd("hyprctl dispatch resizeactive 0 -40"))
+    hl.bind("j",     hl.dsp.exec_cmd("hyprctl dispatch resizeactive 0 40"))
     hl.bind("Escape", hl.dsp.submap("reset"))
     hl.bind("Return", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
