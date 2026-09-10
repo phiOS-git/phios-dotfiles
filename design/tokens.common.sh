@@ -206,6 +206,13 @@ PHI_MOTION_A_EASING='linear'
 # short and ease-out. Anything springy belongs to a category that is not B.
 PHI_MOTION_B_DURATION='120ms'
 PHI_MOTION_B_EASING='ease-out'
+# The same curve as four cubic-bezier control points (Out-of-plan: settings-
+# overhaul batch E — the animation editor). '0.25,0.46,0.45,0.94' is the
+# cubic-bezier equivalent of Qt's Easing.OutQuad, so nothing about the
+# shipped motion changes until the user edits it. Consumed as
+# easing.bezierCurve by every Behavior in phi-shell (Config/Appearance.qml
+# motionBCurve appends the mandatory final (1,1) point).
+PHI_MOTION_B_BEZIER='0.25,0.46,0.45,0.94'
 
 # C — emphasis, rare events: boot, unlock, first run. Exactly two effects are
 # admitted, per-character typing and a random-letters scramble that resolves.
