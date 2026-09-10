@@ -101,3 +101,13 @@ profiles/desktop/templates/.config/qt5ct/colors/phi.conf.tmpl   | .config/qt5ct/
 # ~/.librewolf/profiles.ini's Path= key, deterministic per machine only
 # after first launch) and note it in PROGRESS.md as open, not silently
 # dropped.
+
+# The Linux VT console palette (OOP-29, master plan §6.7 class 5) is a
+# themed target with NO row here, for a different reason: `setvtrgb`'s file
+# format is bare 0-255 decimal triples, and this pipeline only ever emits
+# #rrggbb — there is no hex→decimal step in `phios-render`/`phi theme`.
+# profiles/base/system/etc/phi/console.palette carries the values
+# literally, traced to PHI_ANSI_* in its companion unit
+# (profiles/base/system/etc/systemd/system/phi-vconsole-theme.service). It
+# is a manual re-sync on a palette change, the same known divergence
+# design/brand/README.md records for the Φ assets.

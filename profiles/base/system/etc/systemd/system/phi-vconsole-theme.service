@@ -1,0 +1,46 @@
+# phiOS -- design-token palette for the Linux virtual terminals (OOP-29,
+# master plan Sec6.7 class 5 "chrome di sistema": banner TTY/login). phiOS
+# runs no display manager -- login is agetty on a VT (architettura Sec662)
+# -- so the login surface is themed by two things: /etc/issue (the static
+# Role-A mark) and this unit, which repaints the 16 VT palette entries from
+# design/tokens.dark.sh's PHI_ANSI_* tokens. With it applied the `login:`
+# prompt, what you type, and every early console message render in the
+# phiOS palette instead of the stock VGA one.
+#
+# DECLARED, NEVER ENABLED by the installer (R8, bin/lib/system.sh
+# phios_services_report). profiles/base/system/ is shown by
+# `--system-diff` and applied by hand, file by file. Enable with:
+#   sudo systemctl enable phi-vconsole-theme.service
+#
+# /etc/phi/console.palette carries literal 0-255 decimals, not $PHI_*
+# names: `setvtrgb`'s format is bare decimal triples and the theme render
+# pipeline (envsubst) only ever emits #rrggbb, so there is no template path
+# for this target -- it is a manual re-sync on any palette change, the same
+# known divergence design/brand/README.md records for the Phi assets, and
+# design/adapters.txt notes it has no row for this reason. Provenance
+# (dark variant, tokens.dark.sh hex -> decimal, ANSI slot order 0..15):
+#   0 #242320   1 #b57b73   2 #8fa77e   3 #c0a874
+#   4 #7f95ab   5 #d3a0ac   6 #3d9e9e   7 #d6d1c9
+#   8 #878279   9 #d7897f  10 #87a76f  11 #bd9d53
+#  12 #809ebd  13 #d292a2  14 #1eaaab  15 #d6d1c9
+#
+# Revert on a running system: `setvtrgb vga`.
+
+[Unit]
+Description=phiOS console palette (design tokens applied to the Linux VT colours)
+Documentation=man:setvtrgb(8)
+After=systemd-vconsole-setup.service
+Before=getty.target systemd-user-sessions.service
+ConditionPathExists=/etc/phi/console.palette
+ConditionPathExists=/usr/bin/setvtrgb
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+StandardInput=tty
+StandardOutput=tty
+TTYPath=/dev/tty0
+ExecStart=/usr/bin/setvtrgb /etc/phi/console.palette
+
+[Install]
+WantedBy=multi-user.target

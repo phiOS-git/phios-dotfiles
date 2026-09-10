@@ -1,0 +1,12 @@
+# phiOS -- system units this profile DECLARES. The installer prints them
+# and stops; enabling a unit is a user action (R8, bin/lib/system.sh
+# phios_services_report).
+
+# OOP-29: repaint the Linux virtual-terminal palette from the design
+# tokens, so the login screen (agetty on a VT -- phiOS has no display
+# manager) is drawn in the phiOS colours. The unit file is
+# profiles/base/system/etc/systemd/system/phi-vconsole-theme.service and
+# reads profiles/base/system/etc/phi/console.palette; both are shown by
+# `--system-diff` and applied by hand.
+#   sudo systemctl enable phi-vconsole-theme.service
+phi-vconsole-theme.service
