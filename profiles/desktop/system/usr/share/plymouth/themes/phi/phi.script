@@ -11,6 +11,14 @@
 // independently confirmed byte-for-byte against that reference -- flagged,
 // not guessed silently.
 //
+// OOP-30 (out-of-plan, "auth-surfaces"): composition + passphrase styling
+// brought onto the lock screen's grammar. The mark now sits above centre
+// with the passphrase prompt stacked directly beneath it (was: mark dead
+// centre, prompt at 0.75) -- the same clock-high / input-below stack as
+// Lock/Lock.qml. The passphrase line uses `*` bullets and a block caret,
+// matching the lock screen's masked-`*` echo and rectangle cursor. The
+// palette and the scramble toggle below are unchanged.
+//
 // Colours are PHI_BG_0 and PHI_FG_0, dark variant, literal (Plymouth runs
 // before phi exists -- see design/brand/README.md for the full reasoning,
 // shared by every asset this step produces). RGB values are the exact
@@ -29,7 +37,11 @@ Window.SetBackgroundBottomColor(0.102, 0.098, 0.094);
 logo.image = Image("phi.png");
 logo.sprite = Sprite(logo.image);
 logo.sprite.SetX(Window.GetX() + Window.GetWidth() / 2 - logo.image.GetWidth() / 2);
-logo.sprite.SetY(Window.GetY() + Window.GetHeight() / 2 - logo.image.GetHeight() / 2);
+// Above centre, not dead centre: show_password_prompt() resolves the
+// passphrase line directly below this, so the mark and the prompt read as
+// one vertical stack -- the lock screen's composition (clock high, input
+// beneath), within what a boot splash can draw.
+logo.sprite.SetY(Window.GetY() + Window.GetHeight() * 0.42 - logo.image.GetHeight() / 2);
 logo.sprite.SetOpacity(1);
 
 // --- Optional random-letters resolve on appearance ------------------------
@@ -83,14 +95,26 @@ dialog.message = SpriteNew();
 dialog.message.SetOpacity(0);
 
 fun show_password_prompt(prompt, bullets) {
+    // `*` bullets and a trailing block caret -- the same terminal-input
+    // vocabulary as Lock/Lock.qml's password field (masked `*` echo, a
+    // rectangle cursor), in what Plymouth's text primitive allows. The
+    // caret is U+2588; if it renders as tofu on the target's Plymouth
+    // font, swap it for "_" -- one line, same idea, the console-safe
+    // fallback the way design/brand/phi-ascii.txt is for the Φ mark.
+    // Deliberately NOT blinking: boot is Role A ("immobile") and
+    // Plymouth's refresh cadence is not verifiable from here; a still
+    // block still reads as an old-terminal caret. The lock screen, a live
+    // GUI surface, is the one that blinks.
     dots = "";
     for (i = 0; i < bullets; i++) {
         dots = dots + "*";
     }
-    dialog.text = Image.Text(prompt + "  " + dots, 0.839, 0.820, 0.788);
+    dialog.text = Image.Text(prompt + "  " + dots + "█", 0.839, 0.820, 0.788);
     dialog.message.SetImage(dialog.text);
     dialog.message.SetX(Window.GetX() + Window.GetWidth() / 2 - dialog.text.GetWidth() / 2);
-    dialog.message.SetY(Window.GetY() + Window.GetHeight() * 0.75);
+    // Directly beneath the mark (SetY 0.42) rather than down at 0.75 --
+    // see the logo-placement note above.
+    dialog.message.SetY(Window.GetY() + Window.GetHeight() * 0.56);
     dialog.message.SetOpacity(1);
 }
 
