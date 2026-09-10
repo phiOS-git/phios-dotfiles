@@ -1,6 +1,13 @@
 # Steps that have to be run by hand once, because the installer cannot perform
-# them: they are not pacman packages, not files, and not systemd units.
-# phios-install prints this list and never runs anything in it.
+# them: things that are not T0 pacman packages, plus the application of this
+# profile's system/ (/etc, /usr) material and the enabling of the units it
+# declares — the installer only ever shows those (`--system-diff`) or prints
+# them (services-*.txt), it never touches root. phios-install prints this
+# list and never runs anything in it.
+#
+# The `sudo install` lines below assume the current directory is the
+# phios-dotfiles checkout root. Read each source file first (`--system-diff`
+# shows them against what is already on the machine).
 #
 # The yazi git plugin. home/.config/yazi/init.lua does require("git") and
 # yazi.toml registers it as a fetcher, so without the plugin yazi starts with
@@ -23,3 +30,34 @@ grep -q '^\[phi\]' /etc/pacman.conf || sudo sh -c 'printf "\n[phi]\nSigLevel = R
 # Import and locally trust the phi packaging public key (generated once on
 # zotac by hand; the private key never leaves zotac, per phi-packages/CLAUDE.md).
 sudo pacman-key --add <path-to-phi-packaging-key.asc> && sudo pacman-key --lsign-key <key-id>
+
+# --- Role A: the login / SSH / boot banners (S-53) ---------------------------
+# The TTY login banner. Pure ASCII, safe on the raw console font.
+sudo install -Dm644 profiles/base/system/etc/issue /etc/issue
+# The SSH banner (the Unicode Phi form) and the sshd drop-in that enables it.
+# Confirm sshd_config still has its default `Include /etc/ssh/sshd_config.d/*`
+# line, then reload sshd.
+sudo install -Dm644 profiles/base/system/etc/phi-banner /etc/phi-banner
+sudo install -Dm644 profiles/base/system/etc/ssh/sshd_config.d/10-phi-banner.conf /etc/ssh/sshd_config.d/10-phi-banner.conf && sudo systemctl reload sshd
+
+# --- OOP-29: the design-token console palette --------------------------------
+# Repaints the 16 Linux VT colours from PHI_ANSI_* so the login prompt and
+# early console output are in the phiOS palette. Revert with `setvtrgb vga`.
+sudo install -Dm644 profiles/base/system/etc/phi/console.palette /etc/phi/console.palette
+sudo install -Dm644 profiles/base/system/etc/systemd/system/phi-vconsole-theme.service /etc/systemd/system/phi-vconsole-theme.service
+sudo systemctl daemon-reload && sudo systemctl enable --now phi-vconsole-theme.service
+
+# --- S-45: the pacman theme-regen hook --------------------------------------
+# Re-runs `phi theme set` after an upgrade that could put stale config back
+# (kitty, the GTK/Qt packages, phi, phi-shell). Both files are /etc material.
+sudo install -Dm644 profiles/base/system/etc/pacman.d/hooks/phi-theme-regen.hook /etc/pacman.d/hooks/phi-theme-regen.hook
+sudo install -Dm755 profiles/base/system/usr/local/bin/phi-theme-regen-hook.sh /usr/local/bin/phi-theme-regen-hook.sh
+
+# --- OOP-34: PHI_DOTFILES -----------------------------------------------------
+# phios-install writes ~/.config/phios/dotfiles-root and
+# ~/.config/environment.d/10-phios.conf pointing `phi` and phi-shell at this
+# checkout (see bin/lib/env.sh). Nothing to run — but if this checkout is NOT
+# at ~/phios-dotfiles and you have not re-run phios-install since OOP-34,
+# either do that or export PHI_DOTFILES yourself. To pick it up in the
+# running session without a re-login:
+systemctl --user import-environment PHI_DOTFILES

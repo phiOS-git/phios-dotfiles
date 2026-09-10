@@ -64,6 +64,24 @@ file survives untouched.
 Profile order in each host file is significant: a profile that provides a
 concrete driver must precede one that requires it.
 
+## Where this checkout lives, and `PHI_DOTFILES`
+
+`phi` is installed system-wide by pacman, decoupled from any one checkout, so
+it has to be told — or guess — where this repository is. It resolves it as
+`$PHI_DOTFILES` if set, otherwise `~/phios-dotfiles` (`phi/internal/tokens`
+`Root()`); `phi-shell`'s capability probe (`Config/Capabilities.qml`) does the
+same. Every install procedure clones the repo to `~/phios-dotfiles`, so the
+default works out of the box.
+
+A checkout kept anywhere else needs `$PHI_DOTFILES` set, or `phi theme`,
+`phi doctor`'s dotfiles checks and the capability probe silently fail to find
+it. `bin/phios-install` handles this on every run: it writes the real path of
+this checkout to `~/.config/phios/dotfiles-root` (read by
+`profiles/base/home/.zshenv`, so the login shell and everything it starts pick
+up `$PHI_DOTFILES`) and to `~/.config/environment.d/10-phios.conf` (the
+systemd user environment). Both are derived machine state, not tracked in the
+install manifest — see `bin/lib/env.sh`.
+
 ## What this repository deliberately does not do
 
 - **No `/etc` material, applied or otherwise.** `/etc` changes are a strictly

@@ -37,6 +37,8 @@ PHIOS_ROOT=$(dirname -- "$PHIOS_BIN")
 . "$PHIOS_BIN/lib/packages.sh"
 # shellcheck source=lib/system.sh
 . "$PHIOS_BIN/lib/system.sh"
+# shellcheck source=lib/env.sh
+. "$PHIOS_BIN/lib/env.sh"
 
 usage() {
 	cat <<'USAGE'
@@ -192,6 +194,8 @@ phios_report() {
 	phios_out ''
 	phios_out 'manual steps'
 	phios_manual_report
+
+	phios_env_report
 }
 
 phios_mode_dry_run() {
@@ -280,6 +284,8 @@ phios_mode_apply() {
 	phios_out ''
 	phios_out 'manual steps'
 	phios_manual_report
+
+	phios_env_write
 
 	phios_out ''
 	phios_out "manifest  $(phios_manifest_path)"

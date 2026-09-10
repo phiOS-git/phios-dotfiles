@@ -1,0 +1,24 @@
+# Manual steps for the `desktop` profile: the application of its system/
+# material, which phios-install only ever shows (`--system-diff`) and never
+# touches. The `sudo install` lines assume the current directory is the
+# phios-dotfiles checkout root; read each source first.
+
+# --- S-34: PAM service for the phi-shell lock screen ------------------------
+# Lock/Lock.qml's PamContext.config is "phi-shell-lock". Without this file
+# PamContext.start() fails (PamError.StartFailed) and the lock screen can
+# never authenticate — it stays locked. See the file's own header.
+sudo install -Dm644 profiles/desktop/system/etc/pam.d/phi-shell-lock /etc/pam.d/phi-shell-lock
+
+# --- S-53 / OOP-33: the Plymouth boot theme --------------------------------
+# The Role-A boot splash (mark + LUKS passphrase box). Install the theme
+# directory, make it the default, and rebuild the initramfs so it lands in
+# early boot.
+sudo install -Dm644 profiles/desktop/system/usr/share/plymouth/themes/phi/phi.plymouth /usr/share/plymouth/themes/phi/phi.plymouth
+sudo install -Dm644 profiles/desktop/system/usr/share/plymouth/themes/phi/phi.script   /usr/share/plymouth/themes/phi/phi.script
+sudo install -Dm644 profiles/desktop/system/usr/share/plymouth/themes/phi/phi.png      /usr/share/plymouth/themes/phi/phi.png
+sudo plymouth-set-default-theme -R phi
+# `plymouth-set-default-theme -R` rebuilds the initramfs itself. It only
+# works if `plymouth` is in the HOOKS line of /etc/mkinitcpio.conf (after
+# `base udev`, before `autodetect`); add it there first if it is missing,
+# then re-run the command above.
+grep -q '\bplymouth\b' /etc/mkinitcpio.conf || echo 'ADD plymouth to HOOKS in /etc/mkinitcpio.conf, then re-run plymouth-set-default-theme -R phi'
