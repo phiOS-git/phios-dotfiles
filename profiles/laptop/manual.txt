@@ -1,0 +1,12 @@
+# Manual steps for the `laptop` profile: the application of its system/
+# material, which phios-install only ever shows (`--system-diff`) and never
+# touches. The `sudo install` lines assume the current directory is the
+# phios-dotfiles checkout root; read each source first.
+
+# --- BF-3: NetworkManager → resolvconf, for WireGuard DNS -----------------
+# Routes NM's DNS through resolvconf (openresolv, already installed) so
+# `phi vpn up/down` no longer needs a manual `sudo resolvconf -u` and
+# bringing the VPN down does not blank /etc/resolv.conf. Read the file's
+# own header. Reload NM after.
+sudo install -Dm644 profiles/laptop/system/etc/NetworkManager/conf.d/rc-manager.conf /etc/NetworkManager/conf.d/rc-manager.conf
+sudo systemctl reload NetworkManager.service

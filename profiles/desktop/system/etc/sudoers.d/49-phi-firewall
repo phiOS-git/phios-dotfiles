@@ -1,0 +1,33 @@
+# phiOS — nftables control for `phi firewall` (Out-of-plan: firewall).
+#
+# NEVER APPLIED BY THE INSTALLER. This is /etc material shown by
+# `phios-install --system-diff`; installing it is a deliberate user action:
+#
+#   sudo install -m 0440 -o root -g root \
+#     profiles/desktop/system/etc/sudoers.d/49-phi-firewall /etc/sudoers.d/49-phi-firewall
+#   sudo visudo -cf /etc/sudoers.d/49-phi-firewall   # verify before trusting it
+#
+# It lets the desktop user load and read the phiOS firewall without a
+# password, so `phi firewall` and the Connectivity → Firewall settings
+# section work non-interactively (`sudo -n`).
+#
+# Scope notes / accepted risk on a single-user personal machine (the same
+# stance as 49-phi-vpn):
+#   - `nft -f -` loads an nft script from stdin as root. `phi` is the only
+#     writer of that stdin, and every statement it emits is scoped to
+#     `table inet phi` — it never emits `flush ruleset`, so other tables
+#     (docker, libvirt, podman) are untouched. A %wheel user can already
+#     run `sudo nft` with a password; this removes the prompt, not a wall.
+#   - `tee /etc/nftables.conf` writes exactly that one path — the persisted
+#     ruleset nftables.service loads at boot.
+#   - the `nft list …` and the fixed `journalctl -k …` forms are read-only.
+#   - replace `phi` below with the real desktop username, or keep the
+#     %wheel group form if that user is in wheel.
+#   - the journalctl grep is `phi-fw`, not `phi-fw:`: a literal ':' in a
+#     sudoers command argument is a metacharacter and an unescaped one is a
+#     parse error. `phi firewall` greps the exact `phi-fw:` prefix itself.
+
+%wheel ALL=(root) NOPASSWD: /usr/bin/nft -f -
+%wheel ALL=(root) NOPASSWD: /usr/bin/nft list ruleset, /usr/bin/nft -j list ruleset, /usr/bin/nft list table inet phi
+%wheel ALL=(root) NOPASSWD: /usr/bin/tee /etc/nftables.conf
+%wheel ALL=(root) NOPASSWD: /usr/bin/journalctl -k --no-pager -o json -g phi-fw -n 200
