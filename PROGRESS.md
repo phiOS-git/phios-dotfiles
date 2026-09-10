@@ -247,6 +247,8 @@ follows the same `awaiting-verification` → `verified` discipline as a step.
 
 | OOP-30 | Auth surfaces — boot splash: Plymouth onto the lock screen grammar | awaiting-verification | phios-dotfiles `master` (this row's commit) | 2026-09-11 | **`Out-of-plan: auth-surfaces`**, `phios-dotfiles` only, `profiles/desktop/system/usr/share/plymouth/themes/phi/phi.script`. Brings the boot splash's composition and passphrase styling onto `Lock/Lock.qml`'s grammar. **(1) composition** — the Φ mark moves from dead centre to `SetY = height * 0.42` and the LUKS passphrase line from `height * 0.75` to `* 0.56`, so the mark and the prompt read as one vertical stack (clock-high / input-below, the lock screen's shape) instead of two disconnected elements. **(2) passphrase line** — `*` bullets (unchanged) plus a trailing `█` block caret, matching the lock screen's masked-`*` echo and rectangle cursor; **not blinking** (Role A is "immobile"; Plymouth's refresh cadence is unverifiable from here), with `_` documented as the one-line console-safe fallback if the block glyph is tofu on the target's Plymouth font. Palette (literal `PHI_BG_0` / `PHI_FG_0`, dark — Plymouth runs before `phi`) and the `ENABLE_SCRAMBLE = 0` toggle are unchanged. **Not verified — no machine here, and Plymouth cannot be exercised off a real boot.** Needs `plymouth-set-default-theme -R phi` (or an initramfs rebuild) then a reboot into a LUKS prompt to see. Changed: `profiles/desktop/system/usr/share/plymouth/themes/phi/phi.script`. |
 
+| OOP-31 | Auth surfaces R2 — lock screen: real fade + matrix backdrop | awaiting-verification | phi-shell `c87433f` · phios-dotfiles `master` (this row's commit) | 2026-09-11 | **`Out-of-plan: auth-surfaces`**, revision of OOP-28 on the user's review ("the lock screen does not fade in/out, it's still instant" + "add a lavat-style effect"). `phi-shell` only for code. **(1) fade fixed** — OOP-28 wrapped the content in an `Item` whose `opacity` flipped in `Component.onCompleted`; the animation ran while the `WlSessionLockSurface` was still off-screen and read as instant. Now: `contentRoot.opacity` starts at `0`, an explicit `NumberAnimation` (`revealFade`, category-C duration `motionCScramble`, `Easing.InOutQuad`) is started via `Qt.callLater` one turn past completion — the same deferral `Launcher` uses. **(2) fade-out on unlock** — the `PamResult.Success` branch now sets a new `root.authenticated` flag instead of clearing `locked`; a `Connections` handler starts `concealFade`, and **`concealFade.onFinished` is the one and only writer of `locked = false`**. Still fail-closed: `authenticated` is only set on `Success`, and a stuck animation leaves the screen locked, never unlocked. A crossfade is a deliberate deviation from §6.5 category C's two named effects (typing, scramble) — the user asked for it; noted in the code. **(3) `Lock/MatrixRain.qml`** (new) — a from-scratch `Canvas` falling-glyph field behind the lock content, in the spirit of `AngelJumbo/lavat` (the drifting brightness band is the "lava"). Tokens only (trail `fg-3`→`fg-2`, head/band lift toward `accent`), no green, ASCII+Greek charset (Source Code Pro covers both; **no katakana** — phiOS has no CJK noto font, Q-18). Motion category D with the exception noted (explicit user request, lock surface only, stops on conceal). Frame interval reuses `motionCTypeStep`. `matrixRain.running` is cleared when the conceal starts. **Not verified — no compositor here.** Screenshot-pass risks: `Canvas` throughput at this cell count on the Iris Xe, whether `QQuickContext2D.fillStyle` takes a `color` object, the fade timing, and whether `Qt.callLater` reliably makes the reveal visible on a `WlSessionLockSurface`. New: `phi-shell/Lock/MatrixRain.qml`. Changed: `phi-shell/Lock/Lock.qml`. |
+
 ### `shell-restyle` — consolidated status (2026-09-10, verified 2026-09-11)
 
 A single visual restyle of `phi-shell` + the design tokens, requested out of
@@ -334,12 +336,15 @@ general:gaps_{in,out}` / `~/.config/hypr` grep output (see OOP-25's row).
   user's yazi version is needed first. Librewolf's `userChrome.css` is two
   lines and has no `adapters.txt` row (random profile-dir prefix — see that
   template's header).
-- **#6 — done at OOP-28 (out-of-plan, `auth-surfaces`).** `Lock/Lock.qml`:
-  terminal-style password field (mono role, a `cursorDelegate` block caret
-  blinking on `PHI_MOTION_A_PERIOD`, `*` echo, `radius-small`), a Category-B
-  content fade-in on an inner `Item` (the surface `color` stays opaque per
-  the protocol), and a full-surface `Qt.BlankCursor` `MouseArea` (mouse +
-  touch). Awaiting the screenshot pass — see OOP-28's row.
+- **#6 — done at OOP-28, revised at OOP-31 (out-of-plan, `auth-surfaces`).**
+  `Lock/Lock.qml`: terminal-style password field (mono role, a
+  `cursorDelegate` block caret blinking on `PHI_MOTION_A_PERIOD`, `*` echo,
+  `radius-small`); a real fade in/out (OOP-31 — explicit `NumberAnimation`
+  at the category-C duration, deferred via `Qt.callLater`; conceal on
+  unlock is now the sole writer of `locked = false`); a full-surface
+  `Qt.BlankCursor` `MouseArea` (mouse + touch); and a `Canvas` matrix-rain
+  backdrop (`Lock/MatrixRain.qml`). Awaiting the screenshot pass — see
+  OOP-28 / OOP-31's rows.
 - **#7 — CLOSED at OOP-21 (R4).** The user confirmed it means the per-isle
   blocks, and added the colour-inversion half (R4 item 6). `BarIsle` no
   longer paints a block; `surfaceColors()`'s "isle" branch has no resting
