@@ -585,3 +585,45 @@ general:gaps_{in,out}` / `~/.config/hypr` grep output (see OOP-25's row).
 mid-session (APFS local snapshots the likely cause); `df -h /` recovered to
 ~1.3 GB after cleanup. `phi theme set` and `git pull` write to that disk —
 free space before applying.
+
+### `shell-features` — out of plan (2026-09-10, branch `session-2026-09-10-shell-features`)
+
+A batch of six feature requests, out of plan, each its own commit per repo.
+Branch not pushed — the user merges after reviewing. Nothing here has run on
+real hardware.
+
+| # | Feature | Repos | Status |
+|---|---|---|---|
+| SF-1 | Keybindings + click-to-focus | dotfiles (`hyprland.lua.tmpl`), phi-shell (`Services/Keybinds.qml`) | awaiting-verification |
+| SF-2 | WireGuard: custom-conf detection + import/manage | phi (`internal/vpn`, `internal/cli`), phi-shell (`Services/Vpn`, `Settings/sections/Connectivity`, `Panels/BarPopout`), dotfiles (`profiles/desktop/manual.txt`) | todo |
+| SF-3 | btop / Steam special-workspace rebuild | phi-shell (bar), dotfiles (`hyprland.lua.tmpl`) | todo |
+| SF-4 | Notifications: sound, test button, clean, groups, retention, bar blink | phi-shell, dotfiles (packages — pending user OK on `sound-theme-freedesktop`) | todo |
+| SF-5 | Cursor spotlight: effect picker, optimisation, top z-index | phi-shell | todo |
+
+**SF-1 (keybindings + click-to-focus).** `hyprland.lua.tmpl`:
+- `hl.config({ input = { follow_mouse = 0 } })` — first `hl.config` call in
+  the file; hover no longer focuses, only a click does. A config variable,
+  so it survives `hyprctl reload` (a `hyprctl keyword` in an
+  `hyprland.start` hook would not — that event does not refire on reload).
+- Window management binds that never existed: move window (`Super+Shift+`
+  arrows), numbered workspaces + send-to-workspace (`Super+1..0` /
+  `Super+Shift+1..0`, the `i % 10` loop verbatim from `example/hyprland.lua`),
+  `Super+wheel` workspace scroll, `Super+mouse:272/273` drag/resize,
+  fullscreen (`Super+F`), float toggle (`Super+Shift+F`), dwindle split
+  (`Super+J`), centre (`Super+C`), pin (`Super+Shift+P`), a `special:scratch`
+  scratchpad (`Super+A` / `Super+Shift+A`), monitor focus/move
+  (`Super+,` / `Super+.` — inert on a single output), and a `Super+R`
+  resize submap.
+- API forms: `hl.dsp.focus({ workspace = N })`, `hl.dsp.window.move({
+  workspace = N })`, `hl.dsp.window.float`, `hl.dsp.layout("togglesplit")`,
+  `hl.dsp.workspace.toggle_special`, the mouse binds and the scroll pair are
+  all verbatim from `hyprwm/Hyprland`'s `example/hyprland.lua` (fetched this
+  session). `hl.dsp.window.move({ direction })`, `window.center/pin/resize`
+  and `focus({ monitor })` are from the hl.* API reference only — flagged in
+  the file as the most likely to need a real-hardware fix; each has a
+  `hyprctl dispatch` fallback noted inline. C-06 (Lua API in motion) applies.
+- `Services/Keybinds.qml` `context()` classifier updated so the new binds
+  land in "Window management" in the settings/cheatsheet reference rather
+  than "Other".
+- Reaches machines with `git pull` + `phi theme set <variant>` (re-renders
+  the template) + `hyprctl reload`. No `phi` rebuild.

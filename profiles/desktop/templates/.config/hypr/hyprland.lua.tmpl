@@ -58,6 +58,28 @@ hl.monitor({
     scale    = "auto",
 })
 
+---------------
+---- INPUT ----
+---------------
+
+-- Focus follows the mouse ONLY on click, never on hover (user directive).
+-- `input:follow_mouse = 0` — Hyprland wiki (configuring/variables): "cursor
+-- focus will be detached from keyboard focus completely. Clicking on a
+-- window will move keyboard focus to that window", hovering will not. This
+-- is a config VARIABLE, not a dispatch, so it survives `hyprctl reload` —
+-- a one-shot `hyprctl keyword` inside an `hyprland.start` hook would not
+-- (that event does not refire on reload, see the AUTOSTART note below).
+--
+-- The nested-table `hl.config({ input = { ... } })` form is confirmed
+-- against hyprwm/Hyprland's own example/hyprland.lua, which sets
+-- `follow_mouse` in exactly this shape. This is the first `hl.config` call
+-- in this file — everything else so far has run on Hyprland's own defaults.
+hl.config({
+    input = {
+        follow_mouse = 0,
+    },
+})
+
 ---------------------
 ---- MY PROGRAMS ----
 ---------------------
@@ -122,11 +144,96 @@ hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 
 -- windows managing
-hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
+hl.bind(mainMod .. " + Q", hl.dsp.window.close(), { description = "Close the active window" })
+hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }),  { description = "Focus the window to the left" })
+hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }), { description = "Focus the window to the right" })
+hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }),    { description = "Focus the window above" })
+hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }),  { description = "Focus the window below" })
+
+-- The core window-manager bindings that were never written (only the five
+-- above and the Super+Return/B/E app launchers existed before). "Super for
+-- the window manager" (master plan §8.2 S-38) — so every one of these is
+-- Super, or Super+Shift for the "move / send" variant, mirroring the
+-- universal tiling-WM convention and Hyprland's own example/hyprland.lua.
+--
+-- API forms confirmed against hyprwm/Hyprland's example/hyprland.lua this
+-- session: `hl.dsp.focus({ workspace = N })`, `hl.dsp.window.move({ workspace
+-- = N })`, `hl.dsp.window.float({ action = "toggle" })`, `hl.dsp.layout(
+-- "togglesplit")`, `hl.dsp.workspace.toggle_special(name)`, the
+-- `mouse:272/273` + `{ mouse = true }` drag/resize pair, and the
+-- `mouse_down/mouse_up` + `focus({ workspace = "e+1"/"e-1" })` scroll pair
+-- are all verbatim from that file. `hl.dsp.window.move({ direction = ... })`,
+-- `hl.dsp.window.center/pin/resize`, and `focus({ monitor = ... })` are from
+-- the hl.* API reference (alejandrominaya.github.io/hyprland-lua-docs) but
+-- not in the example — flagged as the ones most likely to need a fix on
+-- real hardware; the reliable fallback for each is the matching
+-- `hl.dsp.exec_cmd("hyprctl dispatch <d> <args>")`.
+
+-- move the active window in a direction (opposite of the focus binds above)
+hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.window.move({ direction = "left" }),  { description = "Move the window left" })
+hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" }), { description = "Move the window right" })
+hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "up" }),    { description = "Move the window up" })
+hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "down" }),  { description = "Move the window down" })
+
+-- layout / floating state
+hl.bind(mainMod .. " + F",         hl.dsp.exec_cmd("hyprctl dispatch fullscreen 0"), { description = "Toggle fullscreen" })
+hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }), { description = "Toggle floating" })
+hl.bind(mainMod .. " + J",         hl.dsp.layout("togglesplit"), { description = "Toggle the dwindle split direction" })
+hl.bind(mainMod .. " + C",         hl.dsp.window.center(), { description = "Centre the floating window" })
+hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pin(), { description = "Pin the floating window to every workspace" })
+
+-- numbered workspaces (Super+1..0), and send-to-workspace (Super+Shift+1..0).
+-- Loop taken verbatim from example/hyprland.lua, including `i % 10` mapping
+-- workspace 10 onto the "0" key.
+for i = 1, 10 do
+    local key = i % 10
+    hl.bind(mainMod .. " + " .. key,         hl.dsp.focus({ workspace = i }),       { description = "Go to workspace " .. i })
+    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }), { description = "Send the window to workspace " .. i })
+end
+
+-- scroll the mouse wheel over an empty part of the desktop to change
+-- workspace; Super+wheel from anywhere.
+hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
+hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+
+-- hold Super and drag with the left / right mouse button to move / resize a
+-- window (the one place a bind is pointer-driven rather than a key).
+hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
+hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+-- a general-purpose scratchpad on its own special workspace (btop's
+-- `special:btop` is separate and owned by the bar — see WINDOWS AND
+-- WORKSPACES below).
+hl.bind(mainMod .. " + A",         hl.dsp.workspace.toggle_special("scratch"), { description = "Toggle the scratchpad" })
+hl.bind(mainMod .. " + SHIFT + A", hl.dsp.window.move({ workspace = "special:scratch" }), { description = "Send the window to the scratchpad" })
+
+-- multi-monitor (inert on a single-output host — zotac is the only one with
+-- two). exec_cmd rather than `focus({ monitor = ... })`: the direction token
+-- Hyprland's `focusmonitor` dispatcher wants here (`+1`/`-1`) is confirmed,
+-- the Lua wrapper's accepted form for it is not.
+hl.bind(mainMod .. " + comma",  hl.dsp.exec_cmd("hyprctl dispatch focusmonitor -1"), { description = "Focus the previous monitor" })
+hl.bind(mainMod .. " + period", hl.dsp.exec_cmd("hyprctl dispatch focusmonitor +1"), { description = "Focus the next monitor" })
+hl.bind(mainMod .. " + SHIFT + comma",  hl.dsp.exec_cmd("hyprctl dispatch movewindow mon:-1"), { description = "Move the window to the previous monitor" })
+hl.bind(mainMod .. " + SHIFT + period", hl.dsp.exec_cmd("hyprctl dispatch movewindow mon:+1"), { description = "Move the window to the next monitor" })
+
+-- resize mode: Super+R, then arrows or h/j/k/l to resize the active window,
+-- Escape / Return / any other key to leave. Same "mode for a rare action"
+-- pattern as the screenshot submap further down.
+hl.bind(mainMod .. " + R", hl.dsp.submap("resize"), { description = "Enter resize mode" })
+hl.define_submap("resize", function()
+    local step = 40
+    hl.bind("left",  hl.dsp.window.resize({ x = -step, y = 0 }))
+    hl.bind("right", hl.dsp.window.resize({ x = step,  y = 0 }))
+    hl.bind("up",    hl.dsp.window.resize({ x = 0, y = -step }))
+    hl.bind("down",  hl.dsp.window.resize({ x = 0, y = step }))
+    hl.bind("h",     hl.dsp.window.resize({ x = -step, y = 0 }))
+    hl.bind("l",     hl.dsp.window.resize({ x = step,  y = 0 }))
+    hl.bind("k",     hl.dsp.window.resize({ x = 0, y = -step }))
+    hl.bind("j",     hl.dsp.window.resize({ x = 0, y = step }))
+    hl.bind("Escape", hl.dsp.submap("reset"))
+    hl.bind("Return", hl.dsp.submap("reset"))
+    hl.bind("catchall", hl.dsp.submap("reset"))
+end)
 
 --------------------------------
 ---- PHI-SHELL KEYBINDINGS  ----
