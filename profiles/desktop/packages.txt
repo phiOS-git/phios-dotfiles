@@ -73,3 +73,11 @@ opencode
 # container to a host tinyproxy that forwards only to whitelisted hosts.
 socat
 tinyproxy
+
+# Out-of-plan: settings-overhaul. WireGuard VPN, driven by `phi vpn` and
+# the Connectivity settings section. extra/T0. Tunnel .conf files are the
+# user's own, kept at ~/.config/phi/wireguard/ — never in this repo (they
+# hold a private key and an endpoint address, and the remote is public).
+# up/down go through sudo -n via profiles/desktop/system/etc/sudoers.d/
+# 49-phi-vpn (that drop-in is NEVER applied by the installer).
+wireguard-tools

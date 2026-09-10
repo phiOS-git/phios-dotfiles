@@ -206,6 +206,13 @@ PHI_MOTION_A_EASING='linear'
 # short and ease-out. Anything springy belongs to a category that is not B.
 PHI_MOTION_B_DURATION='120ms'
 PHI_MOTION_B_EASING='ease-out'
+# The same curve as four cubic-bezier control points (Out-of-plan: settings-
+# overhaul batch E — the animation editor). '0.25,0.46,0.45,0.94' is the
+# cubic-bezier equivalent of Qt's Easing.OutQuad, so nothing about the
+# shipped motion changes until the user edits it. Consumed as
+# easing.bezierCurve by every Behavior in phi-shell (Config/Appearance.qml
+# motionBCurve appends the mandatory final (1,1) point).
+PHI_MOTION_B_BEZIER='0.25,0.46,0.45,0.94'
 
 # C — emphasis, rare events: boot, unlock, first run. Exactly two effects are
 # admitted, per-character typing and a random-letters scramble that resolves.
@@ -219,3 +226,14 @@ PHI_MOTION_C_EASING='linear'
 # D — ambient indicators. Animation is forbidden by default; an exception has
 # to be justified where it is taken.
 PHI_MOTION_D_DURATION='0ms'
+
+# --- Wallpaper texture catalogue (Out-of-plan: settings-overhaul) -----------
+# The procedural textures the shell's background layer can composite over the
+# solid wallpaper colour. The list is a design decision (I-05) — which
+# textures the system offers — so it lives here; `phi wallpaper texture`
+# (phi/internal/wallpaper) is the generator and also validates the mode, and
+# its own Modes slice MUST stay a superset of this list. Space-separated,
+# menu order. Not a colour/font/size, so no [PLACEHOLDER] provenance applies
+# beyond "this set was chosen, not measured".
+PHI_TEXTURE_MODES='grain noise paper leather rock fabric'
+PHI_TEXTURE_INTENSITY_DEFAULT='40'

@@ -1,0 +1,25 @@
+# phiOS — WireGuard control for `phi vpn` (Out-of-plan: settings-overhaul).
+#
+# NEVER APPLIED BY THE INSTALLER. This is /etc material shown by
+# `phios-install --system-diff`; installing it is a deliberate user action:
+#
+#   sudo install -m 0440 -o root -g root \
+#     profiles/desktop/system/etc/sudoers.d/49-phi-vpn /etc/sudoers.d/49-phi-vpn
+#   sudo visudo -cf /etc/sudoers.d/49-phi-vpn   # verify before trusting it
+#
+# It lets the desktop user bring the phiOS-managed WireGuard tunnels up and
+# down without a password prompt, so the Connectivity section's VPN toggle
+# and `phi vpn up/down` work non-interactively (`sudo -n`). `wg show` is
+# also allowed so `phi vpn status` can read the handshake age and byte
+# counters — `phi` deliberately never reads or prints the endpoint or the
+# allowed-IPs from that output (ADR 067 analog).
+#
+# Scope notes / accepted risk on a single-user personal machine:
+#   - the `*` after `up`/`down` is a path/name argument; wg-quick itself
+#     validates its config and refuses anything that is not a WireGuard
+#     interface definition.
+#   - replace `phi` below with the real desktop username, or keep the
+#     %wheel group form if that user is in wheel.
+
+%wheel ALL=(root) NOPASSWD: /usr/bin/wg-quick up *, /usr/bin/wg-quick down *
+%wheel ALL=(root) NOPASSWD: /usr/bin/wg show, /usr/bin/wg show *
