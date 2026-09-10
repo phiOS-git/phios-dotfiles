@@ -7,7 +7,7 @@ Master plan §6.6, style plan §17. Four assets, produced at S-53:
 | `phi-mono.svg` | A — static mark | `PHI_FG_0`, dark variant (`#d6d1c9`) |
 | `phi-accent.svg` | B — agent presence, static reference only | `PHI_ACCENT`, dark variant (`#d3a0ac`) |
 | `phi-ascii.txt` | A, console-safe fallback | none (plain text) |
-| `../../profiles/desktop/system/usr/share/plymouth/themes/phi/phi.png` | A, rasterised for Plymouth | same as `phi-mono.svg` |
+| `../../profiles/desktop/system/usr/share/plymouth/themes/phi/phi.png` | A, rasterised for Plymouth — retained but **unused** since OOP-33 (the script draws `Φ` as text instead) | same as `phi-mono.svg` |
 
 ## Why the colours are literal, not tokens
 

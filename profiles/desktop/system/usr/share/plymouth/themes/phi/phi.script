@@ -1,57 +1,63 @@
 // phiOS -- Plymouth script theme (S-53, master plan Sec9.1, Sec6.6 Role A:
-// "Tier 0, monocromo, immobile"). Syntax verified this session against a
-// real, live Plymouth script theme (github.com/jtyr/plymouth-theme-arch-
-// breeze, fetched raw via curl and read directly, not paraphrased) for
-// every primitive used here: ImageNew/Image, SpriteNew/Sprite, SetImage,
-// SetPosition, SetOpacity, Window.Get*, Window.SetBackground*Color,
-// Image.Text, and the five Plymouth.Set*Function callback names. The
-// password-bullet string-building loop below (an ordinary for-loop with
-// string concatenation) follows the same C-like grammar the reference
-// script's own for-loops use, but string concatenation itself was not
-// independently confirmed byte-for-byte against that reference -- flagged,
-// not guessed silently.
+// "Tier 0, monocromo, immobile"). Syntax verified at S-53 against a real,
+// live Plymouth script theme (github.com/jtyr/plymouth-theme-arch-breeze,
+// fetched raw and read directly) for every primitive used: ImageNew/Image,
+// SpriteNew/Sprite, SetImage, SetPosition, SetOpacity, Window.Get*,
+// Window.SetBackground*Color, Image.Text, String.Length/Substring and the
+// five Plymouth.Set*Function callback names.
 //
-// OOP-30 (out-of-plan, "auth-surfaces"): composition + passphrase styling
-// brought onto the lock screen's grammar. The mark now sits above centre
-// with the passphrase prompt stacked directly beneath it (was: mark dead
-// centre, prompt at 0.75) -- the same clock-high / input-below stack as
-// Lock/Lock.qml. The passphrase line uses `*` bullets and a block caret,
-// matching the lock screen's masked-`*` echo and rectangle cursor. The
-// palette and the scramble toggle below are unchanged.
+// OOP-33 (out-of-plan, "auth-surfaces") -- second revision, on the user's
+// review of OOP-30:
+//   * The mark is now the Phi GLYPH drawn as text (Image.Text "Φ"), not
+//     the phi.png raster -- smaller, thinner, more elegant, and it no
+//     longer needs a rebuilt PNG this environment cannot produce. phi.png
+//     stays in the theme dir, unused (ImageDir still points at it).
+//   * The passphrase prompt and the masked characters are ONE centred
+//     line inside an ASCII box (+---+ / | ... | / +---+), sitting ABOVE
+//     the mark -- the box + `*` echo + block caret mirror the lock
+//     screen's Widgets.Panel + masked-`*` + rectangle cursor.
+//   * Composition: box centred at ~0.34 of the height, mark centred at
+//     0.50. Every sprite is horizontally centred on its own measured
+//     width.
 //
-// Colours are PHI_BG_0 and PHI_FG_0, dark variant, literal (Plymouth runs
-// before phi exists -- see design/brand/README.md for the full reasoning,
-// shared by every asset this step produces). RGB values are the exact
-// #1a1918 / #d6d1c9 hex divided by 255, computed once off-machine:
-//   bg-0 = 0.102, 0.098, 0.094
-//   fg-0 = 0.839, 0.820, 0.788
+// FONT ARGUMENT (Image.Text's 6th parameter, a Pango font string):
+// script-lib-image.c has taken it for years, but S-53's own verification
+// pass only exercised the 4-argument form. If the target's Plymouth build
+// ignores or rejects it, the box borders will not align with a
+// proportional font -- the fix is to drop the "monospace 16" / "Serif 96"
+// arguments and accept the default font (the box then reads as brackets,
+// the mark as a plain glyph). Flagged, not hidden.
+//
+// Colours are PHI_BG_0 and PHI_FG_0, dark variant, LITERAL: Plymouth runs
+// in the initramfs, before phi exists, so it cannot read design/tokens
+// (design/brand/README.md documents this divergence for every boot asset).
+//   bg-0  #1a1918  ->  0.102, 0.098, 0.094
+//   fg-0  #d6d1c9  ->  0.839, 0.820, 0.788
 
-// --- Background: Tier 0, still (Role A) -------------------------------
+fg_r = 0.839;
+fg_g = 0.820;
+fg_b = 0.788;
+
+MARK_FONT   = "Serif 96";      // thin, elegant; a judgement call, tune here
+PROMPT_FONT = "monospace 16";  // must be monospace for the box to align
+BOX_MIN     = 32;              // min inner width, so the box never jumps
+
+// --- Background: Tier 0, still (Role A) ----------------------------------
 Window.SetBackgroundTopColor(0.102, 0.098, 0.094);
 Window.SetBackgroundBottomColor(0.102, 0.098, 0.094);
 
-// --- The mark itself -----------------------------------------------------
-// phi.png is the rasterised design/brand/phi-mono.svg shape (bar through
-// an open ring), fg-0 on transparent -- see that SVG's own header for the
-// exact geometry both were built from.
-logo.image = Image("phi.png");
+// --- The mark: the Phi glyph as text, centred at 0.50 -------------------
+logo.image = Image.Text("Φ", fg_r, fg_g, fg_b, 1, MARK_FONT);
 logo.sprite = Sprite(logo.image);
 logo.sprite.SetX(Window.GetX() + Window.GetWidth() / 2 - logo.image.GetWidth() / 2);
-// Above centre, not dead centre: show_password_prompt() resolves the
-// passphrase line directly below this, so the mark and the prompt read as
-// one vertical stack -- the lock screen's composition (clock high, input
-// beneath), within what a boot splash can draw.
-logo.sprite.SetY(Window.GetY() + Window.GetHeight() * 0.42 - logo.image.GetHeight() / 2);
+logo.sprite.SetY(Window.GetY() + Window.GetHeight() * 0.50 - logo.image.GetHeight() / 2);
 logo.sprite.SetOpacity(1);
 
-// --- Optional random-letters resolve on appearance ------------------------
-// Style plan Sec5/Sec17: "l'effetto random-letters... avrebbe una coerenza
-// diretta se usato per la comparsa del marchio in boot -- non e' una regola
-// imposta, solo un'opzione". OFFERED, not imposed: default OFF. Flip
-// ENABLE_SCRAMBLE to 1 to turn it on -- this is the one line that decision
-// costs, on purpose, so trying it and reverting never means re-deriving
-// anything. Category C (Sec6.5): a rare event (boot), plain linear frame
-// advance, no easing curve to speak of at this pixel scale.
+// --- Optional random-letters resolve on appearance ---------------------
+// Style plan Sec5/Sec17: the random-letters effect "avrebbe una coerenza
+// diretta se usato per la comparsa del marchio in boot -- non e' una
+// regola imposta, solo un'opzione". OFFERED, not imposed: default OFF.
+// Flip to 1 to try it; Category C (Sec6.5), a rare event, linear frames.
 ENABLE_SCRAMBLE = 0;
 
 if (ENABLE_SCRAMBLE) {
@@ -74,52 +80,74 @@ if (ENABLE_SCRAMBLE) {
         }
         index = Math.Int(Math.Random() * String.Length(scramble.alphabet));
         letter = String.Substring(scramble.alphabet, index, 1);
-        scramble.sprite.SetImage(Image.Text(letter, 0.839, 0.820, 0.788));
+        scramble.sprite.SetImage(Image.Text(letter, fg_r, fg_g, fg_b, 1, MARK_FONT));
         scramble.sprite.SetX(Window.GetX() + Window.GetWidth() / 2 - scramble.sprite.GetImage().GetWidth() / 2);
     }
 }
 
-// --- Boot progress: still, so nothing to draw per tick unless scrambling -
+// --- Boot progress: still, so nothing to draw per tick unless scrambling
 fun refresh_callback() {
     if (ENABLE_SCRAMBLE && scramble.frame < scramble.frames) {
         scramble_tick();
     }
 }
 
-// --- LUKS passphrase prompt (VERIFY: "the prompt is graphical") ----------
-// Confirmed against the real reference: display_password_callback receives
-// the prompt text and the number of characters typed so far, not the
-// characters themselves -- Plymouth never exposes the passphrase to a
-// theme script.
-dialog.message = SpriteNew();
-dialog.message.SetOpacity(0);
+// --- LUKS passphrase prompt -------------------------------------------
+// Confirmed against the reference: display_password_callback gets the
+// prompt text and the NUMBER of characters typed, never the characters.
+dialog.top = SpriteNew();
+dialog.mid = SpriteNew();
+dialog.bot = SpriteNew();
+dialog.top.SetOpacity(0);
+dialog.mid.SetOpacity(0);
+dialog.bot.SetOpacity(0);
+
+// No value-returning helper funs -- S-53's verification never exercised
+// `return <expr>` from a user fun, so every string is built inline with a
+// `for` loop (the one control form the reference script confirmed).
+fun place_centered(sprite, image, y) {
+    sprite.SetImage(image);
+    sprite.SetX(Window.GetX() + Window.GetWidth() / 2 - image.GetWidth() / 2);
+    sprite.SetY(y);
+    sprite.SetOpacity(1);
+}
 
 fun show_password_prompt(prompt, bullets) {
-    // `*` bullets and a trailing block caret -- the same terminal-input
-    // vocabulary as Lock/Lock.qml's password field (masked `*` echo, a
-    // rectangle cursor), in what Plymouth's text primitive allows. The
-    // caret is U+2588; if it renders as tofu on the target's Plymouth
-    // font, swap it for "_" -- one line, same idea, the console-safe
-    // fallback the way design/brand/phi-ascii.txt is for the Φ mark.
-    // Deliberately NOT blinking: boot is Role A ("immobile") and
-    // Plymouth's refresh cadence is not verifiable from here; a still
-    // block still reads as an old-terminal caret. The lock screen, a live
-    // GUI surface, is the one that blinks.
-    dots = "";
-    for (i = 0; i < bullets; i++) {
-        dots = dots + "*";
-    }
-    dialog.text = Image.Text(prompt + "  " + dots + "█", 0.839, 0.820, 0.788);
-    dialog.message.SetImage(dialog.text);
-    dialog.message.SetX(Window.GetX() + Window.GetWidth() / 2 - dialog.text.GetWidth() / 2);
-    // Directly beneath the mark (SetY 0.42) rather than down at 0.75 --
-    // see the logo-placement note above.
-    dialog.message.SetY(Window.GetY() + Window.GetHeight() * 0.56);
-    dialog.message.SetOpacity(1);
+    // One line: prompt, gap, `*` per typed character, block caret. `*` and
+    // the U+2588 caret match Lock/Lock.qml's masked echo and rectangle
+    // cursor; the box below mirrors its Widgets.Panel. Still: boot is
+    // Role A ("immobile"), so the caret does not blink -- the live lock
+    // screen is the one that does.
+    stars = "";
+    for (i = 0; i < bullets; i++) { stars = stars + "*"; }
+    inner = prompt + "   " + stars + "█";
+    for (i = String.Length(inner); i < BOX_MIN; i++) { inner = inner + " "; }
+
+    rule = "";
+    rlen = String.Length(inner) + 4;
+    for (i = 0; i < rlen; i++) { rule = rule + "-"; }
+    border = "+" + rule + "+";
+    middle = "|  " + inner + "  |";
+
+    top_img = Image.Text(border, fg_r, fg_g, fg_b, 1, PROMPT_FONT);
+    mid_img = Image.Text(middle, fg_r, fg_g, fg_b, 1, PROMPT_FONT);
+    bot_img = Image.Text(border, fg_r, fg_g, fg_b, 1, PROMPT_FONT);
+    line_h = top_img.GetHeight();
+
+    base_y = Window.GetY() + Window.GetHeight() * 0.34;
+    place_centered(dialog.top, top_img, base_y);
+    place_centered(dialog.mid, mid_img, base_y + line_h);
+    place_centered(dialog.bot, bot_img, base_y + line_h * 2);
+}
+
+fun hide_prompt() {
+    dialog.top.SetOpacity(0);
+    dialog.mid.SetOpacity(0);
+    dialog.bot.SetOpacity(0);
 }
 
 fun display_normal_callback() {
-    dialog.message.SetOpacity(0);
+    hide_prompt();
 }
 
 fun display_password_callback(prompt, bullets) {
@@ -128,7 +156,7 @@ fun display_password_callback(prompt, bullets) {
 
 fun quit_callback() {
     logo.sprite.SetOpacity(0);
-    dialog.message.SetOpacity(0);
+    hide_prompt();
 }
 
 Plymouth.SetRefreshFunction(refresh_callback);
