@@ -1198,3 +1198,30 @@ requests, phi-shell + `hyprland.lua.tmpl` (no new tokens, no `phi`).
 - Unverified (no compositor here): the `hl.gesture` horizontal direction
   tokens and touchscreen coverage, `workspace m±1` wrap behaviour, the
   `ScrollHint` geometry, and every settings-panel layout change.
+
+**Round 3 (on branch, NOT yet merged).** Style & layout pass over the three
+big panels — chat (`Panels/AgentPanel` + `Panels/tabs/agent/*`),
+notifications (`Panels/Sidebar` + `Panels/tabs/Notifications`), settings
+(`Settings/Settings` + a couple of sections). phi-shell only, no tokens, no
+`phi`. Focus: spacing rhythm, text hierarchy, layout coherence.
+
+| # | Item | Files |
+|---|---|---|
+| FC-8 | One heading grammar everywhere — `kind: "title"` (DemiBold ink), never the muted `kind: "label"; sizeStep: 3`. The Settings panel title drops to body size to match every other panel heading. | `Settings/Settings.qml`, `Panels/tabs/agent/{Dashboard,ProjectView}.qml` |
+| FC-9 | Kill literal `spacing: 2` — a derived half-rhythm-unit token (`Math.round(ch * space1 * 0.5)`), the same one `SettingsGroup` already uses | `Settings/sections/{SettingsRow,General}.qml`, `Panels/tabs/agent/{Dashboard,ProjectView,PersonalityEditor}.qml`, `Panels/tabs/ChatBubble.qml` |
+| FC-10 | The ~8 hand-rolled `TextInput` + placeholder blocks in the agent panel → `Widgets/TextField` (built for exactly this in the settings overhaul). The multiline `TextEdit`s stay — no `TextArea` widget exists. The chat compose line stays inline (special case). | `Panels/tabs/agent/{Dashboard,ProjectView,PersonalityEditor}.qml` |
+| FC-11 | Notification tab: top-level blocks on `space2` (matching the Sidebar), "Clear all" right-aligned on the Active/History header line instead of floating, a "History" heading between live cards and grouped history, group-header padding equal to a history row | `Panels/tabs/Notifications.qml` |
+| FC-12 | Chat bubbles read as a conversation — a small `you`/`agent` role label above each, the user's bubble right-aligned and capped at 82% width, the agent's full width; transcript rows tighten `space3`→`space2` | `Panels/tabs/ChatBubble.qml`, `Panels/tabs/agent/Chat.qml` |
+| FC-13 | Agent nav rail: a hover wash + a hairline "you are here" marker on the inner edge — it had no clickable affordance at all before | `Panels/AgentPanel.qml` |
+| FC-14 | New personality opens with an empty name field, not the "+" sentinel string | `Panels/tabs/agent/PersonalityEditor.qml` |
+
+- The settings sections were already on `SettingsGroup`/`SettingsRow` from
+  the overhaul rounds — only `Settings.qml`'s own shell, `SettingsRow`'s
+  label gap and `General`'s stat tiles needed touching. Every other section
+  is unchanged.
+- Reaches machines: `phi-shell` `git pull` + `qs` restart. No `phi theme
+  set`, no `hyprctl reload` — no tokens, no `hyprland.lua`.
+- Unverified (no compositor here): all of it — the two-line settings top
+  bar geometry, the bubble alignment and 82% cap, the rail marker/hover,
+  every re-tuned gap, and that `Widgets/TextField` drops cleanly into each
+  Row it replaced a bare `TextInput` in.
