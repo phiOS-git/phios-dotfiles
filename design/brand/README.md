@@ -1,13 +1,21 @@
 # The Φ mark
 
-Master plan §6.6, style plan §17. Four assets, produced at S-53:
+Master plan §6.6, style plan §17. Assets:
 
 | File | Role | Colour |
 |---|---|---|
-| `phi-mono.svg` | A — static mark | `PHI_FG_0`, dark variant (`#d6d1c9`) |
+| `phi-mono.svg` | A — static mark, geometric reference | `PHI_FG_0`, dark variant (`#d6d1c9`) |
 | `phi-accent.svg` | B — agent presence, static reference only | `PHI_ACCENT`, dark variant (`#d3a0ac`) |
-| `phi-ascii.txt` | A, console-safe fallback | none (plain text) |
-| `../../profiles/desktop/system/usr/share/plymouth/themes/phi/phi.png` | A, rasterised for Plymouth — retained but **unused** since OOP-33 (the script draws `Φ` as text instead) | same as `phi-mono.svg` |
+| `phi-ascii.txt` | A — the mark as text (the TTY/login banner and, rasterised, Plymouth) | none (plain text) |
+| `../../profiles/desktop/system/usr/share/plymouth/themes/phi/phi.png` | A — `phi-ascii.txt` baked to a raster for Plymouth | `#d6d1c9` on transparent |
+| `render-phi-png.sh` | regenerates `phi.png` from `phi-ascii.txt` (off-machine tool, needs ImageMagick) | — |
+
+`phi-ascii.txt` was replaced at OOP-36 with the user's own drawing
+(`references/ascii-phi.txt`) — a more detailed Φ. It is now the single mark
+used by every Role-A boot/console surface: verbatim in `/etc/issue`, and
+rasterised by `render-phi-png.sh` into `phi.png` for Plymouth (which cannot
+render aligned monospace text reliably). The two SVGs are kept as the
+geometric reference the shape descends from, not as a shipped asset.
 
 ## Why the colours are literal, not tokens
 
@@ -40,11 +48,11 @@ ring, both built from the same two primitives (a `rect` and a stroked
 `ellipse`) so the SVGs stay legible as source. Hand-authored: no SVG
 export tool was available off-machine, so the geometry was computed
 directly (viewBox 0-256, centre 128,128, ring outer radius 87.04×76.8,
-stroke 25.6, bar half-width 19.2 spanning y 10.24-245.76). The Plymouth
-PNG is a raster of the identical formula (a small supersampling script run
-once, off-machine, to produce the committed PNG — the script itself is not
-part of this repository, only its output is), not a second, independently
-hand-drawn shape that could drift from the SVG.
+stroke 25.6, bar half-width 19.2 spanning y 10.24-245.76). Since OOP-36 the
+shipped mark is `phi-ascii.txt` (a text drawing of the same letterform),
+and the Plymouth `phi.png` is that text rendered to a raster by
+`render-phi-png.sh` — one source, one command, no hand-drawn second copy
+to drift.
 
 ## Use is a closed list (§6.6, §17)
 
