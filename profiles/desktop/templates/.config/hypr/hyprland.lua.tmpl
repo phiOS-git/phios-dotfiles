@@ -160,9 +160,13 @@ hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }),  { descript
 -- session and used natively below: `hl.dsp.focus({ workspace = N })`,
 -- `hl.dsp.window.move({ workspace = N })`, `hl.dsp.window.float({ action =
 -- "toggle" })`, `hl.dsp.layout("togglesplit")`,
--- `hl.dsp.workspace.toggle_special(name)`, the `mouse:272/273` + `{ mouse =
--- true }` drag/resize pair, and the `mouse_down/mouse_up` + `focus({
--- workspace = "e+1"/"e-1" })` scroll pair.
+-- `hl.dsp.workspace.toggle_special(name)`, and the `mouse:272/273` +
+-- `{ mouse = true }` drag/resize pair.
+--
+-- Super+wheel is NOT bound to workspace scroll here — the OOP-50 magnifier
+-- (further down) owns Super+wheel for its zoom, and would silently win the
+-- collision anyway (last bind for a key combo wins). Workspace switching is
+-- Super+1..0 and Super+arrows.
 --
 -- Everything the example did NOT show — direction-based window moves,
 -- centre/pin, per-key resize, monitor focus/move, fullscreen — goes through
@@ -192,11 +196,6 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + " .. key,         hl.dsp.focus({ workspace = i }),       { description = "Go to workspace " .. i })
     hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }), { description = "Send the window to workspace " .. i })
 end
-
--- scroll the mouse wheel over an empty part of the desktop to change
--- workspace; Super+wheel from anywhere.
-hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 
 -- hold Super and drag with the left / right mouse button to move / resize a
 -- window (the one place a bind is pointer-driven rather than a key).
@@ -357,28 +356,31 @@ hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(qsIpc("brightness", "down")), { repeating = true, locked = true })
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qsIpc("brightness", "up")), { repeating = true, locked = true })
 
--- Magnifier (S-54, architettura §8.2.4/master plan §8.3 surface 21):
--- "il compositore ha uno zoom nativo" -- cursor:zoom_factor, confirmed
--- against the real Hyprland wiki source this session (configuring/core/
--- config-options.md: "The factor to zoom by around the cursor. Like a
--- magnifying glass"), not guessed at. Set live via `hyprctl keyword`
--- (Hyprland's own generic runtime config-write command) rather than a
--- phi-shell IPC round-trip -- this is a plain compositor setting with no
--- shell-side state to keep in sync, unlike brightness/spotlight above.
--- Two fixed levels, not a stateful toggle: reading the CURRENT factor back
--- to decide which way to flip it would need `hyprctl getoption -j` piped
--- through a JSON parser inside this one exec_cmd string, untestable from
--- here and one more thing to get subtly wrong -- two plain binds are
--- simpler and cannot desync.
--- The OTHER half of this card, "the lens effect is a shader", is not
--- attempted: S-43's own spotlight work already found, and verified,
--- that `decoration:screen_shader` does not expose the cursor position to
--- a shader (this file's own spotlight note, and architettura's own closed
--- finding on hyprwm/Hyprland#1502) -- the identical limitation would block
--- a cursor-following lens the same way, so this is not re-investigated
--- from scratch, only cited.
-hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("hyprctl keyword cursor:zoom_factor 2.5"), { description = "Magnifier: zoom in around the cursor" })
-hl.bind(mainMod .. " + SHIFT + Z", hl.dsp.exec_cmd("hyprctl keyword cursor:zoom_factor 1.0"), { description = "Magnifier: reset zoom" })
+-- Magnifier (S-54 / OOP-50, architettura §8.2.4 / master plan §8.3
+-- surface 21). The earlier `hyprctl keyword cursor:zoom_factor` binds are
+-- removed: they zoom the WHOLE output around the cursor, not a loupe, and
+-- on real hardware SUPER+Z "did nothing" (OOP-50's card). Replaced by
+-- phi-shell's Magnifier/ surface (Services/Magnifier + one "magnifier"
+-- IpcHandler), a wlr-screencopy lens drawn just above the pointer.
+--
+-- Why a shell overlay and not a compositor feature: Glasscope (the look
+-- the card now references) is a Hyprland *plugin* — barred by Q-01 / I-01
+-- — and `decoration:screen_shader` cannot see the cursor (Q-F07, closed).
+-- The offset lens is phi-shell's own answer; see Services/Magnifier.qml.
+--
+-- SUPER+Z toggles. Scroll adjusts it while it is up — SUPER + wheel for
+-- zoom, SUPER+SHIFT + wheel for lens size. NOT bare CTRL+wheel (the card's
+-- example): Hyprland consumes a modifier+wheel bind before the focused
+-- app, so CTRL+wheel there would break in-app zoom everywhere; SUPER+wheel
+-- is unclaimed in this config. `mouse_up` / `mouse_down` are Hyprland's
+-- own wheel key names (configuring/binds), used here for the first time in
+-- this file — flagged for the hardware pass. A step on a hidden loupe
+-- still moves the stored value, harmlessly.
+hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(qsIpc("magnifier", "toggle")), { description = "Magnifier: toggle the loupe" })
+hl.bind(mainMod .. " + mouse_up",   hl.dsp.exec_cmd(qsIpc("magnifier", "zoomIn")),  { description = "Magnifier: zoom in" })
+hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd(qsIpc("magnifier", "zoomOut")), { description = "Magnifier: zoom out" })
+hl.bind(mainMod .. " + SHIFT + mouse_up",   hl.dsp.exec_cmd(qsIpc("magnifier", "grow")),   { description = "Magnifier: larger lens" })
+hl.bind(mainMod .. " + SHIFT + mouse_down", hl.dsp.exec_cmd(qsIpc("magnifier", "shrink")), { description = "Magnifier: smaller lens" })
 
 -- Alt+Tab (S-37, architettura §8.2.2 S10): the one binding that genuinely
 -- fits "Alt for applications" — cycling BETWEEN running applications is
