@@ -597,16 +597,13 @@ real hardware.
 | SF-1 | Keybindings + click-to-focus | dotfiles (`hyprland.lua.tmpl`), phi-shell (`Services/Keybinds.qml`) | awaiting-verification |
 | SF-2 | WireGuard: custom-conf detection + import/manage | phi (`internal/vpn`, `internal/cli`), phi-shell (`Services/Vpn`, `Settings/sections/Connectivity`, `Panels/BarPopout`, `Config/Paths`), dotfiles (`profiles/desktop/manual.txt`) | awaiting-verification |
 | SF-3 | btop / Steam special-workspace rebuild | phi-shell (bar), dotfiles (`hyprland.lua.tmpl` comments only) | awaiting-verification |
-| SF-4 | Notifications: sound, test button, clean, groups, retention, bar blink | phi-shell (+ dotfiles PROGRESS) | awaiting-verification |
+| SF-4 | Notifications: sound, test button, clean, groups, retention, bar blink | phi-shell + dotfiles (`profiles/desktop/packages.txt`) | awaiting-verification |
 | SF-5 | Cursor spotlight: effect picker, optimisation, top z-index | phi-shell | awaiting-verification |
 
-**QUESTION FOR THE USER (SF-4):** notification sound defaults to
-`/usr/share/sounds/freedesktop/stereo/message.oga`, which needs
-`sound-theme-freedesktop` (extra/T0, not in master plan §15). It is NOT
-added to `profiles/desktop/packages.txt` on this branch — CLAUDE.md rule 7.
-Sound is off by default and the path is configurable (any absolute path
-works), so the feature is inert without it. Say the word and it goes in as
-a one-line packages.txt commit.
+`sound-theme-freedesktop` was added to `profiles/desktop/packages.txt` by
+the user's explicit choice (extra/T0, not in master plan §15) — it provides
+the named default notification sounds. `pacman -S sound-theme-freedesktop`
+on `zotac`/`razer`.
 
 **SF-1 (keybindings + click-to-focus).** `hyprland.lua.tmpl`:
 - `hl.config({ input = { follow_mouse = 0 } })` — first `hl.config` call in
@@ -731,9 +728,9 @@ All phi-shell.
   (enable / sound name / volume / Test sound / Test notification, with
   `soundError` surfaced in the caption) and a "History" group (retention
   days + Clear all). `options.js` / `sections.json` keywords updated.
-- Reaches machines: phi-shell `git pull` + `qs` restart. **Sound needs
-  `sound-theme-freedesktop`** (see the question above) unless an absolute
-  path is set.
+- Reaches machines: phi-shell `git pull` + `qs` restart; dotfiles `git
+  pull` + `pacman -S sound-theme-freedesktop` for the named default
+  sounds (an absolute `soundName` path needs nothing).
 - Unverified: `pw-play --volume=` flag form, `notify-send -a` availability,
   the freedesktop `.oga` path, and every layout in the rebuilt panel tab.
 

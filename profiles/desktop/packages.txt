@@ -26,6 +26,14 @@ slurp
 wf-recorder
 zbar
 
+# shell-features (SF-4): the freedesktop sound set, for the notification
+# sound (played via pw-play from Services/Notifications.qml). extra/T0.
+# Approved by explicit user choice — not in master plan §15's registry.
+# Sound is off by default; Services/Notifications.qml also accepts an
+# absolute path, so this only provides the named defaults (message.oga,
+# bell.oga, complete.oga, …).
+sound-theme-freedesktop
+
 # S-41: GTK/Qt native-app theming (master plan §6.7 target group 2). Added
 # by explicit user approval this step — not in master plan §15's registry.
 # qt5ct/qt6ct substitute for §6.7's named "Kvantum": their real
