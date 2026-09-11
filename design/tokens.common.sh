@@ -151,7 +151,7 @@ PHI_RADIUS_LARGE='4px'
 # widget. A hairline is a universal UI constant, not a design decision, so
 # one token rather than a per-widget guess. [PLACEHOLDER] the same way
 # radius-base is: unverified on real HiDPI/fractional-scaling output.
-PHI_BORDER_WIDTH='1px'
+PHI_BORDER_WIDTH='2px'
 
 # border-width-strong — OOP-02, retuned OOP-10. The restyle first drew
 # every panel with a 2px opposite-colour border (a hard wireframe read);
