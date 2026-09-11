@@ -167,7 +167,7 @@ hl.on("hyprland.start", function ()
 end)
 
 -- btop starts with the session (ADR 134, reversing ADR 122). It lives on
--- persistent workspace 10 (see WINDOWS AND WORKSPACES) and the user wants
+-- persistent workspace 12 (see WINDOWS AND WORKSPACES) and the user wants
 -- it always there with nothing to launch — its bar icon just switches to
 -- that workspace. `--class phios-btop` is the app id the window rule below
 -- matches; the `pgrep` guard is the same free insurance as the qs and
@@ -268,7 +268,7 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- a general-purpose scratchpad on its own special workspace (btop is no
--- longer a special workspace as of ADR 134 — it is plain workspace 10, see
+-- longer a special workspace as of ADR 134 — it is plain workspace 12, see
 -- WINDOWS AND WORKSPACES below).
 hl.bind(mainMod .. " + A",         hl.dsp.workspace.toggle_special("scratch"), { description = "Toggle the scratchpad" })
 hl.bind(mainMod .. " + SHIFT + A", hl.dsp.window.move({ workspace = "special:scratch" }), { description = "Send the window to the scratchpad" })
@@ -635,23 +635,34 @@ end)
 -- once. At the user's request the special-workspace model is dropped
 -- entirely — btop and Steam are now plain numbered workspaces:
 --
---   * btop  -> workspace 10, `persistent` (so the workspace, and its bar
+--   * btop  -> workspace 12, `persistent` (so the workspace, and its bar
 --     icon, outlive btop being closed) and started with the session (see
 --     AUTOSTART). `silent` on the window rule so login does not follow it
---     to workspace 10.
---   * Steam -> workspace 9, not persistent, not `silent` (opening Steam is
+--     to workspace 12.
+--   * Steam -> workspace 11, not persistent, not `silent` (opening Steam is
 --     meant to take you there). Was a `name:steam` named workspace — the
 --     SF-3 "cannot get back to Steam's workspace" report; a numbered one is
---     reachable by Super+9, the gestures and its bar icon like any other.
+--     reachable by the gestures and its bar icon like any other.
+--
+-- docs/TODO.md: "make steam workspace 11 and btop workspace 12" — moved up
+-- from 9/10 (the numbers 10/9 were the ORIGINAL numeric assignment, not a
+-- typo carried forward) so both free up again for ordinary use under the
+-- Super+1..0 numbered-workspace loop above, which only ever covers 1-10.
+-- The trade-off is real, not hidden: unlike 9/10, workspaces 11 and 12 have
+-- no dedicated physical number key at all — Super+9/Super+0 now switch to
+-- plain ordinary workspaces again, and reaching Steam/btop directly by
+-- keyboard means either the bar icon click, the three-finger workspace
+-- swipe cycling around to them, or a dedicated bind if one is wanted later
+-- (none exists yet, and none was asked for here).
 --
 -- The phi-shell bar (Bar/modules/Workspaces.qml + Bar/workspace-icons.json)
--- renders workspaces 9 and 10 as a Steam / monitor glyph instead of a
+-- renders workspaces 11 and 12 as a Steam / monitor glyph instead of a
 -- digit, at the right end of the strip; clicking one switches to it. Both
 -- rules match the Wayland app id (btop's kitty is launched `--class
 -- phios-btop`), never the window title, which a TUI rewrites at runtime.
 -- The `steam` class is real, from `hyprctl clients` on razer (SF-3).
 hl.workspace_rule({
-    workspace  = "10",
+    workspace  = "12",
     persistent = true,
 })
 
@@ -659,14 +670,14 @@ hl.window_rule({
     name  = "btop-workspace",
     match = { class = "^phios-btop$" },
 
-    workspace = "10 silent",
+    workspace = "12 silent",
 })
 
 hl.window_rule({
     name  = "steam-workspace",
     match = { class = "^steam$" },
 
-    workspace = "9",
+    workspace = "11",
 })
 
 -- "Secondary windows floating" is still NOT written: the one real Steam
