@@ -104,7 +104,7 @@ phios_manual_report() {
 	for profile in "${PHIOS_PROFILES[@]+"${PHIOS_PROFILES[@]}"}"; do
 		file=$PHIOS_ROOT/profiles/$profile/manual.txt
 		while IFS= read -r step; do
-			printf '  %s  (%s)\n' "$step" "$profile"
+			printf '  %s\n' "$step"
 			any=1
 		done < <(phios_read_list "$file")
 	done
