@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+#
+# phi-term-cwd — open a new terminal in the working directory of the
+# focused window (docs/TODO.md: "new terminal windows should start at the
+# same directory as the last focused one"). Super+Return is bound to this in
+# hyprland.lua.tmpl, so a new terminal joins the project you are actually
+# in instead of wherever the session spawned.
+#
+#   phi-term-cwd [terminal [ARG...]]
+#
+# TERMINAL defaults to kitty; any extra ARGs pass through to it, so the same
+# focused-directory logic can serve any launcher.
+#
+# How the directory is found: `hyprctl activewindow -j` reports the pid of
+# the focused window. For a terminal emulator that pid is the emulator, and
+# its own cwd is only the launch directory — the shell inside it is what
+# follows `cd` — so for terminal classes we descend to the process that owns
+# the pty (/dev/pts/* on fd 0, the "real" controlling terminal of the shell
+# at the emulator's own session console) and take ITS cwd. Any other class
+# uses the focused pid's cwd directly. Unreadable, missing or zero pid, or
+# any resolution failure, falls back to $HOME.
+#
+# Dependency budget: bash + coreutils. hyprctl ships with Hyprland (S-01), so
+# it is present wherever this runs. JSON is parsed with sed, not jq.
+
+set -euo pipefail
+
+readonly PROG=phi-term-cwd
+
+die() { printf '%s: %s\n' "$PROG" "$*" >&2; exit 1; }
+
+cwd_of() { readlink -f -- "/proc/$1/cwd" 2>/dev/null || true; }
+
+# The first descendant of $1 that owns a real pty, if any. BFS so the
+# shallowest pty owner wins: for a bare `kitty` that is the shell, whatever
+# processes kitty puts between itself and it (kitten, nested shells). The
+# emulator itself owns fd0 = the session console (/dev/tty1), never a pty,
+# so it is skipped without any class list.
+tty_child() {
+	local queue="$1" next='' child
+	while [[ -n $queue ]]; do
+		for child in $queue; do
+			if [[ $(readlink -f "/proc/$child/fd/0" 2>/dev/null) == /dev/pts/* ]]; then
+				printf '%s\n' "$child"
+				return 0
+			fi
+			next+=" $(cat -- "/proc/$child/task/$child/children" 2>/dev/null)"
+		done
+		queue=$next
+		next=''
+	done
+	return 0
+}
+
+# Resolve the directory to launch a new terminal in, or nothing.
+resolve_focused_dir() {
+	local info pid class child cwd
+	info=$(hyprctl -j activewindow 2>/dev/null) || return 1
+	pid=$(printf '%s' "$info" | sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9-][0-9-]*\).*/\1/p')
+	class=$(printf '%s' "$info" | sed -n 's/.*"class"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+	[[ $pid =~ ^[0-9]+$ && $pid -gt 0 ]] || return 1
+	case $class in
+		kitty | wezterm | alacritty | foot | xterm | konsole | gnome-terminal | urxvt | st | terminator)
+			child=$(tty_child "$pid")
+			cwd=$(cwd_of "${child:-$pid}")
+			;;
+		*)
+			cwd=$(cwd_of "$pid")
+			;;
+	esac
+	[[ -n $cwd && -d $cwd ]] || return 1
+	printf '%s\n' "$cwd"
+}
+
+terminal=${1:-kitty}
+shift 2>/dev/null || true
+
+target=$(resolve_focused_dir) || target=$HOME
+exec "$terminal" --directory "$target" "$@"
