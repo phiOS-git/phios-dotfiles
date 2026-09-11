@@ -101,6 +101,15 @@ hl.config({
 -- graphical session), so this is a no-op there — same reasoning as the
 -- GESTURES section's touchscreen swipe binds ("simply inert", no host
 -- guard needed).
+--
+-- No `pcall` needed here, unlike the GESTURES block below (C-06: a raised
+-- Lua error discards the WHOLE reload): confirmed against the real
+-- hyprwm/Hyprland source (`src/config/lua/ConfigManager.cpp`,
+-- `CConfigManager::CConfigManager()`) that `hl.config` registers every
+-- entry of `Values::CONFIG_VALUES` — the same master keyword registry the
+-- plain-`.conf` parser uses — generically, with no category whitelist.
+-- `cursor:hide_on_touch` is a real entry in that registry (same source as
+-- above), not a guessed category name.
 hl.config({
     cursor = {
         hide_on_touch = false,
