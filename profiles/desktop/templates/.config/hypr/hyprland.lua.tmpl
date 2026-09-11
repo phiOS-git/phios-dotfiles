@@ -299,7 +299,14 @@ end
 -- literally as "_lua 16"), which is what Cheatsheet.qml was rendering
 -- verbatim for lack of anything better to show.
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")), { description = "Toggle the launcher" })    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
-hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("notifications", "toggle")), { description = "Toggle the notification panel" })     -- OOP-06: the sidebar is the notification panel; target renamed (a "sidebar" alias still works)
+-- Both binds call the tab-specific ipc function (not the plain "toggle"),
+-- so each one always lands ON ITS OWN tab: switching from the other tab if
+-- the panel was already open elsewhere, opening fresh onto that tab if it
+-- was closed, and only closing the panel if it was already open on that
+-- exact tab (Services/NotificationPanel.qml's toggleTab — a bare "toggle"
+-- here left Super+N unable to guarantee which tab it landed on, and left
+-- Super+Shift+V only ever able to open, never close, docs/TODO.md).
+hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("notifications", "notifications")), { description = "Toggle the notification panel" })     -- OOP-06: the sidebar is the notification panel; target renamed (a "sidebar" alias still works)
 -- OOP-06: open the notification panel straight onto the Clipboard tab,
 -- with its search focused. Super+Shift+V is the near-universal
 -- "clipboard history" shortcut (KDE Klipper, GNOME extensions, cliphist
