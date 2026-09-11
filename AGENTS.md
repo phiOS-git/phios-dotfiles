@@ -13,6 +13,10 @@ repeated here.
 
 Canonical branch is **`main`** (renamed from `master`).
 
+When your work matches an entry in the workspace's `docs/TODO.md`, claim it
+with `[taken]` and report the result in `docs/VERIFICATION.md` — see *The
+TODO / VERIFICATION loop* in the workspace `AGENTS.md`.
+
 ## How this repo is built
 
 - **`bin/phios-install`** is the one entry point, with four modes:
