@@ -186,7 +186,10 @@ local mainMod = "SUPER"
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 
 -- apps
-hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
+-- Super+Return opens a terminal in the cwd of the last focused window via
+-- phi-term-cwd (~/.local/bin, on PATH via base/.zshenv), falling back to
+-- $HOME when nothing is focused or its directory is unreadable.
+hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("phi-term-cwd " .. terminal))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 
