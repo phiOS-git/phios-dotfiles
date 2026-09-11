@@ -102,10 +102,10 @@ prepend_dirs = [
 # threshold or state only" — crossing out of $HOME onto a different
 # volume is exactly that kind of state.
 prepend_globs = [
-  { url = "/mnt/",     fg = "${PHI_INFO}" },
-  { url = "/mnt/**/",  fg = "${PHI_INFO}" },
-  { url = "/srv/",     fg = "${PHI_INFO}" },
-  { url = "/srv/**/",  fg = "${PHI_INFO}" },
+  { url = "/mnt/",     text = "", fg = "${PHI_INFO}" },
+  { url = "/mnt/**/",  text = "", fg = "${PHI_INFO}" },
+  { url = "/srv/",     text = "", fg = "${PHI_INFO}" },
+  { url = "/srv/**/",  text = "", fg = "${PHI_INFO}" },
 ]
 
 [git]
