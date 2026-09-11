@@ -303,6 +303,56 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind(mainMod .. " + A",         hl.dsp.workspace.toggle_special("scratch"), { description = "Toggle the scratchpad" })
 hl.bind(mainMod .. " + SHIFT + A", hl.dsp.window.move({ workspace = "special:scratch" }), { description = "Send the window to the scratchpad" })
 
+-- docs/TODO.md: "add borders to the whole view when in the scratchpad or
+-- make it recognisable". Deliberately a pure-Hyprland-side fix, not
+-- phi-shell: this project's own memory notes (verified against
+-- quickshell-mirror/quickshell's own C++ IPC source for the pinned 0.3.1
+-- version) found Quickshell cannot read Hyprland's "special" workspace
+-- state at all, so a phi-shell indicator was ruled a dead end for now.
+-- `match.workspace = "special:scratch"` is confirmed (read Hyprland's own
+-- `desktop/rule/Rule.cpp` matchPropFromString + `workspace/filter/
+-- statement/SpecialAddressableNameStatement.cpp`) to be an exact match
+-- against the workspace's addressable name, which is exactly what
+-- `toggle_special("scratch")` above creates.
+--
+-- Scope deliberately stops at "border"/"recognisable": the separate Style
+-- section TODO entry ("scratchpad should slide in from below, have
+-- slightly more out spacing... accent-colored border") asks for the same
+-- border plus a slide-in animation and wider gaps this entry does not
+-- claim or attempt — see docs/VERIFICATION.md for the overlap note.
+--
+-- Both border_size and border_color are set on the *window* rule, not
+-- workspace_rule (which also has a border_size field) — kept on one rule
+-- system deliberately, to sidestep any question of whether a workspace
+-- rule's border_size and a window rule's border_color compose or one
+-- shadows the other when both target the same windows.
+--
+-- border_color deliberately passes TWO identical colour tokens ("accent
+-- accent"), not one: this is Hyprland's own documented `bordercolor
+-- <active> <inactive>` two-colour form, not a single colour. Traced
+-- `addWindowRuleEffectFromLua` (`config/lua/bindings/
+-- LuaBindingsInternal.cpp`) into `parseBorderColorRule`
+-- (`desktop/rule/windowRule/WindowRule.cpp`) to confirm the Lua wrapper
+-- actually reaches that two-colour form: a SINGLE colour string parses
+-- cleanly as one CLuaConfigGradient, whose `toString()` always emits
+-- "<colour> <angle>deg" — and that shape (a second token containing
+-- "deg") is read by parseBorderColorRule as ACTIVE colour + angle only,
+-- leaving the inactive border at its default. The border would vanish the
+-- instant the scratchpad window lost focus, defeating "recognisable". Two
+-- literal colour tokens with no "deg" suffix on the second fail
+-- CLuaConfigGradient's single-colour parse (its `#RRGGBB` branch rejects
+-- the extra characters), which is what routes the raw string through the
+-- wrapper's explicit `allowLegacyString` fallback into Hyprland's real
+-- two-colour parser instead — confirmed by reading both functions, not
+-- assumed.
+hl.window_rule({
+    name  = "scratchpad-border",
+    match = { workspace = "special:scratch" },
+
+    border_size  = 3,
+    border_color = "${PHI_ACCENT} ${PHI_ACCENT}",
+})
+
 -- multi-monitor (inert on a single-output host — zotac is the only one with
 -- two). exec_cmd rather than `focus({ monitor = ... })`: the direction token
 -- Hyprland's `focusmonitor` dispatcher wants here (`+1`/`-1`) is confirmed,
