@@ -177,7 +177,7 @@ PHI_PANEL_PADDING='8px'
 # corner radius those surfaces round at. Both per-user editable
 # (settings › Theme › Shape & spacing). Same fractional-HiDPI [PLACEHOLDER]
 # caveat as radius-base.
-PHI_PANEL_GAP='4px'
+PHI_PANEL_GAP='2px'
 PHI_PANEL_RADIUS='6px'
 
 # slider-thickness — Out-of-plan: features-change. The visible track height
