@@ -6,9 +6,10 @@ server, 4 GB RAM). This repository holds package lists, symlink targets, and
 templates. It contains no compiled code and no application source — those live
 in the sibling repositories `phi`, `phi-shell`, and `phi-packages`.
 
-The full plan this repository executes is in `docs/phios-master-plan.md`
-(the single source of truth) and `docs/phios-agent-brief.md` (the step-by-step
-backlog). `PROGRESS.md` tracks which step is done, in flight, or blocked.
+This repository is one submodule of the phiOS workspace. `AGENTS.md` here
+carries the rules; the workspace `PROGRESS.md` describes the current state
+of the whole system. The original planning documents are archived under
+`docs/archive/` as historical background only.
 
 ## Layout
 
@@ -23,10 +24,10 @@ profiles/<name>/     packages, home tree, templates, /etc material, services
 docs/adr/            decisions local to this repository, if any
 ```
 
-M0 is still in progress and nothing here should be read as final. The pre-M0
-`install.sh`, `theme.sh` and `modules/` tree were removed at S-03, which moved
-their content into `profiles/` without changing a byte of what is rendered onto
-either machine; they are in the git history if a comparison is ever needed.
+The installer, profiles, design tokens, `/etc` boundary and capability
+detection are in daily use on all three hosts. The pre-rewrite `install.sh`,
+`theme.sh` and `modules/` tree are in the git history if a comparison is
+ever needed.
 
 ## What `bin/phios-install` does
 
@@ -113,16 +114,8 @@ install manifest — see `bin/lib/env.sh`.
 
 ## Documentation
 
-`docs/` in this repository holds an offline copy of the four planning
-documents this project runs on, so they travel with a clone even without
-network access to the docs' canonical location:
-
-- `phios-master-plan.md` — the SSOT: rules, decisions, milestones, registries.
-- `phios-agent-brief.md` — the agent's operating contract and main-line backlog.
-- `phios-agent-parallel.md` — tracks developable independently of machine state.
-- `phios-user-runbook.md` — operations reserved to the user: packages, `/etc`,
-  systemd, hardware diagnostics, the feedback protocol.
-
-These are copies for reference. The canonical versions are wherever the user
-keeps the planning repository; in case of any discrepancy, the master plan's
-own precedence rule applies — `phios-master-plan.md` wins.
+`docs/archive/` holds the original planning documents (master plan, agent
+brief, parallel tracks, user runbook) as historical background. They are no
+longer directives — the invariants and closed decisions they contain still
+hold and are summarised in `AGENTS.md`. `docs/adr/` is for decisions that
+concern only the shape of this repository.
