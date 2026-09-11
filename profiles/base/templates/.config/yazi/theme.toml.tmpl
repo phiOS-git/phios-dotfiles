@@ -1,12 +1,27 @@
 [mgr]
 cwd     = { fg = "${PHI_ACCENT}" }
-hovered = { fg = "${PHI_ACCENT_FG}", bg = "${PHI_ACCENT}" }
+
+# docs/TODO.md: "it shouldn't use accent for common elements like the
+# selection highlight, as accent is for the details" — `hovered` is the
+# row under the cursor, repainted constantly as you move through a
+# directory, not a deliberate/occasional state the way `marker_selected`
+# below is. Tier 1 (accent) is defined in design/tokens.dark.sh as "One
+# role and one only: active state, focus, primary interactivity" — an
+# ambient, ever-present row highlight is neither. bg-2 ("+1 ramp step",
+# same tokens.dark.sh) is a neutral elevated surface instead, same family
+# as every other "this is the current one" affordance in this design
+# system that doesn't reach for accent.
+hovered = { fg = "${PHI_FG_0}", bg = "${PHI_BG_2}", bold = true }
 
 find_keyword  = { fg = "${PHI_WARN}", bold = true }
 find_position = { fg = "${PHI_INFO}", bg = "reset", bold = true }
 
 symlink_target = { italic = true, fg = "${PHI_FG_2}" }
 
+# marker_selected/count_selected keep accent: a deliberate multi-select
+# (Space) IS "active state ... primary interactivity" by the token's own
+# definition above, unlike `hovered` — this one wasn't part of the
+# complaint and isn't changed.
 marker_selected = { fg = "${PHI_ACCENT}",  bg = "${PHI_ACCENT}" }
 marker_copied   = { fg = "${PHI_SUCCESS}", bg = "${PHI_SUCCESS}" }
 marker_cut      = { fg = "${PHI_ERROR}",   bg = "${PHI_ERROR}" }
@@ -19,6 +34,78 @@ count_selected = { fg = "${PHI_ACCENT_FG}", bg = "${PHI_ACCENT}" }
 [filetype]
 rules = [
   { url = "*/", fg = "${PHI_ACCENT}", bold = true },
+]
+
+# docs/TODO.md: "replace the Development icon with one that is not VSC
+# and the 'Games' folder with a non default one ... reconsider the
+# coloring ... it uses [a colour that] makes no sense, ... for folders
+# like Documents/Videos/Pictures/Downloads/Development, etc." — yazi's
+# own built-in preset (yazi-config/preset/theme-dark.toml, confirmed
+# against the upstream source) hardcodes EVERY one of these — Desktop,
+# Development, Documents, Downloads, Library, Movies, Music, Pictures,
+# Public, Videos — to the identical literal #00bcd4, a colour this
+# design system does not own or name anywhere (design/tokens.*.sh has no
+# such hex). `prepend_dirs` overrides by exact `name` match without
+# touching the rest of the built-in set (.config, .git, ... stay as
+# shipped — not part of this complaint). Every entry below keeps yazi's
+# own glyph codepoint EXCEPT Development (was U+E70C, nf-dev-visualstudio
+# — the literal VS Code logo) and the new Games entry, neither of which
+# yazi's preset defines at all. Both replacements (U+F121 fa-code, U+F11B
+# fa-gamepad — a generic "</>" and a plain joystick, no editor/publisher
+# branding) fall inside the PUA range phios-dotfiles/profiles/desktop/
+# templates/.config/kitty/fonts.conf.tmpl already declares via
+# symbol_map for PHI_FONT_SYMBOL (U+ED00-U+F2FF covers both), the same
+# font every other yazi glyph here already depends on — not a new,
+# unverified range. \uXXXX escapes, not raw PUA characters in the source
+# — this session's own editor tooling has silently dropped raw PUA
+# characters before (Bar/glyphs.js in phi-shell carries the same note).
+#
+# Colour: fg-2 (design/tokens.dark.sh: "secondary text/comments", a
+# muted, non-accent, non-semantic tone) for the whole personal-folder
+# cluster — one coherent, deliberate value instead of one arbitrary
+# hardcoded one, matching every other folder in the set rather than
+# picking a new arbitrary colour per name.
+[icon]
+prepend_dirs = [
+  { name = "Desktop",     text = "", fg = "${PHI_FG_2}" },
+  { name = "Development", text = "", fg = "${PHI_FG_2}" }, # fa-code, was VS Code's own logo
+  { name = "Documents",   text = "", fg = "${PHI_FG_2}" },
+  { name = "Downloads",   text = "", fg = "${PHI_FG_2}" },
+  { name = "Games",       text = "", fg = "${PHI_FG_2}" }, # fa-gamepad, no default icon existed
+  { name = "Library",     text = "", fg = "${PHI_FG_2}" },
+  { name = "Movies",      text = "", fg = "${PHI_FG_2}" },
+  { name = "Music",       text = "", fg = "${PHI_FG_2}" },
+  { name = "Pictures",    text = "", fg = "${PHI_FG_2}" },
+  { name = "Public",      text = "", fg = "${PHI_FG_2}" },
+  { name = "Videos",      text = "", fg = "${PHI_FG_2}" },
+]
+
+# docs/TODO.md: "apply a different color for folders and subdirectories
+# that are not part of $HOME." yazi's icon `globs` match a rule's `url`
+# against the item's FULL path, not just its basename (confirmed against
+# yazi-config/src/pattern.rs) — but that same source confirms `Pattern`
+# does no ~/$HOME expansion, and this repo's own template renderer
+# deliberately leaves $HOME untouched in a template (bin/lib/tokens.sh:
+# "substituting only the PHI_* names ... never the whole environment, so
+# a $PATH or $HOME inside a configuration file survives untouched") — so
+# there is no portable way to write a literal "outside $HOME" pattern
+# here; it would need a real, hardcoded, per-user absolute path, which
+# this profile (shared across razer/zotac/mini, base/, not per-host) does
+# not have available. Scoped instead to the actual non-home storage this
+# project documents (PROGRESS.md §1): zotac's second disk at /mnt/bulk,
+# mini's /srv volume. Both the mount point itself and everything under it
+# (** crosses "/", confirmed against pattern.rs's own test suite) are
+# listed explicitly rather than relying on a single pattern to cover both
+# cases. ${PHI_INFO} here is a deliberate, different use from the "makes
+# no sense" complaint above — not decoration on an everyday folder, but
+# design/tokens.dark.sh's own Tier 2 rule applied as intended: "on
+# threshold or state only" — crossing out of $HOME onto a different
+# volume is exactly that kind of state.
+prepend_globs = [
+  { url = "/mnt/",     fg = "${PHI_INFO}" },
+  { url = "/mnt/**/",  fg = "${PHI_INFO}" },
+  { url = "/srv/",     fg = "${PHI_INFO}" },
+  { url = "/srv/**/",  fg = "${PHI_INFO}" },
 ]
 
 [git]
