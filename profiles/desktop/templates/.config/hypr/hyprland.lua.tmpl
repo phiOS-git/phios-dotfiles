@@ -230,6 +230,30 @@ hl.bind(mainMod .. " + SHIFT + right", hl.dsp.exec_cmd("hyprctl dispatch movewin
 hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.exec_cmd("hyprctl dispatch movewindow u"), { description = "Move the window up" })
 hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.exec_cmd("hyprctl dispatch movewindow d"), { description = "Move the window down" })
 
+-- docs/TODO.md: "super+shit+left/right do not change active workspace" —
+-- on the real hardware this was reported from, EVERY Super+[extra
+-- modifier]+arrow combo (this block, and the workspace prev/next block
+-- below) does nothing at all, while the plain two-key Super+arrow focus
+-- binds above work fine. Checked three real, separate places this could
+-- break, against hyprwm/Hyprland's own source rather than guessing: the
+-- bind string shape (`"SUPER + SHIFT + left"`, confirmed identical to
+-- Hyprland's own example/hyprland.lua), the modifier token table
+-- (`src/keybinds/Resolver.cpp`'s `MODIFIER_NAMES` — both "SHIFT" and
+-- "CTRL" are real, recognized names, not typos), and keycode resolution
+-- (`CResolver::resolveKeycode`, which resolves "left"/"right" the same
+-- way regardless of which modifier accompanies them). All three check
+-- out; no config-level defect found. Added as h/j/k/l ALTERNATIVES,
+-- alongside the arrow binds rather than replacing them, on the theory
+-- that whatever is actually wrong is specific to the arrow keys
+-- themselves on this hardware/layout, not to 3-key chords in general —
+-- other Super+Shift+<letter> binds elsewhere in this file (F, C, P) were
+-- not reported as broken. h/j/k/l already means left/down/up/right
+-- elsewhere in this exact file (the RESIZE submap below).
+hl.bind(mainMod .. " + SHIFT + h", hl.dsp.exec_cmd("hyprctl dispatch movewindow l"), { description = "Move the window left" })
+hl.bind(mainMod .. " + SHIFT + l", hl.dsp.exec_cmd("hyprctl dispatch movewindow r"), { description = "Move the window right" })
+hl.bind(mainMod .. " + SHIFT + k", hl.dsp.exec_cmd("hyprctl dispatch movewindow u"), { description = "Move the window up" })
+hl.bind(mainMod .. " + SHIFT + j", hl.dsp.exec_cmd("hyprctl dispatch movewindow d"), { description = "Move the window down" })
+
 -- layout / floating state
 hl.bind(mainMod .. " + F",         hl.dsp.exec_cmd("hyprctl dispatch fullscreen 0"), { description = "Toggle fullscreen" })
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }), { description = "Toggle floating" })
@@ -261,6 +285,12 @@ end
 -- whole script; `hyprctl dispatch workspace` is a stable interface).
 hl.bind(mainMod .. " + CTRL + left",  hl.dsp.exec_cmd("hyprctl dispatch workspace m-1"), { description = "Previous workspace" })
 hl.bind(mainMod .. " + CTRL + right", hl.dsp.exec_cmd("hyprctl dispatch workspace m+1"), { description = "Next workspace" })
+-- docs/TODO.md: h/j/k/l alternatives for the same reason as the move-
+-- window block above — see that block's own comment for the
+-- investigation. h/l match this file's own left/right convention
+-- (RESIZE submap below).
+hl.bind(mainMod .. " + CTRL + h", hl.dsp.exec_cmd("hyprctl dispatch workspace m-1"), { description = "Previous workspace" })
+hl.bind(mainMod .. " + CTRL + l", hl.dsp.exec_cmd("hyprctl dispatch workspace m+1"), { description = "Next workspace" })
 
 -- hold Super and drag with the left / right mouse button to move / resize a
 -- window (the one place a bind is pointer-driven rather than a key).
