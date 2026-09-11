@@ -80,6 +80,33 @@ hl.config({
     },
 })
 
+----------------
+---- CURSOR ----
+----------------
+
+-- docs/TODO.md: "the mouse cursor often disappear arbitrarily." Root cause,
+-- read from Hyprland's own source of truth for its defaults (hyprwm/
+-- hyprland-wiki, configuring/core/config-options.md, `cursor` category,
+-- fetched this session rather than assumed): `cursor:hide_on_touch`
+-- defaults to `true` ("Hides the cursor when the last input was a touch
+-- input until a mouse input is done") — nothing in this file ever set it,
+-- so Hyprland's own untouched default was in effect the whole time. razer
+-- has a touchscreen (capabilities doc, PHI_CAP_TOUCHSCREEN; the GESTURES
+-- section's own three-finger-swipe comment further down: "razer has both"
+-- a touchpad and a touchscreen firing through the same gesture engine) —
+-- any touch contact with the screen, deliberate or an incidental brush
+-- while adjusting the lid, silently hides the pointer until the next
+-- mouse-classified input, which reads exactly as "arbitrary." zotac has no
+-- touchscreen (mini never renders this template at all — headless, no
+-- graphical session), so this is a no-op there — same reasoning as the
+-- GESTURES section's touchscreen swipe binds ("simply inert", no host
+-- guard needed).
+hl.config({
+    cursor = {
+        hide_on_touch = false,
+    },
+})
+
 ---------------------
 ---- MY PROGRAMS ----
 ---------------------
