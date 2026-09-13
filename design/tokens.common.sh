@@ -53,6 +53,14 @@
 #   PHI_CURSOR_*               S-54. Theme name is closed (whiteglass); size
 #                              (24) is a plain, common default, not measured
 #                              against any real HiDPI screen.
+#   PHI_TERM_PADDING           16, docs/TODO.md: "terminal panels should have
+#                              larger padding" (references/panel-reference-
+#                              1.JPG, -2.JPG) — a comfortably generous inset
+#                              chosen by eye against those two references,
+#                              not measured. Bare number, no unit: kitty's own
+#                              `window_padding_width` directive (the one
+#                              consumer) takes a plain point value with no
+#                              suffix, unlike every other size token here.
 # ---------------------------------------------------------------------------
 
 # --- Typography roles (§6.3, §6.4) -----------------------------------------
@@ -170,6 +178,14 @@ PHI_BORDER_WIDTH_STRONG='1px'
 # elements; a panel's own edge inset is deliberately independent of the
 # font's cell width). Exact value is a judgment call — flagged.
 PHI_PANEL_PADDING='8px'
+
+# term-padding — docs/TODO.md: "terminal panels should have larger padding",
+# references/panel-reference-1.JPG and -2.JPG. Its own token rather than
+# reusing panel-padding above: a distinct role (kitty's own window chrome,
+# not a phi-shell Panel.qml inset) that may diverge from it later, same
+# reasoning as border-width-strong staying separate from border-width. No
+# unit suffix — see the PLACEHOLDERS note at the top of this file for why.
+PHI_TERM_PADDING='16'
 
 # panel-gap / panel-radius — Out-of-plan: features-change. The inset the
 # below-the-bar surfaces keep from the bar and the screen edges (the
