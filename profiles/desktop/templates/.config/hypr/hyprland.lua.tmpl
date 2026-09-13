@@ -790,28 +790,41 @@ hl.window_rule({
     workspace = "11",
 })
 
--- docs/TODO.md: opening an image from the launcher used to flash a
--- terminal window open and immediately closed (phi's FilesProvider was
--- shelling out to a bare `xdg-open`, which resolves through a
+-- docs/TODO.md: opening an image used to flash a terminal window open and
+-- immediately closed. Both known ways to open one in this system (the
+-- launcher's FilesProvider, and yazi's bundled default opener for
+-- image/*) bottomed out in a bare `xdg-open`, which resolves through a
 -- mimeapps.list default association this repository has never
--- configured — see phi/internal/query/files.go). Fixed there by naming
--- the real, already-installed viewer (imv, every desktop profile's
--- packages.txt) explicitly, with its own "-i phios-imv" app id so this
--- rule can target it reliably (same reasoning as "phios-btop" above,
--- not Hyprland's own default, which imv's man page never documents).
--- float/center/size mirror the classic `windowrule = float, center,
--- size 60% 70%` shape confirmed on Hyprland's own wiki and its
--- example/hyprland.lua (hyprwm/Hyprland); only `float` has a prior,
--- confirmed-working precedent inside THIS file (steam-workspace,
--- btop-workspace above) — `center`/`size` are new to this template and
--- not yet confirmed against a live compositor.
+-- configured — see phi/internal/query/files.go and
+-- profiles/base/home/.config/yazi/yazi.toml. Fixed at both call sites by
+-- naming the real, already-installed viewer (imv, every desktop
+-- profile's packages.txt) explicitly, with its own "-i phios-imv" app id
+-- so this rule can target it reliably (same reasoning as "phios-btop"
+-- above, not Hyprland's own default, which imv's man page never
+-- documents).
+--
+-- `float` only: DeepWiki's read of Hyprland's own
+-- src/config/lua/bindings/LuaBindingsInternal.hpp names the Lua
+-- window_rule effect fields as float/tile/fullscreen/move/size/opacity/
+-- tag — no `center`. An earlier draft of this rule added `center = true`
+-- and a percentage `size`, copied from the classic (non-Lua)
+-- `windowrule = float, center, size 60% 70%` shape shown on Hyprland's
+-- wiki — dropped once `center` turned up nowhere in the Lua binding's own
+-- field list, since this Lua config appears to reject an unrecognized
+-- field at parse time (real reports: "Windowrule warnings - Invalid
+-- fields - Config Error", hyprwm/Hyprland discussion #12492) — on all
+-- three machines, a bad field here would break hyprland.lua entirely,
+-- not just this one rule. `float` alone is the one field with real
+-- precedent already confirmed in THIS file's own commented
+-- "steam-secondary-float" draft above. A specific size/centered position
+-- is left for later, once `size`'s exact Lua syntax (string? a pixel or
+-- percent pair?) can be confirmed the same careful way, ideally against
+-- a live compositor rather than another web search.
 hl.window_rule({
     name  = "imv-float",
     match = { class = "^phios-imv$" },
 
-    float  = true,
-    center = true,
-    size   = "60% 70%",
+    float = true,
 })
 
 -- "Secondary windows floating" is still NOT written: the one real Steam
