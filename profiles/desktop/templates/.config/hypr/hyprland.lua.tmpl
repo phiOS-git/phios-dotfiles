@@ -183,7 +183,34 @@ end)
 
 local mainMod = "SUPER"
 
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
+-- docs/TODO.md: "SUPER+M to close hyprland is problematic: add a
+-- confirmation and an extra more complex binding for terminating without
+-- confirmation." Super+M alone used to run the exit command immediately —
+-- one modifier plus a common letter, one slip away from ending the
+-- session. It now asks first, through phi-shell's own "power" IPC target
+-- (Panels/BarPopout.qml): the popout opens straight on the same
+-- "Log out now? This cannot be undone." confirm step the Reboot/Shutdown
+-- buttons already use, rather than a new, separate confirmation surface.
+-- `qsIpc()` (defined further down, under PHI-SHELL KEYBINDINGS) isn't in
+-- scope yet this early in the file — `qsConfigPath` (AUTOSTART, above) is,
+-- so the call is written out here rather than moving either definition.
+hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call power confirmLogout"), { description = "Log out (asks for confirmation)" })
+-- The "extra more complex binding" the same request asks for: still ends
+-- the session immediately, with no confirmation. Two modifiers on a
+-- letter key, not the word-name "left"/"right" keys the still-open
+-- Super+Shift/Ctrl+arrow report involves — matches the already-confirmed-
+-- working Super+Shift+letter binds elsewhere in this file (movewindow's
+-- h/j/k/l, F, C), not the pattern that report describes.
+--
+-- NOT the exact command this bind used to run: the old fallback here was
+-- `hyprctl dispatch 'hl.dsp.exit()'`, which passes the literal string
+-- "hl.dsp.exit()" — Lua-binding call syntax, not a hyprctl dispatcher
+-- name — as the dispatch argument. Hyprland's real dispatcher for this is
+-- plain `exit` (`hyprctl dispatch exit`), the exact form
+-- Services/PowerActions.qml's own logout() already runs — copied here
+-- rather than carried forward suspect, since this bind is now the one
+-- surface with no confirm step to make a silent no-op visible.
+hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"), { description = "Log out immediately, no confirmation" })
 
 -- apps
 -- Super+Return opens a terminal in the cwd of the last focused window via
