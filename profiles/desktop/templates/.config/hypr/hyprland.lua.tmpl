@@ -74,9 +74,21 @@ hl.monitor({
 -- against hyprwm/Hyprland's own example/hyprland.lua, which sets
 -- `follow_mouse` in exactly this shape. This is the first `hl.config` call
 -- in this file — everything else so far has run on Hyprland's own defaults.
+--
+-- docs/TODO.md: "invert the scroll wheel (mouse/trackpad)". `natural_scroll`
+-- is Hyprland's own name for this (Hyprland wiki, configuring/variables,
+-- `input` category: inverted scroll direction) and applies to every
+-- pointer device, mouse and touchpad alike, when set at this top level —
+-- exactly the "(mouse/trackpad)" scope asked for; `input.touchpad.
+-- natural_scroll` exists separately only for setting the touchpad
+-- differently from the mouse, not needed here. Same "hyprland.lua is where
+-- pointer settings live, not a live settings-panel toggle" boundary
+-- Settings/sections/Devices.qml's "Pointer" group already documents for
+-- sensitivity (phi-shell's own §9.12 perimeter comment).
 hl.config({
     input = {
-        follow_mouse = 0,
+        follow_mouse   = 0,
+        natural_scroll = true,
     },
 })
 
