@@ -10,3 +10,22 @@ group = "git"
 url = "*/"
 run = "git"
 group = "git"
+
+# docs/TODO.md: opening an image used to flash a terminal window open and
+# immediately closed. yazi's own bundled default opener for image/* is
+# `xdg-open %s1` (yazi-config/preset/yazi-default.toml, sxyazi/yazi) — the
+# same unmanaged mimeapps.list resolution phi's launcher FilesProvider was
+# also found relying on (see phi/internal/query/files.go and the matching
+# VERIFICATION.md entry). Whichever of the two paths actually produced the
+# reported symptom, naming the real, already-installed viewer explicitly
+# here closes the yazi half the same way; "-i phios-imv" gives its window
+# a fixed class so hyprland.lua.tmpl's "imv-float" rule can float it.
+[opener]
+phios-image = [
+{ run = 'imv -i phios-imv %s1', desc = "Open with imv", for = "linux", orphan = true },
+]
+
+[open]
+prepend_rules = [
+{ mime = "image/*", use = "phios-image" },
+]
