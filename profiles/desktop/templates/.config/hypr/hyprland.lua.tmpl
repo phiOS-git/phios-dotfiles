@@ -790,6 +790,30 @@ hl.window_rule({
     workspace = "11",
 })
 
+-- docs/TODO.md: opening an image from the launcher used to flash a
+-- terminal window open and immediately closed (phi's FilesProvider was
+-- shelling out to a bare `xdg-open`, which resolves through a
+-- mimeapps.list default association this repository has never
+-- configured — see phi/internal/query/files.go). Fixed there by naming
+-- the real, already-installed viewer (imv, every desktop profile's
+-- packages.txt) explicitly, with its own "-i phios-imv" app id so this
+-- rule can target it reliably (same reasoning as "phios-btop" above,
+-- not Hyprland's own default, which imv's man page never documents).
+-- float/center/size mirror the classic `windowrule = float, center,
+-- size 60% 70%` shape confirmed on Hyprland's own wiki and its
+-- example/hyprland.lua (hyprwm/Hyprland); only `float` has a prior,
+-- confirmed-working precedent inside THIS file (steam-workspace,
+-- btop-workspace above) — `center`/`size` are new to this template and
+-- not yet confirmed against a live compositor.
+hl.window_rule({
+    name  = "imv-float",
+    match = { class = "^phios-imv$" },
+
+    float  = true,
+    center = true,
+    size   = "60% 70%",
+})
+
 -- "Secondary windows floating" is still NOT written: the one real Steam
 -- window captured so far is the main library window itself (title
 -- "Steam"). Distinguishing a secondary window (Friends List, a chat, a
