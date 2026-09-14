@@ -214,15 +214,27 @@ hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc cal
 -- working Super+Shift+letter binds elsewhere in this file (movewindow's
 -- h/j/k/l, F, C), not the pattern that report describes.
 --
--- NOT the exact command this bind used to run: the old fallback here was
--- `hyprctl dispatch 'hl.dsp.exit()'`, which passes the literal string
--- "hl.dsp.exit()" — Lua-binding call syntax, not a hyprctl dispatcher
--- name — as the dispatch argument. Hyprland's real dispatcher for this is
--- plain `exit` (`hyprctl dispatch exit`), the exact form
--- Services/PowerActions.qml's own logout() already runs — copied here
--- rather than carried forward suspect, since this bind is now the one
--- surface with no confirm step to make a silent no-op visible.
-hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"), { description = "Log out immediately, no confirmation" })
+-- Corrected 2026-09-14, with a live Hyprland session to test against
+-- (something no prior session on this project had): the OPPOSITE of what
+-- the comment here used to claim. This install runs Hyprland's Lua
+-- config, which repurposes the `dispatch` IPC/hyprctl socket command
+-- to EVALUATE its argument as Lua (confirmed by sending raw IPC requests
+-- directly over `.socket.sock`, bypassing `hyprctl` entirely, so this is
+-- Hyprland itself, not the `hyprctl` binary) — the bare traditional
+-- dispatcher-string form (`hyprctl dispatch exit`, or even a single bare
+-- word with no arguments at all) fails with "hl.dispatch: expected a
+-- dispatcher", while `hyprctl dispatch 'hl.dsp.exit()'` succeeds. That is
+-- also exactly the form Hyprland's OWN bundled example
+-- (`/usr/share/hypr/hyprland.lua`, this same Hyprland version) uses for
+-- this identical fallback line — so the previous "plain `exit` is the
+-- real dispatcher name" correction was a plausible guess made without
+-- being able to test it, and it was wrong. Not re-verified by actually
+-- ending a real session (that would defeat testing it safely) — this is
+-- the one fix in this change taken on documentation + the shared-
+-- mechanism confirmation elsewhere in this file, not a direct live test.
+-- Services/PowerActions.qml's own logout() carries the identical bug and
+-- the identical fix, see that file.
+hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch \"hl.dsp.exit()\""), { description = "Log out immediately, no confirmation" })
 
 -- apps
 -- Super+Return opens a terminal in the cwd of the last focused window via
@@ -260,17 +272,45 @@ hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }),  { descript
 -- workspace).
 --
 -- Everything the example did NOT show — direction-based window moves,
--- centre/pin, per-key resize, monitor focus/move, fullscreen — goes through
--- `hl.dsp.exec_cmd("hyprctl dispatch ...")` on purpose: `hyprctl dispatch`
--- is a stable interface, and a wrong `hl.dsp.*` shape can abort the whole
--- Lua script on load (taking out every bind, not just the bad one). Once
--- the native forms are confirmed on real hardware these can move over. C-06.
-
--- move the active window in a direction (opposite of the focus binds above)
-hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.exec_cmd("hyprctl dispatch movewindow l"), { description = "Move the window left" })
-hl.bind(mainMod .. " + SHIFT + right", hl.dsp.exec_cmd("hyprctl dispatch movewindow r"), { description = "Move the window right" })
-hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.exec_cmd("hyprctl dispatch movewindow u"), { description = "Move the window up" })
-hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.exec_cmd("hyprctl dispatch movewindow d"), { description = "Move the window down" })
+-- centre/pin, per-key resize, monitor focus/move, fullscreen — used to go
+-- through `hl.dsp.exec_cmd("hyprctl dispatch ...")` on the theory that
+-- `hyprctl dispatch` was a stable interface and a wrong `hl.dsp.*` shape
+-- could abort the whole Lua script on load (taking out every bind, not
+-- just the bad one).
+--
+-- Corrected 2026-09-14 with a live Hyprland session to actually test
+-- against: `hyprctl dispatch` is NOT stable on this Hyprland build — this
+-- install's Lua config repurposes the `dispatch` socket/IPC command to
+-- EVALUATE its argument as Lua, so EVERY traditional two-token dispatcher
+-- string (`movewindow l`, `workspace m-1`, `resizeactive -40 0`, even a
+-- single bare word with no arguments at all) fails with "hl.dispatch:
+-- expected a dispatcher", confirmed by sending the raw request directly
+-- over `.socket.sock`, bypassing the `hyprctl` binary entirely — this is
+-- Hyprland itself, not a `hyprctl` quirk. This is very likely the real
+-- root cause of several long-open docs/TODO.md reports at once: the
+-- scratchpad bar icon, "windows management keybinding (move, resize) do
+-- not work", "super+shift/ctrl+arrow do nothing", the h/j/k/l workspace-
+-- switch alternatives, and "hyprland resize does not seem to work" — all
+-- of them relied on this exact broken string form.
+--
+-- The concern that motivated exec_cmd (a bad native shape aborting the
+-- whole script) does not apply to TESTING one at the live IPC socket —
+-- that only risks a runtime dispatch error, never a config-load abort —
+-- so every native form below (this block, the workspace prev/next block,
+-- fullscreen/centre/pin, and the RESIZE submap further down) was sent
+-- live over this machine's real Hyprland socket and its real, visible
+-- effect checked (a disposable test window's position/size read back via
+-- `hyprctl clients -j`/`activewindow -j` before and after) before being
+-- written here — not guessed from the Lua type stub's untyped `fun(...)`
+-- signatures alone. `hl.dsp.window.move({ direction = ... })` mirrors the
+-- already-native `hl.dsp.focus({ direction = ... })` above exactly (same
+-- table shape, window instead of focus) and was confirmed to swap the
+-- active window with its neighbour, matching the old `movewindow`
+-- dispatcher's own behaviour.
+hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.window.move({ direction = "l" }), { description = "Move the window left" })
+hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }), { description = "Move the window right" })
+hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "u" }), { description = "Move the window up" })
+hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "d" }), { description = "Move the window down" })
 
 -- docs/TODO.md: "super+shit+left/right do not change active workspace" —
 -- on the real hardware this was reported from, EVERY Super+[extra
@@ -289,23 +329,33 @@ hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.exec_cmd("hyprctl dispatch movewin
 -- that whatever is actually wrong is specific to the arrow keys
 -- themselves on this hardware/layout, not to 3-key chords in general —
 -- other Super+Shift+<letter> binds elsewhere in this file (F, C, P) were
--- not reported as broken. h/j/k/l already means left/down/up/right
--- elsewhere in this exact file (the RESIZE submap below).
-hl.bind(mainMod .. " + SHIFT + h", hl.dsp.exec_cmd("hyprctl dispatch movewindow l"), { description = "Move the window left" })
-hl.bind(mainMod .. " + SHIFT + l", hl.dsp.exec_cmd("hyprctl dispatch movewindow r"), { description = "Move the window right" })
-hl.bind(mainMod .. " + SHIFT + k", hl.dsp.exec_cmd("hyprctl dispatch movewindow u"), { description = "Move the window up" })
-hl.bind(mainMod .. " + SHIFT + j", hl.dsp.exec_cmd("hyprctl dispatch movewindow d"), { description = "Move the window down" })
+-- not reported as broken (2026-09-14: this was never actually true — see
+-- the comment above the arrow-key block, everything through exec_cmd's
+-- old string form was equally broken; F/C/P just hadn't been separately
+-- reported yet). h/j/k/l already means left/down/up/right elsewhere in
+-- this exact file (the RESIZE submap below).
+hl.bind(mainMod .. " + SHIFT + h", hl.dsp.window.move({ direction = "l" }), { description = "Move the window left" })
+hl.bind(mainMod .. " + SHIFT + l", hl.dsp.window.move({ direction = "r" }), { description = "Move the window right" })
+hl.bind(mainMod .. " + SHIFT + k", hl.dsp.window.move({ direction = "u" }), { description = "Move the window up" })
+hl.bind(mainMod .. " + SHIFT + j", hl.dsp.window.move({ direction = "d" }), { description = "Move the window down" })
 
--- layout / floating state
-hl.bind(mainMod .. " + F",         hl.dsp.exec_cmd("hyprctl dispatch fullscreen 0"), { description = "Toggle fullscreen" })
+-- layout / floating state. `window.fullscreen()`/`center()`/`pin()`
+-- confirmed live the same way as the moves above: fullscreen toggled the
+-- real client fullscreen state (Hyprland now reports a different internal
+-- mode number for it than the old `fullscreen 0` argument did — 2 instead
+-- of 0 — but the visible behaviour, a real fullscreen toggle, is what
+-- this bind's own description promises and what was observed), center
+-- moved a floating test window to the middle of the screen, pin toggled
+-- `pinned` true/false round-trip.
+hl.bind(mainMod .. " + F",         hl.dsp.window.fullscreen(), { description = "Toggle fullscreen" })
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }), { description = "Toggle floating" })
 hl.bind(mainMod .. " + J",         hl.dsp.layout("togglesplit"), { description = "Toggle the dwindle split direction" })
 -- Centre-window is on Super+Shift+C, not Super+C: Super+C is deliberately
 -- left unbound here so it reaches the focused application — kitty maps it
 -- to copy-to-clipboard (kitty.conf). A bare Super+C bind would be consumed
 -- by the compositor before the terminal ever saw it.
-hl.bind(mainMod .. " + SHIFT + C", hl.dsp.exec_cmd("hyprctl dispatch centerwindow"), { description = "Centre the floating window" })
-hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprctl dispatch pin"), { description = "Pin the floating window to every workspace" })
+hl.bind(mainMod .. " + SHIFT + C", hl.dsp.window.center(), { description = "Centre the floating window" })
+hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pin(),    { description = "Pin the floating window to every workspace" })
 
 -- numbered workspaces (Super+1..0), and send-to-workspace (Super+Shift+1..0).
 -- Loop taken verbatim from example/hyprland.lua, including `i % 10` mapping
@@ -318,21 +368,25 @@ end
 
 -- Previous / next workspace on the focused monitor (user request). The
 -- keyboard companion to the numbered binds above and to the three-finger
--- swipe in the GESTURES section — all three use `workspace m-1 / m+1`,
--- which is MONITOR-relative: it cycles the workspaces this monitor
--- actually has and wraps, never spawning an empty one. Super+Ctrl+arrows
--- is the GNOME/KDE convention for this and was unbound. `hyprctl dispatch`
--- rather than a native `hl.dsp.*` form for the same reason as the
--- direction moves above (C-06: an unconfirmed Lua shape can abort the
--- whole script; `hyprctl dispatch workspace` is a stable interface).
-hl.bind(mainMod .. " + CTRL + left",  hl.dsp.exec_cmd("hyprctl dispatch workspace m-1"), { description = "Previous workspace" })
-hl.bind(mainMod .. " + CTRL + right", hl.dsp.exec_cmd("hyprctl dispatch workspace m+1"), { description = "Next workspace" })
+-- swipe in the GESTURES section — all three switch to the MONITOR-
+-- relative "m-1"/"m+1" workspace selector: it cycles the workspaces this
+-- monitor actually has and wraps, never spawning an empty one.
+-- Super+Ctrl+arrows is the GNOME/KDE convention for this and was unbound.
+--
+-- Corrected 2026-09-14 (same root cause as the move-window block above,
+-- see its comment): `hl.dsp.focus({ workspace = ... })` is the same
+-- native dispatcher already used for the numbered Super+N binds just
+-- above, given the "m-1"/"m+1" relative selector string instead of a
+-- plain number — confirmed live with a real workspace round-trip
+-- (1 -> 12 -> 1, then 1 -> m+1 -> m-1 back to 1).
+hl.bind(mainMod .. " + CTRL + left",  hl.dsp.focus({ workspace = "m-1" }), { description = "Previous workspace" })
+hl.bind(mainMod .. " + CTRL + right", hl.dsp.focus({ workspace = "m+1" }), { description = "Next workspace" })
 -- docs/TODO.md: h/j/k/l alternatives for the same reason as the move-
 -- window block above — see that block's own comment for the
 -- investigation. h/l match this file's own left/right convention
 -- (RESIZE submap below).
-hl.bind(mainMod .. " + CTRL + h", hl.dsp.exec_cmd("hyprctl dispatch workspace m-1"), { description = "Previous workspace" })
-hl.bind(mainMod .. " + CTRL + l", hl.dsp.exec_cmd("hyprctl dispatch workspace m+1"), { description = "Next workspace" })
+hl.bind(mainMod .. " + CTRL + h", hl.dsp.focus({ workspace = "m-1" }), { description = "Previous workspace" })
+hl.bind(mainMod .. " + CTRL + l", hl.dsp.focus({ workspace = "m+1" }), { description = "Next workspace" })
 
 -- hold Super and drag with the left / right mouse button to move / resize a
 -- window (the one place a bind is pointer-driven rather than a key).
@@ -428,9 +482,31 @@ hl.workspace_rule({
 })
 
 -- multi-monitor (inert on a single-output host — zotac is the only one with
--- two). exec_cmd rather than `focus({ monitor = ... })`: the direction token
--- Hyprland's `focusmonitor` dispatcher wants here (`+1`/`-1`) is confirmed,
--- the Lua wrapper's accepted form for it is not.
+-- two, and it only had one connected the day this was investigated, see
+-- below). Same underlying bug as every other bind in this change (see the
+-- comment above the arrow-key block) — `hyprctl dispatch focusmonitor -1`
+-- fails exactly the same way — but the fix below is NOT applied here,
+-- unlike the rest of this file: still exec_cmd, still broken, on purpose.
+--
+-- Investigated 2026-09-14: `hl.dsp.focus({ monitor = -1 })` and
+-- `hl.dsp.window.move({ monitor = -1 })`, sent live, both returned "ok" —
+-- at first read as the same "shape accepted" signal `workspace`/
+-- `direction` gave elsewhere in this file. It is not: `{ monitor = 1 }`
+-- on this exact one-monitor machine fails with "monitor not found" /
+-- "Invalid monitor / monitor doesn't exist", and `{ monitor = 0 }` (the
+-- real, only monitor's id) succeeds — so `monitor` is an ABSOLUTE
+-- selector (id or name), not the relative "cycle to the next/previous
+-- output" the old `focusmonitor +1/-1` dispatcher gave. `-1` returning
+-- "ok" here is most likely negative-index addressing resolving to "the
+-- last monitor", which happens to equal the only monitor on this
+-- machine — not a working relative-previous — so it was NOT actually a
+-- confirmed fix and shipping it as one would have been the same mistake
+-- the old exit-fallback comment already made once in this file. Left
+-- broken rather than guessed at twice. Needs a real second monitor to
+-- find whichever mechanism gives relative cycling now (a Lua function
+-- bind computing the next/previous id via `hl.get_monitors()`, the same
+-- technique the RESIZE submap below now uses for its delta math, is the
+-- likely shape — untested, no second output to check it against).
 hl.bind(mainMod .. " + comma",  hl.dsp.exec_cmd("hyprctl dispatch focusmonitor -1"), { description = "Focus the previous monitor" })
 hl.bind(mainMod .. " + period", hl.dsp.exec_cmd("hyprctl dispatch focusmonitor +1"), { description = "Focus the next monitor" })
 hl.bind(mainMod .. " + SHIFT + comma",  hl.dsp.exec_cmd("hyprctl dispatch movewindow mon:-1"), { description = "Move the window to the previous monitor" })
@@ -439,16 +515,42 @@ hl.bind(mainMod .. " + SHIFT + period", hl.dsp.exec_cmd("hyprctl dispatch movewi
 -- resize mode: Super+R, then arrows or h/j/k/l to resize the active window,
 -- Escape / Return / any other key to leave. Same "mode for a rare action"
 -- pattern as the screenshot submap further down.
+--
+-- Corrected 2026-09-14, same root cause as the rest of this file's
+-- `exec_cmd("hyprctl dispatch ...")` binds (see the comment above the
+-- arrow-key move block) — but `window.resize` is not a drop-in swap for
+-- the old `resizeactive` string the way `window.move`/`focus` were for
+-- `movewindow`/`workspace`: confirmed live that `window.resize({ x = ...,
+-- y = ... })` sets an ABSOLUTE size (a floating test window sent
+-- `{ x = 900, y = 900 }` came back exactly 900x900), not the RELATIVE nudge
+-- `resizeactive -40 0` gave. A static Dispatcher table can't express
+-- "current size minus 40" — every other bind in this file is a plain
+-- Dispatcher value, but `hl.bind` also accepts a plain Lua function
+-- (confirmed against the type stub's own `bind(keys, dispatcher:
+-- HL.Dispatcher|function, ...)` signature), so each direction here reads
+-- the active window's real current size via `hl.get_active_window()` at
+-- the moment the key is pressed and dispatches the same delta the old
+-- command did. Confirmed live end to end: a floating test window's size
+-- went from [950, 515] to exactly [910, 515] after the "left" case below.
+-- (`hl.dispatch(...)`, not a trailing `()` on the Dispatcher object itself
+-- — Hyprland's own error for the latter is explicit: "dispatcher objects
+-- cannot be called directly; use hl.dispatch(dispatcher)".)
 hl.bind(mainMod .. " + R", hl.dsp.submap("resize"), { description = "Enter resize mode" })
 hl.define_submap("resize", function()
-    hl.bind("left",  hl.dsp.exec_cmd("hyprctl dispatch resizeactive -40 0"))
-    hl.bind("right", hl.dsp.exec_cmd("hyprctl dispatch resizeactive 40 0"))
-    hl.bind("up",    hl.dsp.exec_cmd("hyprctl dispatch resizeactive 0 -40"))
-    hl.bind("down",  hl.dsp.exec_cmd("hyprctl dispatch resizeactive 0 40"))
-    hl.bind("h",     hl.dsp.exec_cmd("hyprctl dispatch resizeactive -40 0"))
-    hl.bind("l",     hl.dsp.exec_cmd("hyprctl dispatch resizeactive 40 0"))
-    hl.bind("k",     hl.dsp.exec_cmd("hyprctl dispatch resizeactive 0 -40"))
-    hl.bind("j",     hl.dsp.exec_cmd("hyprctl dispatch resizeactive 0 40"))
+    local function nudge(dx, dy)
+        return function()
+            local w = hl.get_active_window()
+            if w then hl.dispatch(hl.dsp.window.resize({ x = w.size.x + dx, y = w.size.y + dy })) end
+        end
+    end
+    hl.bind("left",  nudge(-40, 0))
+    hl.bind("right", nudge(40, 0))
+    hl.bind("up",    nudge(0, -40))
+    hl.bind("down",  nudge(0, 40))
+    hl.bind("h",     nudge(-40, 0))
+    hl.bind("l",     nudge(40, 0))
+    hl.bind("k",     nudge(0, -40))
+    hl.bind("j",     nudge(0, 40))
     hl.bind("Escape", hl.dsp.submap("reset"))
     hl.bind("Return", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
@@ -930,11 +1032,11 @@ hl.gesture({
 })
 
 -- Three-finger swipe LEFT / RIGHT: next / previous workspace on the
--- focused monitor (user request). Same `workspace m+1 / m-1` dispatch as
--- Super+Ctrl+arrows — monitor-relative, wrapping, never spawning an empty
--- workspace. Swipe left = content moves left = the next workspace comes in
--- from the right (m+1), matching Hyprland's own built-in workspace_swipe
--- direction and the macOS / GNOME convention.
+-- focused monitor (user request). Same monitor-relative "m+1"/"m-1"
+-- workspace selector as Super+Ctrl+arrows — wrapping, never spawning an
+-- empty workspace. Swipe left = content moves left = the next workspace
+-- comes in from the right (m+1), matching Hyprland's own built-in
+-- workspace_swipe direction and the macOS / GNOME convention.
 --
 -- Hyprland 0.51+ unified the gesture engine, so one `hl.gesture` fires
 -- from BOTH the touchpad and the touchscreen — razer has both, and no
@@ -948,15 +1050,25 @@ hl.gesture({
 -- this Hyprland build rejects the horizontal direction tokens, the swipe
 -- binds are skipped and the rest of this file still loads (a raised error
 -- mid-reload discards the whole reload — C-06).
+--
+-- Corrected 2026-09-14: `hl.exec_cmd("hyprctl dispatch workspace m+1")`
+-- carried the identical broken-string bug as every other exec_cmd bind in
+-- this file (see the comment above the Super+Shift+arrow move-window
+-- block) — replaced with `hl.dispatch(hl.dsp.focus({ workspace = ... }))`,
+-- the same native call already confirmed live for Super+Ctrl+arrows just
+-- above (`hl.exec_cmd` runs a shell command and returns nil, it isn't a
+-- Dispatcher itself, so a Lua-side `action` needs `hl.dispatch(...)`, not
+-- `hl.dsp....()`, to actually perform one — same distinction the RESIZE
+-- submap's own comment above walks through).
 pcall(function()
     hl.gesture({
         fingers = 3,
         direction = "left",
-        action = function() hl.exec_cmd("hyprctl dispatch workspace m+1") end,
+        action = function() hl.dispatch(hl.dsp.focus({ workspace = "m+1" })) end,
     })
     hl.gesture({
         fingers = 3,
         direction = "right",
-        action = function() hl.exec_cmd("hyprctl dispatch workspace m-1") end,
+        action = function() hl.dispatch(hl.dsp.focus({ workspace = "m-1" })) end,
     })
 end)
