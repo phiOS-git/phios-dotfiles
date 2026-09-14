@@ -541,7 +541,23 @@ hl.bind(mainMod .. " + P",     hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { desc
 -- carried over onto SUPER+G, matching what the user actually asked for.
 hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")), { description = "Show the cursor spotlight (hold)" }) -- "G" for "glow" -- no closer mnemonic was free ("F"/"L" already used)
 hl.bind("g", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true })
-hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("lock", "lock")), { description = "Lock the screen" })          -- universal desktop-environment convention
+-- docs/TODO.md: "when pressing SUPER+L instead of locking immediatly,
+-- evoke an overlay menu with options (lock, suspend, hibernate, shutdown,
+-- reboot) ... SUPER+L+L (double click) will instantly lock (same
+-- behavior as now)." Was a direct `qsIpc("lock", "lock")` call (this
+-- line's own prior form, "universal desktop-environment convention") —
+-- now every press dispatches unconditionally to a NEW target,
+-- "powerMenu"/"trigger", exactly as dumb and unconditional as the old
+-- lock call was. All double-tap-vs-single-press timing lives entirely in
+-- phi-shell (Services/PowerMenu.qml, a plain QML Timer) — this bind does
+-- not know a double-tap concept exists, deliberately NOT the same shape
+-- as the abandoned bare-SUPER double-tap attempt a few lines above (SUPER
+-- + G's own "ROUND SIX" history, hyprwm/Hyprland#6946): that bug is about
+-- release events never firing for a BARE-MODIFIER-ONLY keysym bind.
+-- SUPER+L is a normal modifier+letter combo, which already dispatched
+-- reliably on every press under the old direct-lock binding — nothing
+-- about that reliability changes here, only what the dispatch means.
+hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("powerMenu", "trigger")), { description = "Power menu (double-press to lock instantly)" })
 -- OOP-24/OOP-25 (user: "unify SUPER+TAB and ALT+TAB, using only ALT+TAB"):
 -- the Super+Tab overview bind is removed. The window overview and Alt+Tab
 -- are one surface now (AltTab.qml); Alt+Tab (below) and the three-finger
