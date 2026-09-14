@@ -97,6 +97,9 @@ PHI_FG_3='#a7a298'            # non-text — [derived] same H/C as fg-2, ramp po
 PHI_BORDER='#e6e4e0'
 PHI_BORDER_STRONG='#bebdb9'
 PHI_OVERLAY_SCRIM='#19151073' # fg-0 at 45% — a light scrim is ink, not black
+# See PHI_OVERLAY_SCRIM_STRONG's comment in tokens.dark.sh — same hue, a
+# harder alpha step, for the small set of full-attention blocking surfaces.
+PHI_OVERLAY_SCRIM_STRONG='#191510a6' # fg-0 at 65%
 
 # --- Tier 1: accent (§6.2) --------------------------------------------------
 PHI_ACCENT='#8e5f6b'          # second lightness of #d3a0ac — 4.82:1 on bg-0

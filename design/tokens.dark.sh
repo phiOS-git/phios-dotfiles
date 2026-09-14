@@ -88,6 +88,15 @@ PHI_FG_3='#635e55'            # [derived] same H/C as fg-2, ramp point 3 of 4
 PHI_BORDER='#242320'          # [carried] kitty inactive_border_color
 PHI_BORDER_STRONG='#3e3d3a'   # [filled]  same hue at L=0.360
 PHI_OVERLAY_SCRIM='#00000099' # [filled]  black at 60%
+# docs/TODO.md (style pass): "the dim from screenshot, overview (alt+tab)
+# and warning/alert ... should cover [the bar] ... have the 2 types of dim
+# have different intensity as well (the one that overlays should be
+# stronger)." Same hue as PHI_OVERLAY_SCRIM, a harder alpha step — for the
+# small set of full-attention blocking surfaces (screenshot selection,
+# Alt-Tab/overview, battery/timer alerts, a destructive confirmation),
+# never the everyday panel scrims (notifications, chat, settings, …),
+# which keep PHI_OVERLAY_SCRIM unchanged.
+PHI_OVERLAY_SCRIM_STRONG='#000000cc' # [filled]  black at 80%
 
 # --- Tier 1: accent (§6.2) --------------------------------------------------
 # One role and one only: active state, focus, primary interactivity. The
