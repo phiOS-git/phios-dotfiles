@@ -10,3 +10,13 @@
 # `--system-diff` and applied by hand.
 #   sudo systemctl enable phi-vconsole-theme.service
 phi-vconsole-theme.service
+
+# Out-of-plan: clamav. Three stock units, none of them touched by this
+# repo (no drop-in, no override — clamav-daemon.service's own [Install]
+# already pulls in clamav-daemon.socket via `Also=`). clamd.conf's own
+# hardening and the VirusEvent notification wiring are manual.txt steps in
+# this same profile.
+#   sudo systemctl enable --now clamav-daemon.service clamav-freshclam.service clamav-clamonacc.service
+clamav-daemon.service
+clamav-freshclam.service
+clamav-clamonacc.service

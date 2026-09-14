@@ -61,3 +61,91 @@ sudo install -Dm755 profiles/base/system/usr/local/bin/phi-theme-regen-hook.sh /
 # either do that or export PHI_DOTFILES yourself. To pick it up in the
 # running session without a re-login:
 systemctl --user import-environment PHI_DOTFILES
+
+# --- Out-of-plan: clamav (real-time on-access protection, all three hosts) --
+# Captures the exact hand-tuned state reached on `zotac` on 2026-09-14 — a
+# hardened clamd.conf (heuristics, PUA, format-specific scanners, on-access
+# fanotify watching all of `/`) plus a desktop notification on detection —
+# so it can be reproduced on `razer`/`mini` in one pass instead of by hand
+# again. `clamd.conf` itself is NOT mirrored as a system/ file: pacman
+# marks it a backup file it manages directly (`pacman -Qii clamav`), it is
+# ~30KB of mostly stock commentary, and every change here is a plain
+# uncomment-in-place of an existing default line — a `sed` against the
+# live file, the same treatment profiles/gaming/manual.txt already gives
+# `/etc/pacman.conf`'s `[multilib]` block, fits its actual shape far better
+# than mirroring the whole vendor file would. Safe to run twice (every
+# substitution only matches the commented, not-yet-applied form).
+#
+# `phios_read_list` (bin/lib/common.sh) truncates every line of this file
+# at its first literal "#", with no notion of quoting — same reason
+# profiles/gaming/manual.txt spells its "#" as $'\x23': the line below
+# does the same, for the same reason, so the six real "#"-comment
+# characters the sed script needs never appear literally in this file.
+#
+# Verified by extracting clamav's own pristine clamd.conf from the local
+# package cache and diffing (`tar -xf .../clamav-*.pkg.tar.zst
+# etc/clamav/clamd.conf`) before this was written down — every line the
+# sed touches was confirmed to be exactly the commented stock default
+# first, not guessed at.
+h=$'\x23'
+sudo sed -i -E \
+  -e "s/^${h}(ExtendedDetectionInfo|MaxDirectoryRecursion|DetectPUA|AlertBrokenExecutables|AlertBrokenMedia|AlertEncrypted|AlertOLE2Macros|AlertPartitionIntersection|OnAccessExtraScanning|OnAccessExcludeUname)/\1/" \
+  -e "s/^${h}(HeuristicAlerts|ScanPE|ScanELF|ScanOLE2|ScanPDF|ScanSWF|ScanXMLDOCS|ScanHWP3|ScanOneNote|ScanMail|ScanHTML|ScanArchive|Bytecode) no/\1 yes/" \
+  -e "s|^${h}OnAccessIncludePath /home\$|OnAccessIncludePath /home|" \
+  -e "s|^${h}OnAccessMountPath /\$|OnAccessMountPath /|" \
+  /etc/clamav/clamd.conf
+# The VirusEvent line is an addition, not an uncomment (the stock file's
+# own commented example points at a different, made-up path) — appended
+# only if not already present, so this half is idempotent the plain way.
+grep -q '^VirusEvent /etc/clamav/virus-event.bash' /etc/clamav/clamd.conf || echo 'VirusEvent /etc/clamav/virus-event.bash' | sudo tee -a /etc/clamav/clamd.conf >/dev/null
+
+# The notification script VirusEvent points at, and the sudoers rule it
+# needs to reach a logged-in user's own session non-interactively (see
+# both files' own header comments for the full why). Verify the sudoers
+# one with visudo before trusting it, same discipline as every other
+# sudoers.d file in this repo.
+sudo install -Dm755 profiles/base/system/etc/clamav/virus-event.bash /etc/clamav/virus-event.bash
+sudo install -m 0440 -o root -g root profiles/base/system/etc/sudoers.d/clamav /etc/sudoers.d/clamav
+sudo visudo -cf /etc/sudoers.d/clamav
+
+# freshclam.conf needs nothing — confirmed unmodified from the packaged
+# default (`pacman -Qii clamav`) on the machine this was captured from.
+#
+# Enabling the three units below is the last step (profiles/base/
+# services-system.txt has the same command, this is the one place it is
+# actually meant to be run). On a FRESH host (no /var/lib/clamav/*.c[vl]d
+# yet) clamav-daemon.service's own ConditionPathExistsGlob is unmet and it
+# skips itself — confirmed live on zotac — because clamav-freshclam.service
+# has not finished its first database download yet (a couple of minutes,
+# ~110MB). clamav-clamonacc.service then fails too, waiting on a socket
+# the never-started daemon never creates (its own ExecStartPre polls for
+# up to its default 90s timeout, then gives up). Not a bug in any of these
+# three units or in this repo — just enable them and, if either of the
+# last two report failed/timeout, wait for freshclam to actually finish
+# (`journalctl -u clamav-freshclam.service -f`, or `ls /var/lib/clamav/`
+# for `daily.cvd`/`main.cvd`) and start them again:
+sudo systemctl enable --now clamav-daemon.service clamav-freshclam.service clamav-clamonacc.service
+#   sudo systemctl start clamav-daemon.service clamav-clamonacc.service   # retry once the DB exists
+
+# clamav-clamonacc's own stock unit (/usr/lib/systemd/system/
+# clamav-clamonacc.service, not overridden by this repo) already quarantines
+# a detected file to /root/quarantine via --move= — confirm the directory
+# exists (root-owned, root-readable-only by design: it holds live malware)
+# and create it if this is a fresh host:
+sudo test -d /root/quarantine || sudo mkdir -m 0700 /root/quarantine
+
+# Verify: trigger clamd's own built-in EICAR self-test from an unprivileged
+# shell (clamdscan talks to the already-running daemon over its socket, no
+# sudo needed) — confirmed live on zotac to reach clamd.conf's VirusEvent
+# correctly and run virus-event.bash's notify-send with no permission
+# error (`journalctl -u clamav-daemon.service` shows the detection AND the
+# notify-send sudo call, with no "not allowed to set" line — that line is
+# exactly what a missing SETENV: in system/etc/sudoers.d/clamav looks
+# like, if this is ever re-diagnosed). Whether the notification actually
+# RENDERS on screen is a separate, NOT confirmed step: a bare `notify-send`
+# with no clamav involved at all showed no visible toast on zotac either
+# in the same session — a phi-shell notification-rendering question, not
+# a clamav or dotfiles one, untouched here.
+curl -s -o /tmp/eicar.com https://secure.eicar.org/eicar.com
+clamdscan /tmp/eicar.com
+rm -f /tmp/eicar.com

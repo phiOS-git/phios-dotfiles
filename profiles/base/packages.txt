@@ -29,6 +29,14 @@ btop
 tesseract
 tesseract-data-eng
 
+# Out-of-plan: clamav. Real-time (on-access) antivirus, wanted on all
+# three hosts regardless of role — including `mini`, headless or not.
+# extra/T0. See profiles/base/manual.txt for the one-time setup (clamd.conf
+# hardening, the sudoers/virus-event system/ material, enabling the units)
+# and profiles/base/services-system.txt for which units this profile
+# declares.
+clamav
+
 # Out-of-plan: bugfixing. openresolv provides /usr/bin/resolvconf, which
 # wg-quick calls to install a tunnel's `DNS =` servers on `up` and remove
 # them on `down`. Without a resolvconf that actually manages

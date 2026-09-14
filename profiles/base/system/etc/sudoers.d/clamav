@@ -1,0 +1,32 @@
+# phiOS — sudoers drop-in for ClamAV's on-access scanner (S-xx, out-of-plan:
+# clamav). Installed 0440 root:root, verified with `visudo -cf` before it is
+# ever trusted — same discipline as profiles/desktop/system/etc/sudoers.d/
+# 49-phi-vpn and 49-phi-firewall.
+#
+# `virus-event.bash` (this profile's system/etc/clamav/virus-event.bash,
+# clamd.conf's VirusEvent target) runs as the unprivileged `clamav` system
+# user (clamd.conf: `User clamav`) and needs to reach into every logged-in
+# graphical user's own D-Bus session to raise a desktop notification —
+# `sudo -u "#$USERID" ... notify-send ...` for each `/run/user/*` uid it
+# finds. Without this rule that sudo call itself fails (no password, no
+# tty), so a detected virus would log but never surface on screen.
+#
+# Scoped to exactly one binary, no wildcard arguments needed since
+# virus-event.bash's own notify-send invocation is fixed. Real, corrected
+# 2026-09-14: an earlier hand-edit on `zotac` put clamd.conf's `VirusEvent`
+# *directive* in this file by mistake instead of an actual sudoers rule —
+# a plain config line is not valid sudoers grammar, so `sudo` refused to
+# parse ANY policy at all (every sudo invocation on the machine failed,
+# not just clamav's) until this was replaced with the real rule below.
+#
+# `SETENV:` is required, not optional — confirmed live on `zotac` the same
+# day: without it, sudo's default env_reset policy refuses the
+# DBUS_SESSION_BUS_ADDRESS/PATH assignments virus-event.bash's own
+# `sudo -u "#$USERID" DBUS_SESSION_BUS_ADDRESS=... PATH=... notify-send`
+# line sets inline ("clamav : sorry, you are not allowed to set the
+# following environment variables: DBUS_SESSION_BUS_ADDRESS, PATH" —
+# clamd's own log, both from the daemon's real VirusEvent execution AND
+# from `sudo`'s syslog line), and the notification silently never fires —
+# clamd still logs the detection either way, so this failure mode is easy
+# to miss without checking `journalctl -u clamav-daemon.service`.
+clamav ALL=(ALL) NOPASSWD: SETENV: /usr/bin/notify-send
