@@ -185,7 +185,9 @@ PHI_PANEL_PADDING='8px'
 # not a phi-shell Panel.qml inset) that may diverge from it later, same
 # reasoning as border-width-strong staying separate from border-width. No
 # unit suffix — see the PLACEHOLDERS note at the top of this file for why.
-PHI_TERM_PADDING='16'
+# rework.md s2 ("terminal windows should have a padding of 20px") raised
+# this from 16 to the exact figure that entry names.
+PHI_TERM_PADDING='20'
 
 # panel-gap / panel-radius — Out-of-plan: features-change. The inset the
 # below-the-bar surfaces keep from the bar and the screen edges (the
