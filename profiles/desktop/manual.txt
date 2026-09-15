@@ -48,3 +48,15 @@ sudo systemctl enable nftables.service
 # command, so `phios-install --system-diff` will report it as differing
 # whenever the firewall is enabled — that is expected, it means "the
 # firewall is on", not "config drift".
+
+# --- hwmon PWM fan control for `phi fan` (docs/TODO.md) ---------------------
+# The sudoers drop-in lets the desktop user write PWM duty cycles/enable
+# modes under /sys/class/hwmon without a password (`phi fan set` and the
+# Stats overlay's fan-profile buttons). Read the file first — it documents
+# the hwmonN-index-is-not-stable reasoning for the glob, and the accepted
+# single-user risk. Only meaningful on a host whose motherboard exposes a
+# real PWM-controllable fan channel — `phi fan status` reports plainly
+# when none is found; installing this on a host with none is harmless,
+# just unused.
+sudo install -m 0440 -o root -g root profiles/desktop/system/etc/sudoers.d/49-phi-fan /etc/sudoers.d/49-phi-fan
+sudo visudo -cf /etc/sudoers.d/49-phi-fan

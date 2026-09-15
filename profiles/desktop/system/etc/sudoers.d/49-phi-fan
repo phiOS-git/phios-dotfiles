@@ -1,0 +1,34 @@
+# phiOS — hwmon PWM fan control for `phi fan` (docs/TODO.md).
+#
+# NEVER APPLIED BY THE INSTALLER. This is /etc material shown by
+# `phios-install --system-diff`; installing it is a deliberate user action:
+#
+#   sudo install -m 0440 -o root -g root \
+#     profiles/desktop/system/etc/sudoers.d/49-phi-fan /etc/sudoers.d/49-phi-fan
+#   sudo visudo -cf /etc/sudoers.d/49-phi-fan   # verify before trusting it
+#
+# It lets the desktop user write PWM duty cycles and enable modes under
+# /sys/class/hwmon without a password, so `phi fan set` and the Stats
+# overlay's fan-profile buttons work non-interactively (`sudo -n`).
+#
+# Scope notes / accepted risk on a single-user personal machine (the same
+# stance as 49-phi-vpn/49-phi-firewall):
+#   - the hwmonN index in the path is NOT stable across reboots/kernel
+#     versions (it is assigned by probe order, confirmed by reading the
+#     kernel's own hwmon-sysfs documentation, not guessed) — a fixed path
+#     like 49-phi-vpn's `wg-quick up *` cannot be used, so this rule
+#     globs `hwmon*` and `pwm*` instead. That glob only reaches files
+#     under /sys/class/hwmon — kernel-owned sysfs nodes, never a path any
+#     local user's own data can redirect this rule at — and `tee` only
+#     ever writes the one path it was invoked with, never a second one a
+#     malicious value could smuggle in (tee has no shell metacharacter
+#     interpretation of its own stdin).
+#   - `internal/fan.Set` (phi) only ever calls this with a value it
+#     computed itself (0/1/2/a fixed 0-255 duty byte) — this sudoers rule
+#     does not by itself limit what gets written, that discipline lives
+#     in the Go code that calls it, the same trust boundary 49-phi-
+#     firewall's own `nft -f -` note already accepts for that command.
+#   - replace `phi` below with the real desktop username, or keep the
+#     %wheel group form if that user is in wheel.
+
+%wheel ALL=(root) NOPASSWD: /usr/bin/tee /sys/class/hwmon/hwmon*/pwm*
