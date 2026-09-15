@@ -110,3 +110,9 @@ thunar
 thunar-volman
 gvfs
 tumbler
+
+# docs/TODO.md: "the network overlay's Wi-Fi section ... has no actual
+# speedtest trigger". extra/T0 (confirmed via `pacman -Ss speedtest`, not
+# AUR). Services/SpeedTest.qml (phi-shell) runs `speedtest-cli --simple`
+# on demand, never polled.
+speedtest-cli
