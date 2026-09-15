@@ -1,15 +1,29 @@
 pragma Singleton
 import Quickshell
 
-// phiOS — design tokens, rendered by `phi theme set` (S-12) from
-// design/tokens.common.sh + design/tokens.<variant>.sh via
-// design/adapters.txt (S-20). GENERATED. Never edit by hand — edit the
-// token files in this repository and re-run `phi theme set`; the next
-// render overwrites this file. A checked-in worked example lives at
-// docs/tokens-example.md in phi-shell (markdown, not .qml — Quickshell's
-// config-tree scanner reads every .qml file in an imported directory
-// whether or not anything references it, so a hand-written example must
-// not carry that extension) for anyone who has not run `phi theme set` yet.
+// phiOS — STRUCTURAL design tokens (radius, spacing, motion, fonts, z-layers,
+// texture catalogue), rendered by `phi theme set` (S-12) from
+// design/tokens.common.sh via design/adapters.txt (S-20). GENERATED. Never
+// edit by hand — edit the token files in this repository and re-run
+// `phi theme set`; the next render overwrites this file. A checked-in
+// worked example lives at docs/tokens-example.md in phi-shell (markdown,
+// not .qml — Quickshell's config-tree scanner reads every .qml file in an
+// imported directory whether or not anything references it, so a
+// hand-written example must not carry that extension) for anyone who has
+// not run `phi theme set` yet.
+//
+// Interface rework (rework.md: the "auto" light/dark theme option needs
+// `phi theme set` to stop forcing a full Quickshell session reload):
+// every token here is identical between the dark and light variant — only
+// colour actually differs by variant, and colour now lives in
+// Config/Colors.json, read by Config/Colors.qml (a plain, never-rewritten
+// singleton that watches that JSON file via FileView) instead of here.
+// This file is `pragma Singleton` too, but because ITS OWN SOURCE no
+// longer changes on a variant switch (only Colors.json does), Quickshell
+// never has to re-evaluate this singleton on a switch — that forced
+// re-evaluation, on the file that used to hold both tiers, was the actual
+// cause of a variant switch resetting in-flight panel/session state. See
+// Config/Colors.qml's own header for the rest of the mechanism.
 //
 // Every value is a string, units included ("14px", "120ms", "1ch"), exactly
 // as design/tokens.common.sh's own contract requires: a consumer that needs
@@ -18,67 +32,6 @@ import Quickshell
 
 Singleton {
     id: root
-
-    readonly property string variant: "${PHI_VARIANT}"
-
-    // --- Tier 0: structure ---------------------------------------------
-    readonly property string bg0: "${PHI_BG_0}"
-    readonly property string bg1: "${PHI_BG_1}"
-    readonly property string bg2: "${PHI_BG_2}"
-    readonly property string bg3: "${PHI_BG_3}"
-    readonly property string fg0: "${PHI_FG_0}"
-    readonly property string fg1: "${PHI_FG_1}"
-    readonly property string fg2: "${PHI_FG_2}"
-    readonly property string fg3: "${PHI_FG_3}"
-    readonly property string border: "${PHI_BORDER}"
-    readonly property string borderStrong: "${PHI_BORDER_STRONG}"
-    readonly property string overlayScrim: "${PHI_OVERLAY_SCRIM}"
-    readonly property string overlayScrimStrong: "${PHI_OVERLAY_SCRIM_STRONG}"
-
-    // --- Tier 1: accent --------------------------------------------------
-    readonly property string accent: "${PHI_ACCENT}"
-    readonly property string accentFg: "${PHI_ACCENT_FG}"
-
-    // --- Tier 2: semantic --------------------------------------------------
-    readonly property string error: "${PHI_ERROR}"
-    readonly property string errorFg: "${PHI_ERROR_FG}"
-    readonly property string warn: "${PHI_WARN}"
-    readonly property string warnFg: "${PHI_WARN_FG}"
-    readonly property string success: "${PHI_SUCCESS}"
-    readonly property string successFg: "${PHI_SUCCESS_FG}"
-    readonly property string info: "${PHI_INFO}"
-    readonly property string infoFg: "${PHI_INFO_FG}"
-
-    // --- Tier 3: syntax --------------------------------------------------
-    readonly property string syntax1: "${PHI_SYNTAX_1}"
-    readonly property string syntax2: "${PHI_SYNTAX_2}"
-    readonly property string syntax3: "${PHI_SYNTAX_3}"
-    readonly property string syntax4: "${PHI_SYNTAX_4}"
-    readonly property string syntax5: "${PHI_SYNTAX_5}"
-    readonly property string syntax6: "${PHI_SYNTAX_6}"
-
-    // --- Selection, terminal cursor ---------------------------------------
-    readonly property string selectionBg: "${PHI_SELECTION_BG}"
-    readonly property string selectionFg: "${PHI_SELECTION_FG}"
-    readonly property string cursorTerm: "${PHI_CURSOR_TERM}"
-
-    // --- ANSI 16 -----------------------------------------------------------
-    readonly property string ansi0: "${PHI_ANSI_0}"
-    readonly property string ansi1: "${PHI_ANSI_1}"
-    readonly property string ansi2: "${PHI_ANSI_2}"
-    readonly property string ansi3: "${PHI_ANSI_3}"
-    readonly property string ansi4: "${PHI_ANSI_4}"
-    readonly property string ansi5: "${PHI_ANSI_5}"
-    readonly property string ansi6: "${PHI_ANSI_6}"
-    readonly property string ansi7: "${PHI_ANSI_7}"
-    readonly property string ansi8: "${PHI_ANSI_8}"
-    readonly property string ansi9: "${PHI_ANSI_9}"
-    readonly property string ansi10: "${PHI_ANSI_10}"
-    readonly property string ansi11: "${PHI_ANSI_11}"
-    readonly property string ansi12: "${PHI_ANSI_12}"
-    readonly property string ansi13: "${PHI_ANSI_13}"
-    readonly property string ansi14: "${PHI_ANSI_14}"
-    readonly property string ansi15: "${PHI_ANSI_15}"
 
     // --- Typography --------------------------------------------------------
     readonly property string fontMono: "${PHI_FONT_MONO}"
