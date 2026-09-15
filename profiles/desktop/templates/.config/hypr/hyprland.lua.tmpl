@@ -923,12 +923,14 @@ end)
 -- image/*) bottomed out in a bare `xdg-open`, which resolves through a
 -- mimeapps.list default association this repository has never
 -- configured — see phi/internal/query/files.go and
--- profiles/base/home/.config/yazi/yazi.toml. Fixed at both call sites by
--- naming the real, already-installed viewer (imv, every desktop
--- profile's packages.txt) explicitly, with its own "-i phios-imv" app id
--- so this rule can target it reliably (same reasoning as "phios-btop"
--- above, not Hyprland's own default, which imv's man page never
--- documents).
+-- profiles/base/home/.config/yazi/yazi.toml. First fixed by naming the
+-- real, already-installed viewer (imv) explicitly, with its own
+-- "-i phios-imv" app id so this rule could target it reliably (same
+-- reasoning as "phios-btop" above, not Hyprland's own default, which
+-- imv's man page never documents) — the rule below is KEPT for anything
+-- still bare-launching imv directly, but both call sites now point at
+-- phi-shell's own native image window instead (see the "phios-image-
+-- float" rule right after this one, and its own header comment).
 --
 -- `float` only: DeepWiki's read of Hyprland's own
 -- src/config/lua/bindings/LuaBindingsInternal.hpp names the Lua
@@ -950,6 +952,29 @@ end)
 hl.window_rule({
     name  = "imv-float",
     match = { class = "^phios-imv$" },
+
+    float = true,
+})
+
+-- Interface rework (rework.md's custom image window, phi-shell's
+-- Images/ImageWindow.qml): a native phi-shell surface now, not an
+-- external `imv` process — the "imv-float" rule above stays for anything
+-- still bare-launching imv directly, but a new one is needed for the new
+-- surface. Quickshell's `FloatingWindow` (the type ImageWindow.qml uses)
+-- exposes no settable Wayland app_id to match on the way "phios-imv"
+-- above matches imv's `-i` flag — only its window TITLE, which
+-- ImageWindow.qml sets to "phios-image — <filename>" specifically so this
+-- rule has something stable to match. `title` is a real match field in
+-- this Lua binding's own vocabulary (see the commented "steam-secondary-
+-- float" draft below, which already matches on `title`), but this exact
+-- rule has NOT been confirmed against a live Hyprland session — flagged
+-- the same way every other not-yet-hardware-verified rule in this file
+-- already is; check on real hardware once phi-shell's own launch path
+-- (phi/internal/query/files.go, yazi's opener) is switched from `imv` to
+-- `qs ipc call image open <path>`.
+hl.window_rule({
+    name  = "phios-image-float",
+    match = { title = "^phios-image" },
 
     float = true,
 })
