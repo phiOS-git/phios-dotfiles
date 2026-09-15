@@ -16,13 +16,19 @@ group = "git"
 # `xdg-open %s1` (yazi-config/preset/yazi-default.toml, sxyazi/yazi) — the
 # same unmanaged mimeapps.list resolution phi's launcher FilesProvider was
 # also found relying on (see phi/internal/query/files.go and the matching
-# VERIFICATION.md entry). Whichever of the two paths actually produced the
-# reported symptom, naming the real, already-installed viewer explicitly
-# here closes the yazi half the same way; "-i phios-imv" gives its window
-# a fixed class so hyprland.lua.tmpl's "imv-float" rule can float it.
+# VERIFICATION.md entry). Naming a real target explicitly here closes the
+# yazi half the same way.
+#
+# Interface rework (rework.md's custom image window): was `imv -i
+# phios-imv %s1` (its "-i" flag gave the window a fixed class so
+# hyprland.lua.tmpl's "imv-float" rule could float it) — replaced once
+# phi-shell grew its own native floating image surface
+# (Images/ImageWindow.qml), the same `qs ipc call image open <path>`
+# target phi/internal/query/files.go's FilesProvider now also uses, so
+# yazi and the launcher open images through the identical mechanism.
 [opener]
 phios-image = [
-{ run = 'imv -i phios-imv %s1', desc = "Open with imv", for = "linux", orphan = true },
+{ run = 'qs -p ~/.config/quickshell/phi ipc call image open %s1', desc = "Open in phi-shell", for = "linux", orphan = true },
 ]
 
 [open]

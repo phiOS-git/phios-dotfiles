@@ -77,6 +77,17 @@ profiles/desktop/templates/.config/hypr/hyprland.lua.tmpl        | .config/hypr/
 # and Quickshell's own named-config lookup both resolve without an override.
 profiles/desktop/templates/.config/quickshell/phi/Config/Tokens.qml.tmpl | .config/quickshell/phi/Config/Tokens.qml | -         | A
 
+# phi-shell colour tokens (interface rework, rework.md's "auto" theme
+# option). Split out of Tokens.qml.tmpl above: THIS file changes on every
+# variant switch, that one no longer does — see Tokens.qml.tmpl's own
+# header for why. Reload is `-` for the identical reason: Config/Colors.qml
+# (phi-shell) watches this JSON file itself via a FileView, no external
+# command needed, and — unlike Tokens.qml.tmpl — this plain JSON file is
+# NOT a QML singleton's own source, so rewriting it on a variant switch
+# only updates a FileView's tracked content (a normal, scoped reactive
+# update), never forces Quickshell's own singleton-reload path.
+profiles/desktop/templates/.config/quickshell/phi/Config/Colors.json.tmpl | .config/quickshell/phi/Config/Colors.json | -         | A
+
 # GTK3/GTK4 and Qt (qt5ct/qt6ct) native-app theming (S-41, master plan §6.7
 # target group 2). Class C: none of these four toolkits watches its own
 # theme/palette files for a live change, only reads them at startup — the
