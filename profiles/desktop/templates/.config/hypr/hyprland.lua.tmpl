@@ -357,45 +357,36 @@ end
 
 -- Previous / next workspace on the focused monitor (user request). The
 -- keyboard companion to the numbered binds above and to the three-finger
--- swipe in the GESTURES section — all three switch to the MONITOR-
--- relative "m-1"/"m+1" workspace selector: it cycles the workspaces this
--- monitor actually has and wraps, never spawning an empty one.
+-- swipe in the GESTURES section.
+--
+-- docs/TODO.md ("switching workspace with a keybind or gesture ... wraps
+-- around at the first/last workspace on a monitor instead of stopping"):
+-- was the native `m-1`/`m+1` relative selector (`hl.dsp.focus({ workspace
+-- = "m-1"/"m+1" })`, confirmed live 2026-09-14 with a real round-trip,
+-- 1 -> 12 -> 1 then 1 -> m+1 -> m-1 back to 1) — it cycles the workspaces
+-- this monitor actually has and always wraps, with no documented non-
+-- wrapping form. A prior pass here investigated a Lua-side bounded
+-- computation and backed off for lack of a confirmed workspace-
+-- enumeration getter (`hl.get_workspaces()`/`hl.get_active_workspace()`
+-- were never tried live) — that gap is closed from the OTHER side
+-- instead: phi-shell's own Quickshell.Hyprland binding already exposes
+-- exactly what was missing (`HyprlandIpcQml.focusedMonitor`,
+-- `HyprlandMonitor.activeWorkspace`), confirmed directly against the real
+-- installed quickshell-hyprland-ipc.qmltypes, not guessed. These binds
+-- now call phi-shell's own bounded next/prev
+-- (Services/HyprlandBridge.qml's `focusAdjacentWorkspace()`) via IPC, the
+-- same `qs -p ... ipc call ...` shape the Super+M logout confirm bind
+-- above already uses — exec_cmd rather than a native Dispatcher, since
+-- this is a shell command, not a Hyprland dispatch.
 -- Super+Ctrl+arrows is the GNOME/KDE convention for this and was unbound.
---
--- Corrected 2026-09-14 (same root cause as the move-window block above,
--- see its comment): `hl.dsp.focus({ workspace = ... })` is the same
--- native dispatcher already used for the numbered Super+N binds just
--- above, given the "m-1"/"m+1" relative selector string instead of a
--- plain number — confirmed live with a real workspace round-trip
--- (1 -> 12 -> 1, then 1 -> m+1 -> m-1 back to 1).
---
--- rework.md ("Features to be changed/fixed"): "the keybind and gestures to
--- change workspace should not loop" — i.e. at the last/first workspace on a
--- monitor, next/prev should do nothing instead of wrapping. Deliberately
--- NOT changed here: `m-1`/`m+1` is a native Hyprland dispatcher with no
--- documented non-wrapping variant, so a real fix needs the bind to become a
--- Lua function (same shape as the RESIZE submap's `nudge()` below) that
--- reads the CURRENT workspace and the set of workspaces that exist on this
--- monitor, and only dispatches an absolute `hl.dsp.focus({ workspace = id
--- })` when a next/prev one actually exists. That needs a Hyprland Lua
--- getter this file has never used or confirmed — `hl.get_active_window()`
--- is confirmed (RESIZE submap below) but does not itself give "current
--- workspace" when no window is focused (an empty workspace), and no
--- `hl.get_workspaces()`/`hl.get_active_workspace()` call has been tried
--- live yet (same unconfirmed-API situation as `hl.get_monitors()` in the
--- monitor-cycling bind further down — see that comment). Shipping a guess
--- at the getter's name/shape here risks silently breaking a keybind that
--- currently works, for a "don't wrap" nicety — left as a real, open gap
--- rather than guessed at; see docs/VERIFICATION.md's rework write-up for
--- the concrete next step.
-hl.bind(mainMod .. " + CTRL + left",  hl.dsp.focus({ workspace = "m-1" }), { description = "Previous workspace" })
-hl.bind(mainMod .. " + CTRL + right", hl.dsp.focus({ workspace = "m+1" }), { description = "Next workspace" })
+hl.bind(mainMod .. " + CTRL + left",  hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev"), { description = "Previous workspace" })
+hl.bind(mainMod .. " + CTRL + right", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next"), { description = "Next workspace" })
 -- docs/TODO.md: h/j/k/l alternatives for the same reason as the move-
 -- window block above — see that block's own comment for the
 -- investigation. h/l match this file's own left/right convention
 -- (RESIZE submap below).
-hl.bind(mainMod .. " + CTRL + h", hl.dsp.focus({ workspace = "m-1" }), { description = "Previous workspace" })
-hl.bind(mainMod .. " + CTRL + l", hl.dsp.focus({ workspace = "m+1" }), { description = "Next workspace" })
+hl.bind(mainMod .. " + CTRL + h", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev"), { description = "Previous workspace" })
+hl.bind(mainMod .. " + CTRL + l", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next"), { description = "Next workspace" })
 
 -- hold Super and drag with the left / right mouse button to move / resize a
 -- window (the one place a bind is pointer-driven rather than a key).
@@ -1022,18 +1013,21 @@ hl.gesture({
 })
 
 -- Three-finger swipe LEFT / RIGHT: next / previous workspace on the
--- focused monitor (user request). Same monitor-relative "m+1"/"m-1"
--- workspace selector as Super+Ctrl+arrows — wrapping, never spawning an
--- empty workspace. Swipe left = content moves left = the next workspace
--- comes in from the right (m+1), matching Hyprland's own built-in
--- workspace_swipe direction and the macOS / GNOME convention.
+-- focused monitor (user request). Swipe left = content moves left = the
+-- next workspace comes in from the right, matching Hyprland's own
+-- built-in workspace_swipe direction and the macOS / GNOME convention.
 --
--- rework.md wants this non-wrapping too — same open gap as the Super+Ctrl+
--- arrow binds above (see that comment for why it isn't fixed here yet: no
--- confirmed Lua getter for "workspaces that exist on this monitor").
--- Whatever bounded-focus helper eventually replaces the plain
--- `hl.dsp.focus({ workspace = "m+1"/"m-1" })` calls should be shared
--- between both bind sites, not duplicated a third time here.
+-- docs/TODO.md ("switching workspace with a keybind or gesture ... wraps
+-- around"): now shares the exact same fix and reasoning as the
+-- Super+Ctrl+arrow binds above (see that comment in full) — phi-shell's
+-- own bounded, non-wrapping `focusAdjacentWorkspace()` via
+-- `qs ipc call workspace next/prev`, not the native `m+1`/`m-1` relative
+-- selector this used to send. This is NOT the same "broken exec_cmd
+-- string" bug a 2026-09-14 pass on this exact block found and fixed
+-- (`hl.exec_cmd("hyprctl dispatch workspace m+1")` — Hyprland's own Lua
+-- config rejects the traditional `hyprctl dispatch` string form): this
+-- `exec_cmd` runs a plain shell command with no `hyprctl dispatch`
+-- involved at all, so that specific rejection does not apply here.
 --
 -- Hyprland 0.51+ unified the gesture engine, so one `hl.gesture` fires
 -- from BOTH the touchpad and the touchscreen — razer has both, and no
@@ -1047,25 +1041,15 @@ hl.gesture({
 -- this Hyprland build rejects the horizontal direction tokens, the swipe
 -- binds are skipped and the rest of this file still loads (a raised error
 -- mid-reload discards the whole reload — C-06).
---
--- Corrected 2026-09-14: `hl.exec_cmd("hyprctl dispatch workspace m+1")`
--- carried the identical broken-string bug as every other exec_cmd bind in
--- this file (see the comment above the Super+Shift+arrow move-window
--- block) — replaced with `hl.dispatch(hl.dsp.focus({ workspace = ... }))`,
--- the same native call already confirmed live for Super+Ctrl+arrows just
--- above (`hl.exec_cmd` runs a shell command and returns nil, it isn't a
--- Dispatcher itself, so a Lua-side `action` needs `hl.dispatch(...)`, not
--- `hl.dsp....()`, to actually perform one — same distinction the RESIZE
--- submap's own comment above walks through).
 pcall(function()
     hl.gesture({
         fingers = 3,
         direction = "left",
-        action = function() hl.dispatch(hl.dsp.focus({ workspace = "m+1" })) end,
+        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next") end,
     })
     hl.gesture({
         fingers = 3,
         direction = "right",
-        action = function() hl.dispatch(hl.dsp.focus({ workspace = "m-1" })) end,
+        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev") end,
     })
 end)
