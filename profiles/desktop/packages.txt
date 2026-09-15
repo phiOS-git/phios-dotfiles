@@ -99,3 +99,14 @@ wireguard-tools
 # go through sudo -n via profiles/desktop/system/etc/sudoers.d/
 # 49-phi-firewall (NEVER applied by the installer).
 nftables
+
+# rework.md: "a GUI file manager needs to be added: thunar". extra/T0.
+# thunar-volman + gvfs give it removable-media auto-mount and the trash/
+# network-location backends a GUI file manager is expected to have; tumbler
+# is its thumbnailer. No new template needed for theming: thunar is a GTK3
+# app and already inherits profiles/desktop/templates/.config/gtk-3.0/
+# {gtk.css,settings.ini}.tmpl like every other GTK3 app in this profile.
+thunar
+thunar-volman
+gvfs
+tumbler
