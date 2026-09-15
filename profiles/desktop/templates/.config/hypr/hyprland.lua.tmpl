@@ -368,6 +368,26 @@ end
 -- above, given the "m-1"/"m+1" relative selector string instead of a
 -- plain number — confirmed live with a real workspace round-trip
 -- (1 -> 12 -> 1, then 1 -> m+1 -> m-1 back to 1).
+--
+-- rework.md ("Features to be changed/fixed"): "the keybind and gestures to
+-- change workspace should not loop" — i.e. at the last/first workspace on a
+-- monitor, next/prev should do nothing instead of wrapping. Deliberately
+-- NOT changed here: `m-1`/`m+1` is a native Hyprland dispatcher with no
+-- documented non-wrapping variant, so a real fix needs the bind to become a
+-- Lua function (same shape as the RESIZE submap's `nudge()` below) that
+-- reads the CURRENT workspace and the set of workspaces that exist on this
+-- monitor, and only dispatches an absolute `hl.dsp.focus({ workspace = id
+-- })` when a next/prev one actually exists. That needs a Hyprland Lua
+-- getter this file has never used or confirmed — `hl.get_active_window()`
+-- is confirmed (RESIZE submap below) but does not itself give "current
+-- workspace" when no window is focused (an empty workspace), and no
+-- `hl.get_workspaces()`/`hl.get_active_workspace()` call has been tried
+-- live yet (same unconfirmed-API situation as `hl.get_monitors()` in the
+-- monitor-cycling bind further down — see that comment). Shipping a guess
+-- at the getter's name/shape here risks silently breaking a keybind that
+-- currently works, for a "don't wrap" nicety — left as a real, open gap
+-- rather than guessed at; see docs/VERIFICATION.md's rework write-up for
+-- the concrete next step.
 hl.bind(mainMod .. " + CTRL + left",  hl.dsp.focus({ workspace = "m-1" }), { description = "Previous workspace" })
 hl.bind(mainMod .. " + CTRL + right", hl.dsp.focus({ workspace = "m+1" }), { description = "Next workspace" })
 -- docs/TODO.md: h/j/k/l alternatives for the same reason as the move-
@@ -982,6 +1002,13 @@ hl.gesture({
 -- empty workspace. Swipe left = content moves left = the next workspace
 -- comes in from the right (m+1), matching Hyprland's own built-in
 -- workspace_swipe direction and the macOS / GNOME convention.
+--
+-- rework.md wants this non-wrapping too — same open gap as the Super+Ctrl+
+-- arrow binds above (see that comment for why it isn't fixed here yet: no
+-- confirmed Lua getter for "workspaces that exist on this monitor").
+-- Whatever bounded-focus helper eventually replaces the plain
+-- `hl.dsp.focus({ workspace = "m+1"/"m-1" })` calls should be shared
+-- between both bind sites, not duplicated a third time here.
 --
 -- Hyprland 0.51+ unified the gesture engine, so one `hl.gesture` fires
 -- from BOTH the touchpad and the touchscreen — razer has both, and no
