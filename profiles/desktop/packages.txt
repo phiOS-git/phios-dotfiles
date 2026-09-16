@@ -11,6 +11,8 @@ librewolf
 kitty
 solaar
 mpv
+cava
+rmpc
 zathura
 zathura-pdf-mupdf
 imv
