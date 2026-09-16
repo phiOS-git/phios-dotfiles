@@ -186,8 +186,15 @@ PHI_PANEL_PADDING='8px'
 # reasoning as border-width-strong staying separate from border-width. No
 # unit suffix — see the PLACEHOLDERS note at the top of this file for why.
 # rework.md s2 ("terminal windows should have a padding of 20px") raised
-# this from 16 to the exact figure that entry names.
-PHI_TERM_PADDING='20'
+# this from 16 to the exact figure that entry names; rework-issues.md
+# "New requests" item 16 ("increase the padding of the terminal windows
+# to 40px") raises it again, to 40 — this is only the DEFAULT now, since
+# that same entry also asks to make it user-customisable: phi's own
+# `theme.Set` (internal/theme/set.go) overrides this with `phi state`'s
+# `terminal.padding` when the user has set one, so a live customisation
+# survives every later `phi theme set`/variant switch instead of being
+# silently reset back to this number.
+PHI_TERM_PADDING='40'
 
 # panel-gap / panel-radius — Out-of-plan: features-change. The inset the
 # below-the-bar surfaces keep from the bar and the screen edges (the
