@@ -238,12 +238,14 @@ hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(qsIpc("powerMenu", "trigger")),
     { description = "Power menu (double-press to lock instantly)" })
 
 -- PopOut keybinds (FN + KEY)
-hl.bind(qsMod .. " + S", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
-    { description = "Toggle the status panel" })
+-- FIXME: cannot use FN, unless... 
+-- TODO: status, network, battery, stats, brightness, volume, bluetooth. ipc to be added
+-- hl.bind(qsMod .. " + S", hl.dsp.exec_cmd(qsIpc("status", "toggle")),
+--     { description = "Toggle the status panel" })
 hl.bind(qsMod .. " + N", hl.dsp.exec_cmd(qsIpc("notifications", "notifications")),
     { description = "Toggle the notification panel" })
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
-    { description = "Open the clipboard history" }) -- FIXME: it's still called "notifications", "clipboard" but they are separated now
+    { description = "Open the clipboard history" }) -- FIXME: it's still called "notifications", "clipboard" but they are separated now (to fix in phi-shell)
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })
 hl.bind(qsMod .. " + P", hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { description = "Toggle the phi agent panel" })
 hl.bind(qsMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")),
