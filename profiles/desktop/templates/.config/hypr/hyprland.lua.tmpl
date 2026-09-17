@@ -89,7 +89,7 @@ end)
 ---------------------
 
 local mainMod = "SUPER"
-local fnMod = "FN"
+local qsMod = "ALT_L"
 
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call power confirmLogout"),
     { description = "Log out (asks for confirmation)" })
@@ -214,16 +214,16 @@ pcall(function()
     }, { description = "Swipe left/right to switch workspaces" })
 end)
 
-hl.gesture({
-    fingers = 4,
-    direction = "in",
-    action = function() hl.exec_cmd(qsIpc("launcher", "open")) end,
-}, { description = "Open the launcher" })
-hl.gesture({
-    fingers = 4,
-    direction = "out",
-    action = function() hl.exec_cmd(qsIpc("launcher", "close")) end,
-}, { description = "Close the launcher" })
+-- hl.gesture({
+--     fingers = 4,
+--     direction = "in",
+--     action = function() hl.exec_cmd(qsIpc("launcher", "open")) end,
+-- }, { description = "Open the launcher" })
+-- hl.gesture({
+--     fingers = 4,
+--     direction = "out",
+--     action = function() hl.exec_cmd(qsIpc("launcher", "close")) end,
+-- }, { description = "Close the launcher" })
 
 
 --------------------------------
@@ -238,20 +238,20 @@ hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(qsIpc("powerMenu", "trigger")),
     { description = "Power menu (double-press to lock instantly)" })
 
 -- PopOut keybinds (FN + KEY)
-hl.bind(fnMod .. " + S", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
+hl.bind(qsMod .. " + S", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
     { description = "Toggle the status panel" })
-hl.bind(fnMod .. " + N", hl.dsp.exec_cmd(qsIpc("notifications", "notifications")),
+hl.bind(qsMod .. " + N", hl.dsp.exec_cmd(qsIpc("notifications", "notifications")),
     { description = "Toggle the notification panel" })
-hl.bind(fnMod .. " + SHIFT + V", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
+hl.bind(qsMod .. " + SHIFT + V", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
     { description = "Open the clipboard history" }) -- FIXME: it's still called "notifications", "clipboard" but they are separated now
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })
-hl.bind(fnMod .. " + P", hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { description = "Toggle the phi agent panel" })
-hl.bind(fnMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")),
+hl.bind(qsMod .. " + P", hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { description = "Toggle the phi agent panel" })
+hl.bind(qsMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")),
     { description = "Show the cursor spotlight (hold)" })
 
 hl.bind("g", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true }) -- FIXME: on release
 
-hl.bind(fnMod .. " + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle")),
+hl.bind(qsMod .. " + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle")),
     { description = "Toggle the cheat sheet" }) -- Super+? — common "show shortcuts" convention
 
 hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(qsIpc("magnifier", "toggle")), { description = "Magnifier: toggle the loupe" })
