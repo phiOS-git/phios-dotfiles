@@ -2,47 +2,10 @@
 ---- ENVIRONMENT ----
 ---------------------
 
--- S-41 (theme, Q-N05 "suppress CSD" decision this session) and the GTK/Qt
--- native-app theming target group (master plan §6.7). `hl.env()` sets a
--- variable before the display server initializes — confirmed against the
--- real Hyprland wiki source (hyprwm/hyprland-wiki, configuring/core/
--- environment-variables.md), which documents QT_QPA_PLATFORMTHEME=qt6ct as
--- its own worked example for exactly this purpose, not guessed.
---
--- QT_WAYLAND_DISABLE_WINDOWDECORATION disables Qt's OWN window chrome under
--- Wayland outright — the same wiki page's own documented variable, and a
--- more direct CSD fix for Qt than GTK_CSD is for GTK (Qt does not have
--- libadwaita's "hardcodes its own HeaderBar" problem: this one variable is
--- unconditional, not "wherever the toolkit exposes a setting").
---
--- GTK_CSD=0 is real and documented (GNOME/gtk#760, PCMan/gtk3-nocsd) but
--- KNOWN INCOMPLETE for GTK4/libadwaita apps, which need either GTK_THEME
--- forced or an LD_PRELOAD shim (GTK-NoCSD) neither of which phiOS can add
--- under Q-01 (AUR/manual-build excluded) — accepted and documented, not
--- silently narrowed: GTK3 apps and non-libadwaita GTK4 apps suppress
--- cleanly, libadwaita apps (most modern GNOME apps) keep their header bar.
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
 hl.env("GTK_CSD", "0")
 
--- S-54: XCURSOR_THEME/XCURSOR_SIZE are the standard freedesktop cursor-spec
--- variables every well-behaved Wayland client (Hyprland's own compositor
--- cursor, GTK, Qt/quickshell) resolves on its own -- one env var here is
--- what DONE WHEN's "consistent across GTK, Qt and the shell" actually
--- means, not three separate per-toolkit settings. GTK also gets an
--- explicit gtk-cursor-theme-name (settings.ini.tmpl): real and
--- long-standing GtkSettings property, kept as a second, redundant path in
--- case a GTK app resolves its cursor before this env var is visible to it.
--- Qt/qt6ct deliberately does NOT get an equivalent: its own upstream
--- source (github.com/trialuser02/qt6ct, checked this session) has no
--- cursor-theme setting at all -- Qt's Wayland platform plugin reads
--- XCURSOR_THEME directly, the same as any other Wayland client, so a
--- qt6ct-specific key would be inventing a config option that does not
--- exist.
---
--- This file became a design/adapters.txt template at S-54 for exactly
--- this one substitution -- everything else in it is still plain Lua, same
--- as every step before this one left it.
 hl.env("XCURSOR_THEME", "${PHI_CURSOR_THEME}")
 hl.env("XCURSOR_SIZE", "${PHI_CURSOR_SIZE}")
 
@@ -62,29 +25,6 @@ hl.monitor({
 ---- INPUT ----
 ---------------
 
--- Focus follows the mouse ONLY on click, never on hover (user directive).
--- `input:follow_mouse = 0` — Hyprland wiki (configuring/variables): "cursor
--- focus will be detached from keyboard focus completely. Clicking on a
--- window will move keyboard focus to that window", hovering will not. This
--- is a config VARIABLE, not a dispatch, so it survives `hyprctl reload` —
--- a one-shot `hyprctl keyword` inside an `hyprland.start` hook would not
--- (that event does not refire on reload, see the AUTOSTART note below).
---
--- The nested-table `hl.config({ input = { ... } })` form is confirmed
--- against hyprwm/Hyprland's own example/hyprland.lua, which sets
--- `follow_mouse` in exactly this shape. This is the first `hl.config` call
--- in this file — everything else so far has run on Hyprland's own defaults.
---
--- docs/TODO.md: "invert the scroll wheel (mouse/trackpad)". `natural_scroll`
--- is Hyprland's own name for this (Hyprland wiki, configuring/variables,
--- `input` category: inverted scroll direction) and applies to every
--- pointer device, mouse and touchpad alike, when set at this top level —
--- exactly the "(mouse/trackpad)" scope asked for; `input.touchpad.
--- natural_scroll` exists separately only for setting the touchpad
--- differently from the mouse, not needed here. Same "hyprland.lua is where
--- pointer settings live, not a live settings-panel toggle" boundary
--- Settings/sections/Devices.qml's "Pointer" group already documents for
--- sensitivity (phi-shell's own §9.12 perimeter comment).
 hl.config({
     input = {
         follow_mouse   = 0,
@@ -96,43 +36,37 @@ hl.config({
 ---- CURSOR ----
 ----------------
 
--- docs/TODO.md: "the mouse cursor often disappear arbitrarily." Root cause,
--- read from Hyprland's own source of truth for its defaults (hyprwm/
--- hyprland-wiki, configuring/core/config-options.md, `cursor` category,
--- fetched this session rather than assumed): `cursor:hide_on_touch`
--- defaults to `true` ("Hides the cursor when the last input was a touch
--- input until a mouse input is done") — nothing in this file ever set it,
--- so Hyprland's own untouched default was in effect the whole time. razer
--- has a touchscreen (capabilities doc, PHI_CAP_TOUCHSCREEN; the GESTURES
--- section's own three-finger-swipe comment further down: "razer has both"
--- a touchpad and a touchscreen firing through the same gesture engine) —
--- any touch contact with the screen, deliberate or an incidental brush
--- while adjusting the lid, silently hides the pointer until the next
--- mouse-classified input, which reads exactly as "arbitrary." zotac has no
--- touchscreen (mini never renders this template at all — headless, no
--- graphical session), so this is a no-op there — same reasoning as the
--- GESTURES section's touchscreen swipe binds ("simply inert", no host
--- guard needed).
---
--- No `pcall` needed here, unlike the GESTURES block below (C-06: a raised
--- Lua error discards the WHOLE reload): confirmed against the real
--- hyprwm/Hyprland source (`src/config/lua/ConfigManager.cpp`,
--- `CConfigManager::CConfigManager()`) that `hl.config` registers every
--- entry of `Values::CONFIG_VALUES` — the same master keyword registry the
--- plain-`.conf` parser uses — generically, with no category whitelist.
--- `cursor:hide_on_touch` is a real entry in that registry (same source as
--- above), not a guessed category name.
 hl.config({
     cursor = {
         hide_on_touch = false,
     },
 })
 
+
+----------------
+-- SCRATCHPAD --
+----------------
+
+hl.window_rule({
+    name         = "scratchpad-border",
+    match        = { workspace = "special:scratch" },
+
+    border_size  = 3,
+    border_color = "${PHI_ACCENT}",
+})
+
+hl.workspace_rule({
+    workspace = "special:scratch",
+    animation = "slidevert",
+    gaps_out  = 30,
+})
+
+
 ---------------------
 ---- MY PROGRAMS ----
 ---------------------
 
-local terminal = "kitty"
+local terminal     = "kitty"
 local browser      = "librewolf"
 local fileManager  = "kitty -e yazi"
 
@@ -140,41 +74,13 @@ local fileManager  = "kitty -e yazi"
 ---- AUTOSTART ----
 -------------------
 
--- Quickshell must stay checked out at exactly this path (phi-shell/README.md).
--- Named once here and reused by every `qs ipc call` below (PHI-SHELL
--- KEYBINDINGS section) via qsIpc(), rather than repeating the literal:
--- `qs ipc call` with no `-p`/`-c` targets Quickshell's "default" config
--- (`<xdg dir>/quickshell/shell.qml`, confirmed by reading Quickshell's own
--- src/launch/parsecommand.cpp), and phi-shell is launched below as a named
--- path, not that default, so every call must repeat this same `-p`.
 local qsConfigPath = "~/.config/quickshell/phi"
 
--- phi-shell starts with the session (S-24, ADR 072: one shell, not
--- independent components). Confirmed at S-25 against the real upstream
--- event reference (hyprwm/hyprland-wiki, advanced-configuration/events):
--- `hyprland.start` is documented as "Emitted once on start", i.e. it does
--- not refire on a plain `hyprctl reload` — a reload tears down and
--- reconstructs the Lua state (`config.unload`, then the script runs again
--- top to bottom), but that is a different thing from `hyprland.start`
--- itself firing twice. The `pgrep` guard was never actually defending
--- against a refire that could happen; it stays anyway as free, harmless
--- insurance against any other path that might run this same script twice.
--- Editing QML afterward never needs this to run again: Quickshell
--- hot-reloads its own files on save (master plan §8.1). See
--- phi-shell/README.md for restarting `qs` itself without a session reload.
-hl.on("hyprland.start", function ()
+hl.on("hyprland.start", function()
     hl.exec_cmd("pgrep -x qs >/dev/null || qs -p " .. qsConfigPath)
 end)
 
--- S-42: hyprsunset with NO config file and NO CLI profile args — started
--- bare, at a neutral default (identity, no colour shift) and left entirely
--- to `hyprctl hyprsunset` IPC calls from Services/NightShift.qml (phi-shell)
--- from then on. A ~/.config/hypr/hyprsunset.conf profile schedule would
--- fight with that: the wiki's own doc says a new profile activation "resets
--- all options set by other profiles", so a clock-based profile would
--- silently overwrite whatever NightShift.qml's own toggle/temperature state
--- had just set. No profile file is written on purpose.
-hl.on("hyprland.start", function ()
+hl.on("hyprland.start", function()
     hl.exec_cmd("pgrep -x hyprsunset >/dev/null || hyprsunset")
 end)
 
@@ -183,359 +89,82 @@ end)
 ---------------------
 
 local mainMod = "SUPER"
+local fnMod = "FN"
 
--- docs/TODO.md: "SUPER+M to close hyprland is problematic: add a
--- confirmation and an extra more complex binding for terminating without
--- confirmation." Super+M alone used to run the exit command immediately —
--- one modifier plus a common letter, one slip away from ending the
--- session. It now asks first, through phi-shell's own "power" IPC target
--- (Panels/BarPopout.qml): the popout opens straight on the same
--- "Log out now? This cannot be undone." confirm step the Reboot/Shutdown
--- buttons already use, rather than a new, separate confirmation surface.
--- `qsIpc()` (defined further down, under PHI-SHELL KEYBINDINGS) isn't in
--- scope yet this early in the file — `qsConfigPath` (AUTOSTART, above) is,
--- so the call is written out here rather than moving either definition.
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call power confirmLogout"), { description = "Log out (asks for confirmation)" })
--- The "extra more complex binding" the same request asks for: still ends
--- the session immediately, with no confirmation. Two modifiers on a
--- letter key, not the word-name "left"/"right" keys the still-open
--- Super+Shift/Ctrl+arrow report involves — matches the already-confirmed-
--- working Super+Shift+letter binds elsewhere in this file (movewindow's
--- h/j/k/l, F, C), not the pattern that report describes.
---
--- Corrected 2026-09-14, with a live Hyprland session to test against
--- (something no prior session on this project had): the OPPOSITE of what
--- the comment here used to claim. This install runs Hyprland's Lua
--- config, which repurposes the `dispatch` IPC/hyprctl socket command
--- to EVALUATE its argument as Lua (confirmed by sending raw IPC requests
--- directly over `.socket.sock`, bypassing `hyprctl` entirely, so this is
--- Hyprland itself, not the `hyprctl` binary) — the bare traditional
--- dispatcher-string form (`hyprctl dispatch exit`, or even a single bare
--- word with no arguments at all) fails with "hl.dispatch: expected a
--- dispatcher", while `hyprctl dispatch 'hl.dsp.exit()'` succeeds. That is
--- also exactly the form Hyprland's OWN bundled example
--- (`/usr/share/hypr/hyprland.lua`, this same Hyprland version) uses for
--- this identical fallback line — so the previous "plain `exit` is the
--- real dispatcher name" correction was a plausible guess made without
--- being able to test it, and it was wrong. Not re-verified by actually
--- ending a real session (that would defeat testing it safely) — this is
--- the one fix in this change taken on documentation + the shared-
--- mechanism confirmation elsewhere in this file, not a direct live test.
--- Services/PowerActions.qml's own logout() carries the identical bug and
--- the identical fix, see that file.
-hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch \"hl.dsp.exit()\""), { description = "Log out immediately, no confirmation" })
+hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call power confirmLogout"),
+    { description = "Log out (asks for confirmation)" })
+hl.bind(mainMod .. " + SHIFT + M",
+    hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch \"hl.dsp.exit()\""),
+    { description = "Log out immediately, no confirmation" })
 
 -- apps
--- Super+Return opens a terminal in the cwd of the last focused window via
--- phi-term-cwd (~/.local/bin, on PATH via base/.zshenv), falling back to
--- $HOME when nothing is focused or its directory is unreadable.
-hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("phi-term-cwd " .. terminal))
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
+hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("phi-term-cwd " .. terminal), { description = "Open a new terminal" })
+hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser), { description = "Open the browser" })
+hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager), { description = "Open the file manager" })
 
 -- windows managing
 hl.bind(mainMod .. " + Q", hl.dsp.window.close(), { description = "Close the active window" })
-hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }),  { description = "Focus the window to the left" })
+hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }), { description = "Focus the window to the left" })
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }), { description = "Focus the window to the right" })
-hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }),    { description = "Focus the window above" })
-hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }),  { description = "Focus the window below" })
+hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }), { description = "Focus the window above" })
+hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }), { description = "Focus the window below" })
 
--- The core window-manager bindings that were never written (only the five
--- above and the Super+Return/B/E app launchers existed before). "Super for
--- the window manager" (master plan §8.2 S-38) — so every one of these is
--- Super, or Super+Shift for the "move / send" variant, mirroring the
--- universal tiling-WM convention and Hyprland's own example/hyprland.lua.
---
--- API forms confirmed against hyprwm/Hyprland's example/hyprland.lua this
--- session and used natively below: `hl.dsp.focus({ workspace = N })`,
--- `hl.dsp.window.move({ workspace = N })`, `hl.dsp.window.float({ action =
--- "toggle" })`, `hl.dsp.layout("togglesplit")`,
--- `hl.dsp.workspace.toggle_special(name)`, and the `mouse:272/273` +
--- `{ mouse = true }` drag/resize pair.
---
--- Super+wheel is NOT bound to workspace scroll here — the OOP-50 magnifier
--- (further down) owns Super+wheel for its zoom, and would silently win the
--- collision anyway (last bind for a key combo wins). Workspace switching is
--- Super+1..0 for a specific one and Super+Ctrl+left/right for
--- previous/next (Super+arrows on their own move window FOCUS, not the
--- workspace).
---
--- Everything the example did NOT show — direction-based window moves,
--- centre/pin, per-key resize, monitor focus/move, fullscreen — used to go
--- through `hl.dsp.exec_cmd("hyprctl dispatch ...")` on the theory that
--- `hyprctl dispatch` was a stable interface and a wrong `hl.dsp.*` shape
--- could abort the whole Lua script on load (taking out every bind, not
--- just the bad one).
---
--- Corrected 2026-09-14 with a live Hyprland session to actually test
--- against: `hyprctl dispatch` is NOT stable on this Hyprland build — this
--- install's Lua config repurposes the `dispatch` socket/IPC command to
--- EVALUATE its argument as Lua, so EVERY traditional two-token dispatcher
--- string (`movewindow l`, `workspace m-1`, `resizeactive -40 0`, even a
--- single bare word with no arguments at all) fails with "hl.dispatch:
--- expected a dispatcher", confirmed by sending the raw request directly
--- over `.socket.sock`, bypassing the `hyprctl` binary entirely — this is
--- Hyprland itself, not a `hyprctl` quirk. This is very likely the real
--- root cause of several long-open docs/TODO.md reports at once: the
--- scratchpad bar icon, "windows management keybinding (move, resize) do
--- not work", "super+shift/ctrl+arrow do nothing", the h/j/k/l workspace-
--- switch alternatives, and "hyprland resize does not seem to work" — all
--- of them relied on this exact broken string form.
---
--- The concern that motivated exec_cmd (a bad native shape aborting the
--- whole script) does not apply to TESTING one at the live IPC socket —
--- that only risks a runtime dispatch error, never a config-load abort —
--- so every native form below (this block, the workspace prev/next block,
--- fullscreen/centre/pin, and the RESIZE submap further down) was sent
--- live over this machine's real Hyprland socket and its real, visible
--- effect checked (a disposable test window's position/size read back via
--- `hyprctl clients -j`/`activewindow -j` before and after) before being
--- written here — not guessed from the Lua type stub's untyped `fun(...)`
--- signatures alone. `hl.dsp.window.move({ direction = ... })` mirrors the
--- already-native `hl.dsp.focus({ direction = ... })` above exactly (same
--- table shape, window instead of focus) and was confirmed to swap the
--- active window with its neighbour, matching the old `movewindow`
--- dispatcher's own behaviour.
-hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.window.move({ direction = "l" }), { description = "Move the window left" })
+hl.bind(mainMod .. " + SHIFT + left", hl.dsp.window.move({ direction = "l" }), { description = "Move the window left" })
 hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }), { description = "Move the window right" })
-hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "u" }), { description = "Move the window up" })
-hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "d" }), { description = "Move the window down" })
+hl.bind(mainMod .. " + SHIFT + up", hl.dsp.window.move({ direction = "u" }), { description = "Move the window up" })
+hl.bind(mainMod .. " + SHIFT + down", hl.dsp.window.move({ direction = "d" }), { description = "Move the window down" })
 
--- docs/TODO.md: "super+shit+left/right do not change active workspace" —
--- on the real hardware this was reported from, EVERY Super+[extra
--- modifier]+arrow combo (this block, and the workspace prev/next block
--- below) does nothing at all, while the plain two-key Super+arrow focus
--- binds above work fine. Checked three real, separate places this could
--- break, against hyprwm/Hyprland's own source rather than guessing: the
--- bind string shape (`"SUPER + SHIFT + left"`, confirmed identical to
--- Hyprland's own example/hyprland.lua), the modifier token table
--- (`src/keybinds/Resolver.cpp`'s `MODIFIER_NAMES` — both "SHIFT" and
--- "CTRL" are real, recognized names, not typos), and keycode resolution
--- (`CResolver::resolveKeycode`, which resolves "left"/"right" the same
--- way regardless of which modifier accompanies them). All three check
--- out; no config-level defect found. Added as h/j/k/l ALTERNATIVES,
--- alongside the arrow binds rather than replacing them, on the theory
--- that whatever is actually wrong is specific to the arrow keys
--- themselves on this hardware/layout, not to 3-key chords in general —
--- other Super+Shift+<letter> binds elsewhere in this file (F, C, P) were
--- not reported as broken (2026-09-14: this was never actually true — see
--- the comment above the arrow-key block, everything through exec_cmd's
--- old string form was equally broken; F/C/P just hadn't been separately
--- reported yet). h/j/k/l already means left/down/up/right elsewhere in
--- this exact file (the RESIZE submap below).
 hl.bind(mainMod .. " + SHIFT + h", hl.dsp.window.move({ direction = "l" }), { description = "Move the window left" })
 hl.bind(mainMod .. " + SHIFT + l", hl.dsp.window.move({ direction = "r" }), { description = "Move the window right" })
 hl.bind(mainMod .. " + SHIFT + k", hl.dsp.window.move({ direction = "u" }), { description = "Move the window up" })
 hl.bind(mainMod .. " + SHIFT + j", hl.dsp.window.move({ direction = "d" }), { description = "Move the window down" })
 
--- layout / floating state. `window.fullscreen()`/`center()`/`pin()`
--- confirmed live the same way as the moves above: fullscreen toggled the
--- real client fullscreen state (Hyprland now reports a different internal
--- mode number for it than the old `fullscreen 0` argument did — 2 instead
--- of 0 — but the visible behaviour, a real fullscreen toggle, is what
--- this bind's own description promises and what was observed), center
--- moved a floating test window to the middle of the screen, pin toggled
--- `pinned` true/false round-trip.
-hl.bind(mainMod .. " + F",         hl.dsp.window.fullscreen(), { description = "Toggle fullscreen" })
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen(), { description = "Toggle fullscreen" })
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }), { description = "Toggle floating" })
-hl.bind(mainMod .. " + J",         hl.dsp.layout("togglesplit"), { description = "Toggle the dwindle split direction" })
--- Centre-window is on Super+Shift+C, not Super+C: Super+C is deliberately
--- left unbound here so it reaches the focused application — kitty maps it
--- to copy-to-clipboard (kitty.conf). A bare Super+C bind would be consumed
--- by the compositor before the terminal ever saw it.
+hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"), { description = "Toggle the dwindle split direction" })
 hl.bind(mainMod .. " + SHIFT + C", hl.dsp.window.center(), { description = "Centre the floating window" })
-hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pin(),    { description = "Pin the floating window to every workspace" })
+hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pin(), { description = "Pin the floating window to every workspace" })
 
 -- numbered workspaces (Super+1..0), and send-to-workspace (Super+Shift+1..0).
 -- Loop taken verbatim from example/hyprland.lua, including `i % 10` mapping
 -- workspace 10 onto the "0" key.
 for i = 1, 10 do
     local key = i % 10
-    hl.bind(mainMod .. " + " .. key,         hl.dsp.focus({ workspace = i }),       { description = "Go to workspace " .. i })
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }), { description = "Send the window to workspace " .. i })
+    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }), { description = "Go to workspace " .. i })
+    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }),
+        { description = "Send the window to workspace " .. i })
 end
 
--- Previous / next workspace on the focused monitor (user request). The
--- keyboard companion to the numbered binds above and to the three-finger
--- swipe in the GESTURES section.
---
--- docs/TODO.md ("switching workspace with a keybind or gesture ... wraps
--- around at the first/last workspace on a monitor instead of stopping"):
--- was the native `m-1`/`m+1` relative selector (`hl.dsp.focus({ workspace
--- = "m-1"/"m+1" })`, confirmed live 2026-09-14 with a real round-trip,
--- 1 -> 12 -> 1 then 1 -> m+1 -> m-1 back to 1) — it cycles the workspaces
--- this monitor actually has and always wraps, with no documented non-
--- wrapping form. A prior pass here investigated a Lua-side bounded
--- computation and backed off for lack of a confirmed workspace-
--- enumeration getter (`hl.get_workspaces()`/`hl.get_active_workspace()`
--- were never tried live) — that gap is closed from the OTHER side
--- instead: phi-shell's own Quickshell.Hyprland binding already exposes
--- exactly what was missing (`HyprlandIpcQml.focusedMonitor`,
--- `HyprlandMonitor.activeWorkspace`), confirmed directly against the real
--- installed quickshell-hyprland-ipc.qmltypes, not guessed. These binds
--- now call phi-shell's own bounded next/prev
--- (Services/HyprlandBridge.qml's `focusAdjacentWorkspace()`) via IPC, the
--- same `qs -p ... ipc call ...` shape the Super+M logout confirm bind
--- above already uses — exec_cmd rather than a native Dispatcher, since
--- this is a shell command, not a Hyprland dispatch.
--- Super+Ctrl+arrows is the GNOME/KDE convention for this and was unbound.
-hl.bind(mainMod .. " + CTRL + left",  hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev"), { description = "Previous workspace" })
-hl.bind(mainMod .. " + CTRL + right", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next"), { description = "Next workspace" })
--- docs/TODO.md: h/j/k/l alternatives for the same reason as the move-
--- window block above — see that block's own comment for the
--- investigation. h/l match this file's own left/right convention
--- (RESIZE submap below).
-hl.bind(mainMod .. " + CTRL + h", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev"), { description = "Previous workspace" })
-hl.bind(mainMod .. " + CTRL + l", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next"), { description = "Next workspace" })
+hl.bind(mainMod .. " + CTRL + left", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev"),
+    { description = "Previous workspace" }) -- FIXME: 'ipc call workspace next' does not work (check gestures section as well)
+hl.bind(mainMod .. " + CTRL + right", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next"),
+    { description = "Next workspace" })
 
--- hold Super and drag with the left / right mouse button to move / resize a
--- window (the one place a bind is pointer-driven rather than a key).
-hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
-hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+hl.bind(mainMod .. " + CTRL + h", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev"),
+    { description = "Previous workspace" })
+hl.bind(mainMod .. " + CTRL + l", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next"),
+    { description = "Next workspace" })
 
--- a general-purpose scratchpad on its own special workspace (btop has no
--- dedicated workspace at all any more — interface rework, see WINDOWS AND
--- WORKSPACES below).
-hl.bind(mainMod .. " + A",         hl.dsp.workspace.toggle_special("scratch"), { description = "Toggle the scratchpad" })
-hl.bind(mainMod .. " + SHIFT + A", hl.dsp.window.move({ workspace = "special:scratch" }), { description = "Send the window to the scratchpad" })
+hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true },
+    { description = "Drag the window with the mouse" })
+hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true },
+    { description = "Resize the window with the mouse" })
 
--- docs/TODO.md: "add borders to the whole view when in the scratchpad or
--- make it recognisable". Deliberately a pure-Hyprland-side fix, not
--- phi-shell: this project's own memory notes (verified against
--- quickshell-mirror/quickshell's own C++ IPC source for the pinned 0.3.1
--- version) found Quickshell cannot read Hyprland's "special" workspace
--- state at all, so a phi-shell indicator was ruled a dead end for now.
--- `match.workspace = "special:scratch"` is confirmed (read Hyprland's own
--- `desktop/rule/Rule.cpp` matchPropFromString + `workspace/filter/
--- statement/SpecialAddressableNameStatement.cpp`) to be an exact match
--- against the workspace's addressable name, which is exactly what
--- `toggle_special("scratch")` above creates.
---
--- Extended 2026-09-14 for the separate Style-section TODO entry this one
--- used to defer to ("scratchpad should slide in from below, have slightly
--- more out spacing... accent-colored border... an old change made windows
--- in the scratchpad had thin borders... i can't even see which one is
--- focused"): the animation and wider gaps below are new; the border rule
--- itself is the SAME rule as before minus one change (see its own comment)
--- that is exactly what "i can't even see which one is focused" reports.
---
--- Both border_size and border_color are set on the *window* rule, not
--- workspace_rule (which also has a border_size field) — kept on one rule
--- system deliberately, to sidestep any question of whether a workspace
--- rule's border_size and a window rule's border_color compose or one
--- shadows the other when both target the same windows.
---
--- border_color is ONE colour token, not two: an earlier version of this
--- rule passed "${PHI_ACCENT} ${PHI_ACCENT}" (Hyprland's documented
--- `bordercolor <active> <inactive>` two-colour form) specifically so the
--- border stayed accent-coloured regardless of focus — which is exactly
--- the bug this TODO entry reports: forcing both states to the same colour
--- means every window in the scratchpad looks identical no matter which
--- one is actually focused, so focus is not visible at all. Traced the
--- same parse path as before to confirm the fix (`addWindowRuleEffectFromLua`,
--- `config/lua/bindings/LuaBindingsInternal.cpp`, into `parseBorderColorRule`,
--- `desktop/rule/windowRule/WindowRule.cpp`): a SINGLE colour string (no
--- second, "deg"-suffixed token) parses as the ACTIVE colour only, leaving
--- the inactive border at Hyprland's own normal default colour — which
--- *is* "restored to default" for the unfocused case, while the focused
--- window still gets the accent colour this entry also asks for
--- ("recognisable", "accent-colored border"). The common case — one window
--- in the scratchpad, focused, sized close to the screen by the wider
--- gaps_out below — reads as an accent frame around the whole visible
--- area; a second, unfocused window (the scratchpad is general-purpose,
--- not guaranteed to ever hold only one) keeps its ordinary, distinct
--- inactive border instead of vanishing into the same accent as the
--- focused one.
-hl.window_rule({
-    name  = "scratchpad-border",
-    match = { workspace = "special:scratch" },
+hl.bind(mainMod .. " + A", hl.dsp.workspace.toggle_special("scratch"), { description = "Toggle the scratchpad" })
+hl.bind(mainMod .. " + SHIFT + A", hl.dsp.window.move({ workspace = "special:scratch" }),
+    { description = "Send the window to the scratchpad" }) -- TODO: add a toggle to bring it back to the current workspace
 
-    border_size  = 3,
-    border_color = "${PHI_ACCENT}",
-})
+-- TODO : find new mapping
+-- hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("hyprctl dispatch focusmonitor -1"),
+--     { description = "Focus the previous monitor" })
+-- hl.bind(mainMod .. " + period", hl.dsp.exec_cmd("hyprctl dispatch focusmonitor +1"),
+--     { description = "Focus the next monitor" })
+hl.bind(mainMod .. " + SHIFT + comma", hl.dsp.exec_cmd("hyprctl dispatch movewindow mon:-1"),
+    { description = "Move the window to the previous monitor" })
+hl.bind(mainMod .. " + SHIFT + period", hl.dsp.exec_cmd("hyprctl dispatch movewindow mon:+1"),
+    { description = "Move the window to the next monitor" })
 
--- docs/TODO.md: "should slide in from below, have slightly more out
--- spacing than other workspace". `animation = "slidevert"` is a real,
--- documented PER-WORKSPACE override (`Config::CWorkspaceRule::m_animationStyle`,
--- `WORKSPACE_RULE_FIELDS` in `config/lua/bindings/LuaBindingsConfigRules.cpp`
--- — a plain string field, not a name that has to already exist in
--- Hyprland's animation tree the way `hl.animation()`'s own `leaf` argument
--- does) — so this touches only THIS workspace's animation, nothing global.
--- For a `special` workspace specifically, Hyprland's own `slidevert`
--- direction convention is "from the bottom" with no extra parameter
--- needed (the reverse — from the top — needs an explicit negative offset
--- this entry does not want) — matching "slide in from below" exactly as
--- written, not assumed.
---
--- gaps_out: nothing in this project overrides gaps anywhere else, so
--- every other workspace already sits at Hyprland's own default (20).
--- `30` is "slightly more" — a plain functional constant, not a design
--- token: no §6.3 token covers Hyprland's own gap sizing (a different
--- scale, a different renderer entirely from phi-shell's QML side), the
--- same category Bar/modules/Clock.qml's 1000ms poll interval already is.
--- This also keeps the accent border above visibly clear of the true
--- screen edge rather than flush against it.
-hl.workspace_rule({
-    workspace = "special:scratch",
-    animation = "slidevert",
-    gaps_out  = 30,
-})
-
--- multi-monitor (inert on a single-output host — zotac is the only one with
--- two, and it only had one connected the day this was investigated, see
--- below). Same underlying bug as every other bind in this change (see the
--- comment above the arrow-key block) — `hyprctl dispatch focusmonitor -1`
--- fails exactly the same way — but the fix below is NOT applied here,
--- unlike the rest of this file: still exec_cmd, still broken, on purpose.
---
--- Investigated 2026-09-14: `hl.dsp.focus({ monitor = -1 })` and
--- `hl.dsp.window.move({ monitor = -1 })`, sent live, both returned "ok" —
--- at first read as the same "shape accepted" signal `workspace`/
--- `direction` gave elsewhere in this file. It is not: `{ monitor = 1 }`
--- on this exact one-monitor machine fails with "monitor not found" /
--- "Invalid monitor / monitor doesn't exist", and `{ monitor = 0 }` (the
--- real, only monitor's id) succeeds — so `monitor` is an ABSOLUTE
--- selector (id or name), not the relative "cycle to the next/previous
--- output" the old `focusmonitor +1/-1` dispatcher gave. `-1` returning
--- "ok" here is most likely negative-index addressing resolving to "the
--- last monitor", which happens to equal the only monitor on this
--- machine — not a working relative-previous — so it was NOT actually a
--- confirmed fix and shipping it as one would have been the same mistake
--- the old exit-fallback comment already made once in this file. Left
--- broken rather than guessed at twice. Needs a real second monitor to
--- find whichever mechanism gives relative cycling now (a Lua function
--- bind computing the next/previous id via `hl.get_monitors()`, the same
--- technique the RESIZE submap below now uses for its delta math, is the
--- likely shape — untested, no second output to check it against).
-hl.bind(mainMod .. " + comma",  hl.dsp.exec_cmd("hyprctl dispatch focusmonitor -1"), { description = "Focus the previous monitor" })
-hl.bind(mainMod .. " + period", hl.dsp.exec_cmd("hyprctl dispatch focusmonitor +1"), { description = "Focus the next monitor" })
-hl.bind(mainMod .. " + SHIFT + comma",  hl.dsp.exec_cmd("hyprctl dispatch movewindow mon:-1"), { description = "Move the window to the previous monitor" })
-hl.bind(mainMod .. " + SHIFT + period", hl.dsp.exec_cmd("hyprctl dispatch movewindow mon:+1"), { description = "Move the window to the next monitor" })
-
--- resize mode: Super+R, then arrows or h/j/k/l to resize the active window,
--- Escape / Return / any other key to leave. Same "mode for a rare action"
--- pattern as the screenshot submap further down.
---
--- Corrected 2026-09-14, same root cause as the rest of this file's
--- `exec_cmd("hyprctl dispatch ...")` binds (see the comment above the
--- arrow-key move block) — but `window.resize` is not a drop-in swap for
--- the old `resizeactive` string the way `window.move`/`focus` were for
--- `movewindow`/`workspace`: confirmed live that `window.resize({ x = ...,
--- y = ... })` sets an ABSOLUTE size (a floating test window sent
--- `{ x = 900, y = 900 }` came back exactly 900x900), not the RELATIVE nudge
--- `resizeactive -40 0` gave. A static Dispatcher table can't express
--- "current size minus 40" — every other bind in this file is a plain
--- Dispatcher value, but `hl.bind` also accepts a plain Lua function
--- (confirmed against the type stub's own `bind(keys, dispatcher:
--- HL.Dispatcher|function, ...)` signature), so each direction here reads
--- the active window's real current size via `hl.get_active_window()` at
--- the moment the key is pressed and dispatches the same delta the old
--- command did. Confirmed live end to end: a floating test window's size
--- went from [950, 515] to exactly [910, 515] after the "left" case below.
--- (`hl.dispatch(...)`, not a trailing `()` on the Dispatcher object itself
--- — Hyprland's own error for the latter is explicit: "dispatcher objects
--- cannot be called directly; use hl.dispatch(dispatcher)".)
-hl.bind(mainMod .. " + R", hl.dsp.submap("resize"), { description = "Enter resize mode" })
+hl.bind(mainMod .. " + R", hl.dsp.submap("resize"), { description = "Enter resize mode" }) -- FIXME: not working
 hl.define_submap("resize", function()
     local function nudge(dx, dy)
         return function()
@@ -543,277 +172,130 @@ hl.define_submap("resize", function()
             if w then hl.dispatch(hl.dsp.window.resize({ x = w.size.x + dx, y = w.size.y + dy })) end
         end
     end
-    hl.bind("left",  nudge(-40, 0))
+    hl.bind("left", nudge(-40, 0))
     hl.bind("right", nudge(40, 0))
-    hl.bind("up",    nudge(0, -40))
-    hl.bind("down",  nudge(0, 40))
-    hl.bind("h",     nudge(-40, 0))
-    hl.bind("l",     nudge(40, 0))
-    hl.bind("k",     nudge(0, -40))
-    hl.bind("j",     nudge(0, 40))
+    hl.bind("up", nudge(0, -40))
+    hl.bind("down", nudge(0, 40))
+    -- hl.bind("h", nudge(-40, 0))
+    -- hl.bind("l", nudge(40, 0))
+    -- hl.bind("k", nudge(0, -40))
+    -- hl.bind("j", nudge(0, 40))
     hl.bind("Escape", hl.dsp.submap("reset"))
     hl.bind("Return", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
 end)
 
+
+-----------------
+---- GESTURES ----
+-----------------
+
+hl.gesture({
+    fingers = 3,
+    direction = "up",
+    action = function() hl.exec_cmd(qsIpc("alttab", "open")) end,
+}, { description = "Swipe up to open the Alt+Tab surface" })
+hl.gesture({
+    fingers = 3,
+    direction = "down",
+    action = function() hl.exec_cmd(qsIpc("alttab", "close")) end,
+}, { description = "Swipe up/down to open/close the Alt+Tab surface" })
+
+pcall(function()
+    hl.gesture({
+        fingers = 3,
+        direction = "left",
+        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next") end,
+    }, { description = "Swipe left/right to switch workspaces" })
+    hl.gesture({
+        fingers = 3,
+        direction = "right",
+        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev") end,
+    }, { description = "Swipe left/right to switch workspaces" })
+end)
+
+hl.gesture({
+    fingers = 4,
+    direction = "in",
+    action = function() hl.exec_cmd(qsIpc("launcher", "open")) end,
+}, { description = "Open the launcher" })
+hl.gesture({
+    fingers = 4,
+    direction = "out",
+    action = function() hl.exec_cmd(qsIpc("launcher", "close")) end,
+}, { description = "Close the launcher" })
+
+
 --------------------------------
 ---- PHI-SHELL KEYBINDINGS  ----
 --------------------------------
-
--- S-38: "propose a complete scheme... Super for the window manager, Alt
--- for applications, modes for rare actions" (master plan). Every M2/M3
--- shell surface reaches this way, all through the same `qs ipc call
--- <target> <fn>` mechanism S-31 established and every surface since has
--- followed — via qsIpc() below, which prepends the `-p` targeting
--- phi-shell's own instance (see qsConfigPath's own note under AUTOSTART
--- above for why that flag is required, not optional).
---
--- The pre-existing Super+Return/B/E/Q/arrows/M binds above (S-24) are
--- deliberately left untouched, even though app-launching sits oddly
--- against "Alt for applications" read strictly: no real keybinding has
--- ever been used on real hardware yet (every M2/M3 step's own note, most
--- recently S-37's), so there is no muscle memory here to protect, but
--- treating "open a terminal" as basic window-manager-level functionality
--- (as most tiling WM configs do) rather than an "application" in the
--- Alt-Tab sense is this agent's own reading, not a document's — flagged
--- for the user's own amend, exactly as this step's DONE WHEN asks for
--- ("the user confirms the scheme is the one they want to learn").
 local function qsIpc(target, fn)
     return "qs -p " .. qsConfigPath .. " ipc call " .. target .. " " .. fn
 end
 
--- `{ description = ... }` on every phi-shell bind below is a real,
--- documented `hl.bind()` flag (hyprwm/hyprland-wiki,
--- configuring/core/binds/flags.md: "You can describe your keybind with
--- the description flag... use hyprctl binds" to read it back) — found
--- needed on real hardware: without it, every Lua-callback bind shows up
--- in `hyprctl binds -j` as an opaque internal dispatcher/arg pair (seen
--- literally as "_lua 16"), which is what Cheatsheet.qml was rendering
--- verbatim for lack of anything better to show.
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")), { description = "Toggle the launcher" })    -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
--- Both binds call the tab-specific ipc function (not the plain "toggle"),
--- so each one always lands ON ITS OWN tab: switching from the other tab if
--- the panel was already open elsewhere, opening fresh onto that tab if it
--- was closed, and only closing the panel if it was already open on that
--- exact tab (Services/NotificationPanel.qml's toggleTab — a bare "toggle"
--- here left Super+N unable to guarantee which tab it landed on, and left
--- Super+Shift+V only ever able to open, never close, docs/TODO.md).
-hl.bind(mainMod .. " + N",     hl.dsp.exec_cmd(qsIpc("notifications", "notifications")), { description = "Toggle the notification panel" })     -- OOP-06: the sidebar is the notification panel; target renamed (a "sidebar" alias still works)
--- OOP-06: open the notification panel straight onto the Clipboard tab,
--- with its search focused. Super+Shift+V is the near-universal
--- "clipboard history" shortcut (KDE Klipper, GNOME extensions, cliphist
--- guides all use it).
-hl.bind(mainMod .. " + SHIFT + V", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")), { description = "Open the clipboard history" })
-hl.bind(mainMod .. " + S",     hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })      -- S-40: no prior bind claimed S, obvious mnemonic
--- Out-of-plan (2026-09-09): the phi agent panel (phios-agente.md §10.1,
--- "evocazione da scorciatoia globale"). "P" for phi/panel, and it was
--- free. On razer this is also what Fn+F4 synthesizes in firmware
--- (KEY_RIGHTMETA + KEY_P, S-06) — so Fn+F4 likely toggles the panel too
--- there, which is a reasonable answer to S-06's open "what should Super+P
--- do on Linux" question; confirm at verification.
-hl.bind(mainMod .. " + P",     hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { description = "Toggle the phi agent panel" })
--- S-43, revised after real-hardware feedback ("it shouldn't be a toggle,
--- while pressed it shows, when released it fades out"): press/release
--- pair, not a single toggle bind.
---
--- SECOND round: the first attempt bound release on the FULL combo
--- ("SUPER + G", release = true), confirmed real syntax but confirmed
--- BROKEN on real hardware — releasing G before Super left the overlay
--- stuck on, the exact class of quirk this file's own Alt+Tab binds
--- already ran into and solved the same way: bind the release on the BARE
--- key, not the full combo, so it fires regardless of what else is held
--- at the moment it comes up — exactly what ALT_L/ALT_R already do below
--- for Alt+Tab's own confirm.
---
--- ROUNDS FOUR AND FIVE tried replacing this with a bare-Super
--- double-/triple-tap-and-hold, bound on the SUPER_L keysym alone. ROUND
--- SIX found why it could never work: `hyprctl binds -j` confirmed the
--- binds registered correctly, and the user's own comparison ("it also
--- used to work with super+G") pointed at the one thing that changed —
--- searching Hyprland's own issue tracker instead of guessing a sixth
--- variant found `hyprwm/Hyprland#6946`, still reproducing as of a
--- 2026-08-17 comment on Hyprland 0.56.2: release events never fire for a
--- bare modifier keysym bind, only press does — confirmed a compositor-
--- level dispatch gap, not fixable from any config in this repository.
--- SUPER+G's own G key has no such problem: it is an ordinary key whose
--- press and release are both reliably delivered, which is exactly why it
--- "used to work". Reverted here to that proven-reliable shape, by the
--- user's own explicit choice once given the real cause rather than
--- another guess — the double-/triple-tap idea is dropped entirely, not
--- carried over onto SUPER+G, matching what the user actually asked for.
-hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")), { description = "Show the cursor spotlight (hold)" }) -- "G" for "glow" -- no closer mnemonic was free ("F"/"L" already used)
-hl.bind("g", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true })
--- docs/TODO.md: "when pressing SUPER+L instead of locking immediatly,
--- evoke an overlay menu with options (lock, suspend, hibernate, shutdown,
--- reboot) ... SUPER+L+L (double click) will instantly lock (same
--- behavior as now)." Was a direct `qsIpc("lock", "lock")` call (this
--- line's own prior form, "universal desktop-environment convention") —
--- now every press dispatches unconditionally to a NEW target,
--- "powerMenu"/"trigger", exactly as dumb and unconditional as the old
--- lock call was. All double-tap-vs-single-press timing lives entirely in
--- phi-shell (Services/PowerMenu.qml, a plain QML Timer) — this bind does
--- not know a double-tap concept exists, deliberately NOT the same shape
--- as the abandoned bare-SUPER double-tap attempt a few lines above (SUPER
--- + G's own "ROUND SIX" history, hyprwm/Hyprland#6946): that bug is about
--- release events never firing for a BARE-MODIFIER-ONLY keysym bind.
--- SUPER+L is a normal modifier+letter combo, which already dispatched
--- reliably on every press under the old direct-lock binding — nothing
--- about that reliability changes here, only what the dispatch means.
-hl.bind(mainMod .. " + L",     hl.dsp.exec_cmd(qsIpc("powerMenu", "trigger")), { description = "Power menu (double-press to lock instantly)" })
--- OOP-24/OOP-25 (user: "unify SUPER+TAB and ALT+TAB, using only ALT+TAB"):
--- the Super+Tab overview bind is removed. The window overview and Alt+Tab
--- are one surface now (AltTab.qml); Alt+Tab (below) and the three-finger
--- gesture (GESTURES section) are its only entry points.
--- "slash" (lowercase), not "Slash": X11/XKB keysym names for punctuation
--- are lowercase words (matching "left"/"right"/"up"/"down" above), unlike
--- named keys like "Return"/"Tab"/"Escape", which are capitalized.
-hl.bind(mainMod .. " + SHIFT + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle")), { description = "Toggle the cheat sheet" }) -- Super+? — common "show shortcuts" convention
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")), { description = "Toggle the launcher" }) -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(qsIpc("powerMenu", "trigger")),
+    { description = "Power menu (double-press to lock instantly)" })
 
--- Magnifier loupe (OOP-50, revised OOP-57). SUPER+Z toggles it; the zoom
--- and lens-size steppers work whether it is up or not (a step on a hidden
--- loupe just moves the stored value — Services/Magnifier.qml). These live
--- here with the other overlay toggles (spotlight, lock, cheatsheet) and,
--- deliberately, BEFORE and clear of the SUPER+wheel binds further down:
--- `mouse_up`/`mouse_down` are used nowhere else in this file, so if this
--- Hyprland/Lua build rejects them the failure must not be able to take
--- this toggle (or anything after it) down with it — the wheel block is
--- pcall-wrapped for the same reason. SUPER+= / SUPER+- (US layout, the
--- kb_layout default — no `kb_layout` is set anywhere in the profiles)
--- are the plain-key path that always works.
-hl.bind(mainMod .. " + Z",             hl.dsp.exec_cmd(qsIpc("magnifier", "toggle")),  { description = "Magnifier: toggle the loupe" })
-hl.bind(mainMod .. " + equal",         hl.dsp.exec_cmd(qsIpc("magnifier", "zoomIn")),  { description = "Magnifier: zoom in" })
-hl.bind(mainMod .. " + minus",         hl.dsp.exec_cmd(qsIpc("magnifier", "zoomOut")), { description = "Magnifier: zoom out" })
-hl.bind(mainMod .. " + SHIFT + equal", hl.dsp.exec_cmd(qsIpc("magnifier", "grow")),    { description = "Magnifier: larger lens" })
-hl.bind(mainMod .. " + SHIFT + minus", hl.dsp.exec_cmd(qsIpc("magnifier", "shrink")),  { description = "Magnifier: smaller lens" })
+-- PopOut keybinds (FN + KEY)
+hl.bind(fnMod .. " + S", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
+    { description = "Toggle the status panel" })
+hl.bind(fnMod .. " + N", hl.dsp.exec_cmd(qsIpc("notifications", "notifications")),
+    { description = "Toggle the notification panel" })
+hl.bind(fnMod .. " + SHIFT + V", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
+    { description = "Open the clipboard history" }) -- FIXME: it's still called "notifications", "clipboard" but they are separated now
+hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })
+hl.bind(fnMod .. " + P", hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { description = "Toggle the phi agent panel" })
+hl.bind(fnMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")),
+    { description = "Show the cursor spotlight (hold)" })
 
--- S-46: fixed volume/brightness keys (funzionalita §2.15, C-09). S-06's
--- own diagnosis already found the kernel reports STANDARD, correctly-named
--- codes for every one of these (KEY_MUTE, KEY_VOLUMEUP/DOWN,
--- KEY_BRIGHTNESSUP/DOWN, i.e. Hyprland's XF86Audio*/XF86MonBrightness*
--- keysyms) — no hwdb rule was ever needed, the actual gap this whole time
--- was simply that no bind existed yet (S-06's own words: "almost
--- certainly the absence of any compositor keybinding"). `repeating = true,
--- locked = true` on the brightness binds matches the real Hyprland wiki's
--- own worked example for this exact keysym pair (configuring/core/
--- environment-variables.md's hyprsunset-gamma example) — `locked` so they
--- still work from the lock screen, which volume/brightness genuinely
--- should.
---
--- Volume goes straight to wpctl (WirePlumber's own CLI, real/standard),
--- not through phi-shell: Services/AudioBridge.qml already reflects live
--- PipeWire state reactively, regardless of which process changed it, so
--- there is nothing phi-shell needs to be told. Brightness is NOT like
--- that — Services/Brightness.qml caches `percent` from its own
--- brightnessctl reads, so it goes through `qs ipc call brightness up/down`
--- (that file's own S-46 IpcHandler) instead of a bare brightnessctl call,
--- so the OSD (S-43) updates atomically rather than going stale.
--- Bare key name, ONE string argument, no modifier prefix — matches the
--- real wiki's own worked example exactly (hl.bind("XF86MonBrightnessUp",
--- ...)), not a two-argument hl.bind("", "Key", ...) form, which an
--- earlier draft of this file used and which no source here confirms.
-hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { repeating = true, locked = true })
--- docs/TODO.md: "holding the volume up key... should reach a top of 100%."
--- `wpctl set-volume`'s percentage steps are uncapped by default — PipeWire
--- allows amplification above unity gain, so `5%+` on a `repeating = true`
--- bind (every repeat while the key is held) just kept climbing past 100%
--- with nothing to stop it. `-l 1.0` is wpctl's own real, documented flag
--- for exactly this (Arch manual, wpctl(1): "-l, --limit LIMIT — Limit
--- final volume to below this value (floating point, 1.0 = 100%)"),
--- confirmed against the man page rather than assumed. Deliberately NOT
--- attempting the TODO's second half — a double-tap-and-hold gesture to
--- intentionally exceed 100% — as a config-only fix: Hyprland binds have no
--- built-in double-tap primitive, and this exact file's own SUPER+G history
--- (ROUNDS FOUR/FIVE/SIX above) is a documented case of a custom-timed
--- multi-tap gesture going wrong on real hardware. Raising it as a
--- follow-up if still wanted, rather than guessing at a bespoke timer here.
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ -l 1.0"), { repeating = true, locked = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(qsIpc("brightness", "down")), { repeating = true, locked = true })
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qsIpc("brightness", "up")), { repeating = true, locked = true })
+hl.bind("g", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true }) -- FIXME: on release
 
--- Magnifier — SUPER+wheel (S-54 / OOP-50 / OOP-57). The loupe toggle and
--- the plain-key zoom / lens-size steppers are up with the other overlay
--- toggles (search "Magnifier loupe" above). This is the extra wheel path:
--- SUPER + wheel for zoom, SUPER+SHIFT + wheel for lens size. NOT bare
--- CTRL+wheel (the reference's example): Hyprland consumes a modifier+wheel
--- bind before the focused app, so CTRL+wheel there would break in-app zoom
--- everywhere; SUPER+wheel is unclaimed in this config.
---
--- `mouse_up` / `mouse_down` are Hyprland's own wheel key names (the wiki's
--- own `hl.bind("SUPER + mouse_down", ...)` example) but appear nowhere
--- else here. The whole block is pcall-wrapped: if this Hyprland/Lua build
--- rejects the wheel-key form, the wheel binds are simply skipped and the
--- rest of this file — including the magnifier toggle and steppers above —
--- still loads. Earlier this coupling is the leading suspect for SUPER+Z
--- "doing nothing": a raised error partway through a Lua config reload
--- discards the reload.
---
--- Why a shell overlay and not a compositor feature: Glasscope (the look
--- the card references) is a Hyprland *plugin* — barred by Q-01 / I-01 —
--- and `decoration:screen_shader` cannot see the cursor (Q-F07, closed).
--- The lens is phi-shell's own answer; see Services/Magnifier.qml.
+hl.bind(fnMod .. " + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle")),
+    { description = "Toggle the cheat sheet" }) -- Super+? — common "show shortcuts" convention
+
+hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(qsIpc("magnifier", "toggle")), { description = "Magnifier: toggle the loupe" })
+-- FIXME: holding does not work
+hl.bind(mainMod .. " + equal", hl.dsp.exec_cmd(qsIpc("magnifier", "zoomIn")), { description = "Magnifier: zoom in" })
+hl.bind(mainMod .. " + minus", hl.dsp.exec_cmd(qsIpc("magnifier", "zoomOut")), { description = "Magnifier: zoom out" })
+hl.bind(mainMod .. " + SHIFT + equal", hl.dsp.exec_cmd(qsIpc("magnifier", "grow")),
+    { description = "Magnifier: larger lens" })
+hl.bind(mainMod .. " + SHIFT + minus", hl.dsp.exec_cmd(qsIpc("magnifier", "shrink")),
+    { description = "Magnifier: smaller lens" })
+
 pcall(function()
-    hl.bind(mainMod .. " + mouse_up",          hl.dsp.exec_cmd(qsIpc("magnifier", "zoomIn")),  { description = "Magnifier: zoom in (wheel)" })
-    hl.bind(mainMod .. " + mouse_down",         hl.dsp.exec_cmd(qsIpc("magnifier", "zoomOut")), { description = "Magnifier: zoom out (wheel)" })
-    hl.bind(mainMod .. " + SHIFT + mouse_up",   hl.dsp.exec_cmd(qsIpc("magnifier", "grow")),    { description = "Magnifier: larger lens (wheel)" })
-    hl.bind(mainMod .. " + SHIFT + mouse_down", hl.dsp.exec_cmd(qsIpc("magnifier", "shrink")),  { description = "Magnifier: smaller lens (wheel)" })
+    hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd(qsIpc("magnifier", "zoomIn")),
+        { description = "Magnifier: zoom in (wheel)" })
+    hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd(qsIpc("magnifier", "zoomOut")),
+        { description = "Magnifier: zoom out (wheel)" })
+    hl.bind(mainMod .. " + SHIFT + mouse_up", hl.dsp.exec_cmd(qsIpc("magnifier", "grow")),
+        { description = "Magnifier: larger lens (wheel)" })
+    hl.bind(mainMod .. " + SHIFT + mouse_down", hl.dsp.exec_cmd(qsIpc("magnifier", "shrink")),
+        { description = "Magnifier: smaller lens (wheel)" })
 end)
 
--- Alt+Tab (S-37, architettura §8.2.2 S10): the one binding that genuinely
--- fits "Alt for applications" — cycling BETWEEN running applications is
--- exactly that, and matches the universal Alt+Tab convention besides.
--- Three ways out of the submap (Alt release, Escape, catchall) so a
--- stray keypress can never leave the session stuck inside it (the real
--- documentation's own explicit warning: "Do not forget a keybind to
--- reset the keymap while inside it!").
---
--- Found on real hardware: the FIRST Alt+Tab press only entered the
--- submap — it did not also show the overlay or select a window, which
--- needed a second, separate Tab press to reach the submap's own "ALT +
--- Tab" bind below. Fixed the same documented way the release/confirm
--- binds already use ("You can also set the same keybind to perform
--- multiple actions... the binds are executed in the order they appear",
--- submaps.md): entering the submap and calling next()/prev() now happen
--- together on the very first press. A new Alt+Shift+Tab entry point is
--- added for the same reason — found on real hardware to only work once
--- the submap was already open, since only the submap-local "ALT + SHIFT
--- + Tab" bind existed before.
+-- Function Keys
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true },
+    { description = "Toggle mute" })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
+    { repeating = true, locked = true }, { description = "Lower volume" })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ -l 1.0"),
+    { repeating = true, locked = true }, { description = "Raise volume" })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(qsIpc("brightness", "down")), { repeating = true, locked = true },
+    { description = "Lower brightness" })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qsIpc("brightness", "up")), { repeating = true, locked = true },
+    { description = "Raise brightness" })
+
+-- FIXME : releasing should select and close
 local function enterAltTab(step)
     return function()
-        hl.dispatch(hl.dsp.submap("alttab"))
+        hl.dispatch(hl.dsp.submap("alttab")) -- FIXME: should change name in Overview
         hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", step)))
     end
 end
 hl.bind("ALT + Tab", enterAltTab("next"), { description = "Cycle to the next window" })
 hl.bind("ALT + SHIFT + Tab", enterAltTab("prev"), { description = "Cycle to the previous window" })
 
--- Releasing Alt confirms and exits — the actual mechanism S-37's own card
--- names ("release Alt exits the mode and confirms"). This used to be bound
--- INSIDE hl.define_submap("alttab", ...) on ALT_L/ALT_R with { release =
--- true } — confirmed on real hardware to never fire on the first release,
--- root-caused (not guessed) against Hyprland's own issue tracker
--- (hyprwm/Hyprland#15785, closed without a fix by policy, not because it
--- was resolved): a modifier held continuously from BEFORE a submap is
--- entered does not fire its own release bind on its first release inside
--- that submap, only on a subsequent full press-and-release cycle already
--- inside it. Alt+Tab enters "alttab" with Alt already held, which is
--- exactly that case.
---
--- Moved here instead, to the GLOBAL keymap, with `submap_universal = true`
--- (confirmed real flag, hyprwm/hyprland-wiki content/configuring/core/
--- binds/flags.md: "Will be active no matter the submap") — this is a
--- materially different case from the one #15785 describes: the bind is
--- registered once, before Alt+Tab is ever pressed, not declared inside the
--- submap's own scope, so there is no "held from before entering THIS
--- bind's scope" to trip over. Safe to leave active outside Alt+Tab too
--- (e.g. AltGr on some keyboard layouts is physically the right Alt key):
--- AltTab.qml's own confirm() ignores the IPC call unless the overlay is
--- actually shown, so an unrelated Alt release elsewhere is a harmless
--- no-op, not a stray confirm. Return (inside the submap, below) stays as
--- the always-reliable path regardless of whether this one turns out to
--- fire — it is a fresh key press while already inside the submap, not a
--- modifier held from before entering it, so it never hits #15785 either
--- way.
 local function confirmAndReset()
     hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "confirm")))
     hl.dispatch(hl.dsp.submap("reset"))
@@ -822,13 +304,6 @@ hl.bind("ALT_L", confirmAndReset, { release = true, submap_universal = true })
 hl.bind("ALT_R", confirmAndReset, { release = true, submap_universal = true })
 
 hl.define_submap("alttab", function()
-    -- Binding "ALT + Tab" again inside the submap, not a bare "Tab": Alt
-    -- is still physically held from entering the submap, and this
-    -- project has no confirmed source for whether Hyprland's submap key
-    -- matching requires an exact modifier-state match the way a normal
-    -- global bind does — repeating the held modifier is the safer
-    -- reading, not a confirmed one; flagged for cheap veto if cycling
-    -- does not respond to a second Tab press on real hardware.
     hl.bind("ALT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "next")))
     hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "prev")))
 
@@ -844,12 +319,7 @@ hl.define_submap("alttab", function()
     end)
 end)
 
--- Screenshot/OCR/QR/recording (S-36): a "mode for a rare action" (master
--- plan's own third category), not five-plus separate modifier chords —
--- Print enters the mode, one mnemonic letter picks the action, every
--- action exits back to the global keymap on its own (the documented
--- "same keybind performs multiple actions" pattern, factored through one
--- local helper rather than repeated seven times).
+-- Screenshot + screen recording
 hl.bind("Print", hl.dsp.submap("screenshot"), { description = "Enter the screenshot/recording mode" })
 
 hl.define_submap("screenshot", function()
@@ -864,82 +334,20 @@ hl.define_submap("screenshot", function()
     hl.bind("w", fireAndReset(qsIpc("screenshot", "window")), { description = "Screenshot: active window" })
     hl.bind("f", fireAndReset(qsIpc("screenshot", "fullscreen")), { description = "Screenshot: full screen" })
     hl.bind("o", fireAndReset(qsIpc("screenshot", "ocr")), { description = "Screenshot: OCR a selected area" })
-    hl.bind("q", fireAndReset(qsIpc("screenshot", "qr")), { description = "Screenshot: decode a QR code in a selected area" })
+    hl.bind("q", fireAndReset(qsIpc("screenshot", "qr")),
+        { description = "Screenshot: decode a QR code in a selected area" })
     hl.bind("c", fireAndReset(qsIpc("colorpicker", "pick")), { description = "Screenshot: pick a colour" }) -- S-43
-    -- Found on real hardware: `r` used fireAndReset like every other
-    -- action here, which exits this submap immediately after starting a
-    -- recording -- but recording is the one action here that spans time
-    -- rather than firing once, so that left `SHIFT + r` (stop) bound
-    -- only inside a submap the user had already been kicked out of.
-    -- Confirmed by the user's own test: `qs ipc call record stop`
-    -- directly worked, Shift+R did not -- the handler was always fine,
-    -- the submap just was not active when Shift+R was pressed. `r`
-    -- fires without resetting, staying in this submap so Shift+R stays
-    -- reachable; only the stop action resets back to the global keymap.
+    
     hl.bind("r", hl.dsp.exec_cmd(qsIpc("record", "start")), { description = "Start screen recording" })
     hl.bind("SHIFT + r", fireAndReset(qsIpc("record", "stop")), { description = "Stop screen recording" })
     hl.bind("Escape", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
 end)
 
--- Deliberately NOT bound to anything: Widgets/ContextMenu.qml (mouse-
--- driven, and unwired to any surface by the user's own S-37 decision) and
--- Tooltip/Tooltip.qml (hover-driven, no keyboard trigger makes sense for
--- either).
-
 --------------------------------
 ---- WINDOWS AND WORKSPACES ----
 --------------------------------
 
--- Dynamic workspaces (master plan §2.3, a closed decision) need no rule at
--- all: Hyprland creates a workspace on first use and destroys it once empty
--- by default, which already is "dynamic". What would violate the decision
--- is a static monitor-pinned or `default = true` workspace assignment —
--- none exists here. The btop/Steam dedicated-workspace exception that used
--- to live here is gone — see the interface-rework note immediately below.
-
--- Interface rework (rework.md, "Features to be removed": "there will be no
--- more workspaces specific for a certain program (btop/steam)") — reverses
--- ADR 134 (which itself reversed ADR 122's hidden special-workspace model).
--- The dedicated workspace-12/btop-autostart and workspace-11/Steam window
--- rules, and the btop `hyprland.start` autostart hook (AUTOSTART section,
--- above), are removed; both apps are ordinary windows on whatever workspace
--- is active when they're launched, same as everything else. phi-shell's bar
--- (Bar/modules/Workspaces.qml) no longer renders a pinned-app glyph for any
--- workspace id — plain numbers throughout.
---
--- docs/TODO.md: opening an image used to flash a terminal window open and
--- immediately closed. Both known ways to open one in this system (the
--- launcher's FilesProvider, and yazi's bundled default opener for
--- image/*) bottomed out in a bare `xdg-open`, which resolves through a
--- mimeapps.list default association this repository has never
--- configured — see phi/internal/query/files.go and
--- profiles/base/home/.config/yazi/yazi.toml. First fixed by naming the
--- real, already-installed viewer (imv) explicitly, with its own
--- "-i phios-imv" app id so this rule could target it reliably (same
--- reasoning as "phios-btop" above, not Hyprland's own default, which
--- imv's man page never documents) — the rule below is KEPT for anything
--- still bare-launching imv directly, but both call sites now point at
--- phi-shell's own native image window instead (see the "phios-image-
--- float" rule right after this one, and its own header comment).
---
--- `float` only: DeepWiki's read of Hyprland's own
--- src/config/lua/bindings/LuaBindingsInternal.hpp names the Lua
--- window_rule effect fields as float/tile/fullscreen/move/size/opacity/
--- tag — no `center`. An earlier draft of this rule added `center = true`
--- and a percentage `size`, copied from the classic (non-Lua)
--- `windowrule = float, center, size 60% 70%` shape shown on Hyprland's
--- wiki — dropped once `center` turned up nowhere in the Lua binding's own
--- field list, since this Lua config appears to reject an unrecognized
--- field at parse time (real reports: "Windowrule warnings - Invalid
--- fields - Config Error", hyprwm/Hyprland discussion #12492) — on all
--- three machines, a bad field here would break hyprland.lua entirely,
--- not just this one rule. `float` alone is the one field with real
--- precedent already confirmed in THIS file's own commented
--- "steam-secondary-float" draft above. A specific size/centered position
--- is left for later, once `size`'s exact Lua syntax (string? a pixel or
--- percent pair?) can be confirmed the same careful way, ideally against
--- a live compositor rather than another web search.
 hl.window_rule({
     name  = "imv-float",
     match = { class = "^phios-imv$" },
@@ -947,109 +355,9 @@ hl.window_rule({
     float = true,
 })
 
--- Interface rework (rework.md's custom image window, phi-shell's
--- Images/ImageWindow.qml): a native phi-shell surface now, not an
--- external `imv` process — the "imv-float" rule above stays for anything
--- still bare-launching imv directly, but a new one is needed for the new
--- surface. Quickshell's `FloatingWindow` (the type ImageWindow.qml uses)
--- exposes no settable Wayland app_id to match on the way "phios-imv"
--- above matches imv's `-i` flag — only its window TITLE, which
--- ImageWindow.qml sets to "phios-image — <filename>" specifically so this
--- rule has something stable to match. `title` is a real match field in
--- this Lua binding's own vocabulary (see the commented "steam-secondary-
--- float" draft below, which already matches on `title`), but this exact
--- rule has NOT been confirmed against a live Hyprland session — flagged
--- the same way every other not-yet-hardware-verified rule in this file
--- already is; check on real hardware once phi-shell's own launch path
--- (phi/internal/query/files.go, yazi's opener) is switched from `imv` to
--- `qs ipc call image open <path>`.
 hl.window_rule({
     name  = "phios-image-float",
     match = { title = "^phios-image" },
 
     float = true,
 })
-
--- "Secondary windows floating" is still NOT written: the one real Steam
--- window captured so far is the main library window itself (title
--- "Steam"). Distinguishing a secondary window (Friends List, a chat, a
--- game's own popup) needs either that window's own title from a real
--- `hyprctl clients` capture, or confirmation of how to negate a match in
--- this Hyprland version — real sources disagree on whether its regex
--- engine even supports a negative-lookahead title match at all (some
--- describe ECMA-262 semantics, others RE2 with a separate `negative:`
--- prefix instead), so guessing the mechanism is exactly the same mistake
--- as guessing a class name. Add once a secondary window's real title is
--- captured:
---
--- hl.window_rule({
---     name  = "steam-secondary-float",
---     match = { class = "^steam$", title = "<secondary-title-regex>" },
---     float = true,
--- })
-
------------------
----- GESTURES ----
------------------
-
--- Overview / Alt+Tab recall gesture (S-35 + S-37, unified at OOP-24):
--- three-finger swipe UP opens the unified Alt+Tab / overview surface, DOWN
--- closes it — the vertical axis, clear of the horizontal workspace swipe
--- below. OOP-25: retargeted from the old "overview" IPC name to "alttab" —
--- the surface is one now, opened persistently (no Alt held) by the
--- gesture. Syntax confirmed against the real Hyprland wiki source
--- (hyprwm/hyprland-wiki, configuring/core/binds/gestures.md) rather than
--- assumed — this project's own risk C-06 flag on a fast-moving Lua config
--- API applies here as much as anywhere else in this file.
-hl.gesture({
-    fingers = 3,
-    direction = "up",
-    action = function() hl.exec_cmd(qsIpc("alttab", "open")) end,
-})
-hl.gesture({
-    fingers = 3,
-    direction = "down",
-    action = function() hl.exec_cmd(qsIpc("alttab", "close")) end,
-})
-
--- Three-finger swipe LEFT / RIGHT: next / previous workspace on the
--- focused monitor (user request). Swipe left = content moves left = the
--- next workspace comes in from the right, matching Hyprland's own
--- built-in workspace_swipe direction and the macOS / GNOME convention.
---
--- docs/TODO.md ("switching workspace with a keybind or gesture ... wraps
--- around"): now shares the exact same fix and reasoning as the
--- Super+Ctrl+arrow binds above (see that comment in full) — phi-shell's
--- own bounded, non-wrapping `focusAdjacentWorkspace()` via
--- `qs ipc call workspace next/prev`, not the native `m+1`/`m-1` relative
--- selector this used to send. This is NOT the same "broken exec_cmd
--- string" bug a 2026-09-14 pass on this exact block found and fixed
--- (`hl.exec_cmd("hyprctl dispatch workspace m+1")` — Hyprland's own Lua
--- config rejects the traditional `hyprctl dispatch` string form): this
--- `exec_cmd` runs a plain shell command with no `hyprctl dispatch`
--- involved at all, so that specific rejection does not apply here.
---
--- Hyprland 0.51+ unified the gesture engine, so one `hl.gesture` fires
--- from BOTH the touchpad and the touchscreen — razer has both, and no
--- separate per-device touch config exists to set. zotac has neither and
--- these are simply inert there (ADR 074's capability-driven default; no
--- host guard needed).
---
--- Discrete (a full swipe = one workspace), NOT the old continuous
--- `workspace_swipe` — same proven `action = function()` shape as the
--- up/down binds above. Wrapped in pcall like the Super+wheel block: if
--- this Hyprland build rejects the horizontal direction tokens, the swipe
--- binds are skipped and the rest of this file still loads (a raised error
--- mid-reload discards the whole reload — C-06).
-pcall(function()
-    hl.gesture({
-        fingers = 3,
-        direction = "left",
-        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next") end,
-    })
-    hl.gesture({
-        fingers = 3,
-        direction = "right",
-        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev") end,
-    })
-end)
