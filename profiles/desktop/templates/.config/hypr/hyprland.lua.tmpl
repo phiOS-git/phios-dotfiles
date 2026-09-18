@@ -89,7 +89,7 @@ end)
 ---------------------
 
 local mainMod = "SUPER"
-local qsMod = "ALT_L"
+local qsMod = "SUPER"
 
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("qs -p " .. qsConfigPath .. " ipc call power confirmLogout"),
     { description = "Log out (asks for confirmation)" })
@@ -184,47 +184,6 @@ hl.define_submap("resize", function()
     hl.bind("Return", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
 end)
-
-
------------------
----- GESTURES ----
------------------
-
-hl.gesture({
-    fingers = 3,
-    direction = "up",
-    action = function() hl.exec_cmd(qsIpc("alttab", "open")) end,
-}, { description = "Swipe up to open the Alt+Tab surface" })
-hl.gesture({
-    fingers = 3,
-    direction = "down",
-    action = function() hl.exec_cmd(qsIpc("alttab", "close")) end,
-}, { description = "Swipe up/down to open/close the Alt+Tab surface" })
-
-pcall(function()
-    hl.gesture({
-        fingers = 3,
-        direction = "left",
-        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next") end,
-    }, { description = "Swipe left/right to switch workspaces" })
-    hl.gesture({
-        fingers = 3,
-        direction = "right",
-        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev") end,
-    }, { description = "Swipe left/right to switch workspaces" })
-end)
-
--- hl.gesture({
---     fingers = 4,
---     direction = "in",
---     action = function() hl.exec_cmd(qsIpc("launcher", "open")) end,
--- }, { description = "Open the launcher" })
--- hl.gesture({
---     fingers = 4,
---     direction = "out",
---     action = function() hl.exec_cmd(qsIpc("launcher", "close")) end,
--- }, { description = "Close the launcher" })
-
 
 --------------------------------
 ---- PHI-SHELL KEYBINDINGS  ----
@@ -345,6 +304,48 @@ hl.define_submap("screenshot", function()
     hl.bind("Escape", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
 end)
+
+
+-----------------
+---- GESTURES ----
+-----------------
+
+hl.gesture({
+    fingers = 3,
+    direction = "up",
+    action = function() hl.exec_cmd(qsIpc("alttab", "open")) end,
+}, { description = "Swipe up to open the Alt+Tab surface" })
+hl.gesture({
+    fingers = 3,
+    direction = "down",
+    action = function() hl.exec_cmd(qsIpc("alttab", "close")) end,
+}, { description = "Swipe up/down to open/close the Alt+Tab surface" })
+
+pcall(function()
+    hl.gesture({
+        fingers = 3,
+        direction = "left",
+        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next") end,
+    }, { description = "Swipe left/right to switch workspaces" })
+    hl.gesture({
+        fingers = 3,
+        direction = "right",
+        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev") end,
+    }, { description = "Swipe left/right to switch workspaces" })
+end)
+
+-- hl.gesture({
+--     fingers = 4,
+--     direction = "in",
+--     action = function() hl.exec_cmd(qsIpc("launcher", "open")) end,
+-- }, { description = "Open the launcher" })
+-- hl.gesture({
+--     fingers = 4,
+--     direction = "out",
+--     action = function() hl.exec_cmd(qsIpc("launcher", "close")) end,
+-- }, { description = "Close the launcher" })
+
+
 
 --------------------------------
 ---- WINDOWS AND WORKSPACES ----
