@@ -26,6 +26,7 @@ ripgrep
 jq
 resvg
 btop
+
 tesseract
 tesseract-data-eng
 
@@ -36,7 +37,7 @@ tesseract-data-eng
 # and profiles/base/services-system.txt for which units this profile
 # declares.
 clamav
-
+fastfetch
 # Out-of-plan: bugfixing. openresolv provides /usr/bin/resolvconf, which
 # wg-quick calls to install a tunnel's `DNS =` servers on `up` and remove
 # them on `down`. Without a resolvconf that actually manages

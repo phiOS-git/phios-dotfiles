@@ -12,6 +12,7 @@ setopt SHARE_HISTORY
 PROMPT='%F{cyan}%n@%m%f %F{yellow}%~%f %# '
 
 eval "$(zoxide init zsh)"
+eval "ssh-agent -s"
 
 # history substring search
 source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
@@ -43,3 +44,7 @@ source "$ZDOTDIR/theme.zsh"
 # phiOS AI agent shell helpers — shipped by the desktop profile only
 # (absent on mini, S-76). Defines `phi-code` for a contained A2 session.
 [ -r "$ZDOTDIR/agent.zsh" ] && source "$ZDOTDIR/agent.zsh"
+
+
+# GREETING
+clear && fastfetch
