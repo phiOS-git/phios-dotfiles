@@ -203,7 +203,7 @@ hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(qsIpc("powerMenu", "trigger")),
 --     { description = "Toggle the status panel" })
 hl.bind(qsMod .. " + N", hl.dsp.exec_cmd(qsIpc("notifications", "notifications")),
     { description = "Toggle the notification panel" })
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
+hl.bind(mainMod .. " + SHIFT + V", hl.dsp.exec_cmd(qsIpc("notifications", "clipboard")),
     { description = "Open the clipboard history" }) -- FIXME: it's still called "notifications", "clipboard" but they are separated now (to fix in phi-shell)
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })
 hl.bind(qsMod .. " + P", hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { description = "Toggle the phi agent panel" })
