@@ -111,7 +111,7 @@ PHI_ANSI_4='#596d82'          # blue           -> info
 PHI_ANSI_5='#8e5f6b'          # magenta        -> accent
 PHI_ANSI_6='#1f7878'          # cyan           -> new anchor, H=195° C=0.08, solved 4.8:1
 PHI_ANSI_7='#c5c4c0'          # white          -> bg-3
-PHI_ANSI_8='#736f66'          # bright black   -> fg-2 (S-50's fixed value)
+PHI_ANSI_8='#736f66'          # bright black   -> fg-2
 PHI_ANSI_9='#915048'          # bright red     -> error hue, higher C, solved 5.6:1
 PHI_ANSI_10='#4e6a37'         # bright green   -> success hue, higher C, solved 5.6:1
 PHI_ANSI_11='#785c09'         # bright yellow  -> warn hue, higher C, solved 5.8:1
