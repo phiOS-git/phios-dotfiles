@@ -5,12 +5,12 @@ zoxide
 fzf
 fd
 bat
-ttf-iosevkatermslab-nerd     # PATCHED (ADR 054 violation). Remove ONLY after the S-51 yazi/btop glyph check passes on real hardware — not before (§6.4). Superseded below.
-adobe-source-code-pro-fonts  # font-mono, unpatched (Q-N01 closed: Source Code Pro, S-51)
-adobe-source-serif-fonts     # font-reading (§6.4)
-adobe-source-sans-fonts      # font-ui (§6.4)
-ttf-nerd-fonts-symbols-mono  # font-symbol, glyphs-only split of ttf-nerd-fonts-symbols (§15.2) — Mono metrics match the terminal grid; symbol_map needs an exact fc-list family name, verify once installed
-noto-fonts                   # targeted fallback: Greek (Φ) + extended Latin only — no noto-fonts-cjk (Q-18)
+ttf-iosevkatermslab-nerd     # Patched; remove after glyph check passes.
+adobe-source-code-pro-fonts  # font-mono, unpatched.
+adobe-source-serif-fonts     # font-reading.
+adobe-source-sans-fonts      # font-ui.
+ttf-nerd-fonts-symbols-mono  # font-symbol glyphs; Mono metrics for terminal grid.
+noto-fonts                   # Targeted fallback: Greek (Φ) + extended Latin only.
 yazi
 neovim
 nnn
@@ -38,15 +38,9 @@ tesseract-data-eng
 # declares.
 clamav
 fastfetch
-# Out-of-plan: bugfixing. openresolv provides /usr/bin/resolvconf, which
-# wg-quick calls to install a tunnel's `DNS =` servers on `up` and remove
-# them on `down`. Without a resolvconf that actually manages
-# /etc/resolv.conf, `phi vpn up` needs a manual `sudo resolvconf -u` and
-# `phi vpn down` leaves /etc/resolv.conf pointing at the dead tunnel
-# resolver (looks like "no internet"). extra/T0. NOT in master plan §15
-# (only wireguard-tools is) — added on the user's explicit instruction;
-# §15.2 needs a matching line. Conflicts with systemd-resolvconf over
-# /usr/bin/resolvconf — pacman resolves it at install time.
+# openresolv provides /usr/bin/resolvconf, which wg-quick uses to manage
+# tunnel DNS servers. Without it, `phi vpn` requires manual resolvconf calls.
+# Conflicts with systemd-resolvconf; pacman resolves at install time.
 openresolv
 
 # Requested: `phi fan` (real hwmon PWM control, internal/fan) needs the
