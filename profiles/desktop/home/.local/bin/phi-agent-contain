@@ -1,35 +1,31 @@
 #!/usr/bin/env bash
 #
 # phi-agent-contain — start an AI agent instance inside a bubblewrap
-# containment built FROM EMPTY (docs/phios-agente.md §4, ADR 087).
+# containment built from empty.
 #
 #   phi-agent-contain a1|a2 [--dry-run] -- COMMAND [ARG...]
 #
-# A path that is not mounted below does not exist for the process, whatever
-# command it runs (§4.1). This script is the ONLY way the two opencode
-# instances are ever launched: the systemd user units (S-71/S-74) and
-# `phi agent ask` (S-74) all go through it. There is no path that starts an
-# agent outside the containment, by design (§4.7, ADR 090).
+# A path not mounted does not exist for the process. This script is the ONLY
+# way opencode instances are launched (systemd user units and `phi agent ask`
+# all go through it). There is no path that starts an agent outside the
+# containment.
 #
-# Fail-closed (§4.7 / V-04): if bubblewrap is missing, unusable, or the
-# kernel refuses the namespaces, this script prints one line to stderr and
-# exits non-zero WITHOUT running COMMAND. A unit whose ExecStart is this
-# script therefore lands in `failed` with no engine process — which is the
-# whole of V-04. There is deliberately no degraded mode.
+# Fail-closed: if bubblewrap is missing, unusable, or the kernel refuses
+# namespaces, this script prints one line to stderr and exits non-zero WITHOUT
+# running COMMAND. A unit whose ExecStart is this script lands in `failed` with
+# no engine process. There is deliberately no degraded mode.
 #
 # What this script does NOT do, on purpose:
-#   - It never reads the caller's environment into the container: --clearenv
-#     drops everything and only the explicit allowlist below (add_env calls)
-#     is put back (§4.6). The SSH-agent socket, the session bus, Wayland, and
-#     every *_API_KEY / *_TOKEN are excluded by construction, not by a filter.
-#   - It never enables a systemd unit, installs a package, or writes outside
-#     the agent's own XDG trees.
+#   - Never reads the caller's environment into the container: --clearenv drops
+#     everything and only the explicit allowlist below (add_env calls) is put
+#     back. SSH-agent socket, session bus, Wayland, *_API_KEY /*_TOKEN excluded.
+#   - Never enables a systemd unit, installs a package, or writes outside the
+#     agent's own XDG trees.
 #
 # Dependency budget: bash + coreutils + bubblewrap. No jq, no python.
 #
 # UNVERIFIED FROM THE BUILD MACHINE: this whole invocation is written from
-# §4 and bwrap(1); it has never run. V-01..V-04 (phios-agente.md §15) are
-# the proof and are USER operations on zotac / razer. See PROGRESS.md S-70.
+# bwrap(1) documentation; it has never run on a real machine.
 
 set -euo pipefail
 
@@ -53,11 +49,11 @@ usage() {
 	--workdir DIR   (a2 only) the single directory mounted read-write at
 	                /home/agent/work — the A2 session's whole world. Refused if
 	                it matches ~/.config/phi-agent/code-blocklist or an always-
-	                denied root. Normally passed by `phi agent code`; the
-	                blocklist here is a guard-rail, not the boundary (§4.1).
+	                denied root. Normally passed by `phi agent code`; blocklist
+	                is a guard-rail, not the boundary.
 
-	A1's per-project read-only folders of interest (phios-agente-delta.md D-02)
-	come from <project>/folders.list, written by `phi agent project`.
+	A1's per-project read-only folders of interest come from <project>/
+	folders.list, written by `phi agent project`.
 
 	Environment (from ~/.config/phi-agent/env, see env.example):
 	  PHI_AGENT_PROJECT          A1 active project name              (default: none)
@@ -91,14 +87,14 @@ done
 [[ -n $instance ]] || { usage >&2; die "no instance (a1|a2)"; }
 ((${#cmd[@]})) || die "no command after --"
 if ((remote)); then
-	[[ $instance == a2 ]] || die "--remote is A2 only (phios-agente.md §10.3)"
+	[[ $instance == a2 ]] || die "--remote is A2 only"
 fi
 if [[ -n $workdir ]]; then
-	[[ $instance == a2 ]] || die "--workdir is A2 only (phios-agente-delta.md §3.3)"
+	[[ $instance == a2 ]] || die "--workdir is A2 only"
 fi
 
 # ---------------------------------------------------------------------------
-# Fail-closed preflight (V-04)
+# Fail-closed preflight: containment must be available and working
 # ---------------------------------------------------------------------------
 
 bwrap=$(command -v bwrap 2>/dev/null) || die "containment unavailable: bwrap not found"
@@ -128,8 +124,7 @@ data_home=${XDG_DATA_HOME:-$HOME/.local/share}
 state_home=${XDG_STATE_HOME:-$HOME/.local/state}
 cache_home=${XDG_CACHE_HOME:-$HOME/.cache}
 
-# Per-instance XDG trees (§3.3, ADR 086): separate config, data, state and
-# cache, from which separate credentials and history follow. The two
+# Per-instance XDG trees: separate config, data, state and cache. The two
 # instances never share a path.
 AGENT_CONFIG=$conf_home/phi-agent/$instance
 AGENT_DATA=$data_home/phi-agent/$instance
@@ -169,11 +164,8 @@ mounts_dir=$conf_home/phi-agent/mounts
 [[ -d $mounts_dir ]] || die "containment unavailable: $mounts_dir not found"
 
 # The instance's own XDG roots must exist for the writable binds to work.
-# These belong to this instance alone — creating them here is not a
-# perimeter decision, it is making the perimeter's own write areas real on
-# a machine that has never run the agent. The §8.2 data model
-# (personalita/, projects/) is NOT created here: that is S-73 and
-# `phi agent project`.
+# These belong to this instance alone. The data model (personalita/,
+# projects/) is NOT created here; it is created by `phi agent project`.
 mkdir -p -- "$AGENT_DATA" "$AGENT_STATE" "$AGENT_CACHE"
 [[ $instance == a2 ]] && mkdir -p -- "$A2_TOOLCHAIN_CACHE"
 
@@ -190,11 +182,10 @@ mkdir -p -- "$AGENT_DATA" "$AGENT_STATE" "$AGENT_CACHE"
 #   dir  DEST         create an empty directory in the container
 #   sym  TARGET LINK  create a symlink in the container
 #
-# Ordering matters and is intentional: bubblewrap applies binds left to
-# right and a later bind wins. mounts/a1.paths binds the project read-only
-# first, then re-binds output/ and proposte/ writable underneath it — so
-# memoria.md and materiali/ stay read-only with no explicit rule, and
-# S-73 only has to make that guarantee louder, not create it (§8.4).
+# Ordering matters: bubblewrap applies binds left to right; later bind wins.
+# mounts/a1.paths binds the project read-only first, then re-binds output/
+# and proposte/ writable underneath — so memoria.md and materiali/ stay
+# read-only with no explicit rule.
 
 bind_args=()
 
@@ -228,7 +219,7 @@ read_paths() {
 		kind=$1; a=$(expand "${2:-}"); b=$(expand "${3:-}")
 		case $kind in
 			ro|rw)
-				# Required: refuse to start if the source is missing (§4.7).
+				# Required: refuse to start if source is missing.
 				[[ -n $a ]] || die "$file: '$kind' with no source (unset @VAR@?)"
 				[[ -n $b ]] || b=$a
 				[[ -e $a ]] || die "containment unavailable: required mount source missing: $a"
@@ -256,9 +247,9 @@ read_paths "$mounts_dir/$instance.paths"
 # express). These come AFTER the static binds so a later --bind wins.
 # ---------------------------------------------------------------------------
 
-# Always-denied roots for a mounted directory (phios-agente-delta.md §3.4).
-# The same set is enforced by `phi agent code` in Go; this is defence in
-# depth for a direct `phi-agent-contain --workdir` call.
+# Always-denied roots for a mounted directory. The same set is enforced by
+# `phi agent code` in Go; this is defence in depth for a direct
+# `phi-agent-contain --workdir` call.
 _resolve() { cd -- "$1" 2>/dev/null && pwd -P || printf '%s' "$1"; }
 
 path_denied() {
@@ -296,11 +287,10 @@ path_denied() {
 }
 
 if [[ $instance == a1 ]]; then
-	# Per-personality (phios-agente-delta.md D-01): the whole personalita/
-	# tree was just re-bound read-only by a1.paths — so every <name>/memoria.md
-	# is read-only (the agent cannot write its own memory at any level,
-	# ADR 094). Re-bind each <name>/proposte/ writable underneath, so a memory
-	# proposal at personality level can still be dropped.
+	# Per-personality: the whole personalita/ tree was re-bound read-only by
+	# a1.paths — so every <name>/memoria.md is read-only (agent cannot write
+	# memory at any level). Re-bind each <name>/proposte/ writable underneath
+	# so memory proposals at personality level can still be dropped.
 	if [[ -d $AGENT_DATA/personalita ]]; then
 		for pdir in "$AGENT_DATA"/personalita/*/; do
 			[[ -d $pdir ]] || continue
@@ -310,9 +300,9 @@ if [[ $instance == a1 ]]; then
 		done
 	fi
 
-	# Folders of interest (phios-agente-delta.md D-02 / §4.3.1): real host
-	# directories, READ-ONLY, from <project>/folders.list (written by
-	# `phi agent project`). A blocked or missing path fails the launch.
+	# Folders of interest: real host directories, READ-ONLY, from
+	# <project>/folders.list (written by `phi agent project`). A blocked or
+	# missing path fails the launch.
 	folders_list=$PROJECT_DIR/folders.list
 	if [[ -r $folders_list ]]; then
 		fidx=0
@@ -332,8 +322,8 @@ if [[ $instance == a1 ]]; then
 fi
 
 if [[ $instance == a2 && -n $workdir ]]; then
-	# The single read-write working directory for this A2 session
-	# (phios-agente-delta.md §3.3). Everything else under $HOME is invisible.
+	# The single read-write working directory for this A2 session.
+	# Everything else under $HOME is invisible.
 	real_workdir=$(cd -- "$workdir" 2>/dev/null && pwd -P) \
 		|| die "not a directory: $workdir"
 	if reason=$(path_denied "$real_workdir"); then
@@ -343,7 +333,7 @@ if [[ $instance == a2 && -n $workdir ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Environment allowlist (§4.6) — put back ONLY these, after --clearenv.
+# Environment allowlist — put back ONLY these, after --clearenv
 # ---------------------------------------------------------------------------
 
 setenv_args=(--clearenv)
@@ -366,22 +356,19 @@ net_args=()
 case $instance in
 	a1)
 		# A1 keeps the host network namespace: its job is to fetch pages the
-		# search turned up, and control there is interactive approval at the
-		# engine, not a static list (§5.2). It reaches the brokering service
-		# on host loopback directly.
+		# search turned up, with interactive approval at the engine. It reaches
+		# the brokering service on host loopback directly.
 		[[ -n $PROJECT_NAME ]] && add_env PHI_AGENT_PROJECT "$PROJECT_NAME"
 		;;
 	a2)
-		# A2's network boundary IS the namespace, not a variable (§5.1):
-		# --unshare-net gives it a fresh namespace with only a down
-		# loopback. The ONLY way out is two unix sockets, created on the
-		# host and reachable through the bridge dir bound below:
-		#   net/proxy.sock     -> host tinyproxy (the §5.1 egress whitelist)
-		#   net/broker-a2.sock -> the A2 credential broker (§6.2)
-		# The in-container command is wrapped further down with two socat
-		# forwarders that turn those sockets into loopback TCP ports. A
-		# process that unsets HTTP(S)_PROXY reaches tinyproxy on nothing
-		# and is left with NO network, not free network — which is V-03.
+		# A2's network boundary IS the namespace: --unshare-net gives it a fresh
+		# namespace with only a down loopback. The ONLY way out is two unix
+		# sockets, created on the host and reachable through the bridge dir:
+		#   net/proxy.sock     -> host tinyproxy (egress whitelist)
+		#   net/broker-a2.sock -> the A2 credential broker
+		# The in-container command is wrapped with two socat forwarders that
+		# turn those sockets into loopback TCP ports. A process that unsets
+		# HTTP(S)_PROXY reaches only the broker, not the free network.
 		net_args+=(--unshare-net)
 
 		bridge_dir=$state_home/phi-agent/net
@@ -411,11 +398,10 @@ case $instance in
 			/usr/bin/socat TCP-LISTEN:8790,bind=127.0.0.1,fork,reuseaddr UNIX-CONNECT:/run/phi-agent/net/broker-a2.sock &'
 
 		if ((remote)); then
-			# --remote (§10.3): the ONLY time A2 gets a password and an
-			# INBOUND socket. A default A2 launch has neither, so V-02 run
-			# against it stays clean with nothing to explain. The overlay
-			# address is bound by the HOST unit (phi-agent-a2-remote.service),
-			# never in here and never in the repo — this side only exposes
+			# --remote: the ONLY time A2 gets a password and an INBOUND socket.
+			# A default A2 launch has neither, so remote sessions are separate.
+			# The overlay address is bound by the HOST unit
+			# (phi-agent-a2-remote.service), never here — this side only exposes
 			# opencode's loopback port on a unix socket the host reads.
 			#
 			# The password is bind-mounted as a file and read by the wrapper
@@ -441,7 +427,7 @@ case $instance in
 esac
 
 # ---------------------------------------------------------------------------
-# Namespaces and process rules (§4.6)
+# Namespaces and process rules
 # ---------------------------------------------------------------------------
 
 ns_args=(
