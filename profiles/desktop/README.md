@@ -44,11 +44,10 @@ this file calls is unchanged between them.
 **Result: no deprecation found.** Every symbol this file calls is present,
 unchanged in shape, and not flagged deprecated anywhere in the Hyprland
 `v0.55.0`→`v0.56.2` release notes (scanned for every entry mentioning
-`lua`) or in the current wiki. The one open question S-24 left for this
-step — whether `hyprland.start` can refire on a plain `hyprctl reload` — is
-resolved: the events reference documents it as "Emitted once on start", so
-it cannot; see the comment above `hl.on("hyprland.start", ...)` in
-`hyprland.lua` for the fix this unblocked.
+`lua`) or in the current wiki. Whether `hyprland.start` can refire on a plain
+`hyprctl reload` is resolved: the events reference documents it as "Emitted
+once on start", so it cannot; see the comment above `hl.on("hyprland.start",
+...)` in `hyprland.lua` for the fix this resolved.
 
 **Not in scope here:** `phi-shell`'s own `Quickshell.Hyprland` usage
 (`Services/HyprlandBridge.qml` — workspace list, active window, read over

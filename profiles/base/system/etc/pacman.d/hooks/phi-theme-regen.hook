@@ -1,21 +1,15 @@
-# phiOS — pacman hook (S-45, master plan §7.3: "pacman hook (repository
-# file, applied dall'utente) che rigenera le config del tema dopo un
-# upgrade che tocca un target di tema"). /etc material, NEVER applied by
-# phios-install (S-05's own boundary) — copy to /etc/pacman.d/hooks/,
-# manually, after reading it.
+# phiOS pacman hook to regenerate themed configs after package upgrade.
+# /etc material, NEVER applied by phios-install — copy to /etc/pacman.d/hooks/
+# manually after reading.
 #
-# Targets are every package whose upgrade could put stale config back in
-# place of phi theme set's own output: the four GTK/Qt packages S-41
-# templated a themed file for, kitty (S-03's own templated target), and
-# phi/phi-shell themselves (a phi upgrade can change the template
-# contract, S-12's own README note on that).
+# Targets packages whose upgrade could put stale config back: GTK/Qt packages,
+# kitty, phi, phi-shell. Upgrades to phi can change template contract.
 #
 # `Exec` cannot be an inline shell command — pacman's hook format takes a
-# single executable path, no shell interpretation — so the actual logic
-# lives in the sibling script this hook calls,
-# /usr/local/bin/phi-theme-regen-hook.sh (also /etc-material here, also
-# never applied automatically). Both files unverified end to end: no real
-# pacman transaction has run either of them.
+# single executable path only — so logic lives in /usr/local/bin/
+# phi-theme-regen-hook.sh (also /etc material, also never applied
+# automatically). Both files unverified: no real pacman transaction has run
+# them yet.
 
 [Trigger]
 Type = Package
