@@ -192,7 +192,7 @@ local function qsIpc(target, fn)
     return "qs -p " .. qsConfigPath .. " ipc call " .. target .. " " .. fn
 end
 
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")), { description = "Toggle the launcher" }) -- architettura §8.2.2 S1: "Runner con Super+Spazio", verbatim
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(qsIpc("launcher", "toggle")), { description = "Toggle the launcher" })
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(qsIpc("powerMenu", "trigger")),
     { description = "Power menu (double-press to lock instantly)" })
 

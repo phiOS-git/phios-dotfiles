@@ -1,33 +1,20 @@
-# phiOS — kitty font configuration (S-51, master plan §6.4).
+# phiOS — kitty font configuration.
 #
 # Separate from theme.conf.tmpl (colours) on purpose: this file changes only
-# when a font token changes, not on every `phi theme set`, and keeping the
-# two apart means a font edit never touches a colour-only diff or vice versa.
+# when a font token changes, not on every `phi theme set`. Font edits never
+# touch colour-only diffs or vice versa.
 #
-# §6.4's fallback chain, generated from tokens rather than hand-written:
+# Fallback chain, generated from tokens rather than hand-written:
 #   1. font-mono (primary)
-#   2. font-symbol (glyphs only)
-#   3. targeted Noto (Greek + extended Latin; no CJK — Q-18, no noto-fonts-cjk
-#      package is declared anywhere in this repo)
-# kitty resolves `font_family` and its own fallback through fontconfig on
-# Linux, so step 3 is already covered by fontconfig/fonts.conf.tmpl in this
-# same profile — kitty does not need Noto named here again.
+#   2. font-symbol (glyphs only, Nerd Fonts)
+#   3. targeted Noto (Greek + extended Latin, via fontconfig/fonts.conf.tmpl)
 #
-# `symbol_map` is the part fontconfig's own fallback cannot cover: kitty does
-# NOT rely on fontconfig alone for missing glyphs (§6.4's own "copertura del
-# caso yazi" note) — the codepoints below are Private Use Area, and without
-# an explicit symbol_map kitty renders them as boxes even with a correct
-# fontconfig fallback chain in place. Ranges are the published Nerd Fonts
-# v3.5.0 glyph-set table (github.com/ryanoasis/nerd-fonts wiki, "Glyph Sets
-# and Code Points" — fetched and quoted this session, not guessed): Pomicons,
-# Powerline, Powerline Extra, Font Awesome Extension, Weather, Seti-UI +
-# Custom, Devicons, Codicons, Font Awesome, Font Logos, Octicons + two extra
-# symbols, IEC Power Symbols, Material Design Icons. This is what yazi's file
-# icons and any other Nerd-Font-glyph TUI (btop included) need to stop
-# rendering as boxes once the patched font (ttf-iosevkatermslab-nerd) is
-# removed — verify with a real `yazi`/`btop` screenshot BEFORE removing it,
-# per this step's own DONE WHEN. Unverified end to end: no compositor or
-# real kitty instance here to confirm the glyphs actually resolve.
+# symbol_map is critical: kitty does NOT rely on fontconfig alone for
+# missing glyphs. The codepoints below are Private Use Area. Without explicit
+# symbol_map, kitty renders them as boxes. Ranges are from Nerd Fonts v3.5.0
+# glyph-set table: Pomicons, Powerline, Font Awesome, Devicons, Codicons,
+# Material Design Icons, and others. This is what yazi and other Nerd-Font
+# TUIs need to render correctly.
 font_family      ${PHI_FONT_MONO}
 
 symbol_map U+E000-U+E00A ${PHI_FONT_SYMBOL}
