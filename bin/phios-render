@@ -2,21 +2,19 @@
 #
 # phios-render — render one template against the design tokens.
 #
-# This is the bootstrap half of the generation contract (master plan §6.7).
 # It renders; it does not decide where the output goes and it does not reload
 # anything. design/adapters.txt owns destinations and reload commands, and
-# `phi theme set` (S-12) is what reads it — at which point this script becomes
-# redundant and goes away. Until `phi` exists, this is how a template is
-# turned into a configuration file by hand.
+# `phi theme set` is what reads it. Until `phi` exists, this is how a template
+# is turned into a configuration file by hand.
 #
 # It deliberately takes an explicit template path rather than driving off
-# adapters.txt: every row there points into profiles/, which S-03 fills.
+# adapters.txt.
 #
 # Exit codes
 #   0  rendered
 #   2  error
 #
-# Dependency budget (R9): bash, coreutils, gettext.
+# Dependency budget: bash, coreutils, gettext.
 
 set -euo pipefail
 

@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 #
 # phios-install — the single entry point for applying this repository to a
-# machine (master plan §5.1–§5.5).
+# machine.
 #
 # The machines are already configured, so the first run of this installer is an
-# update, not an installation. That shapes everything: it must be idempotent
-# (R1), previewable before it touches anything (R2), able to remove what it
-# once created and no longer declares (R3), and able to report drift between
-# repository and machine (R10).
+# update, not an installation. That shapes everything: it must be idempotent,
+# previewable before it touches anything, able to remove what it once created
+# and no longer declares, and able to report drift between repository and
+# machine.
 #
 # What it never does: touch /etc, run systemctl, or install anything that is
-# not a T0 pacman package.
+# not an Arch pacman package.
 #
 # Exit codes
 #   0  success, or --check / --system-diff found nothing

@@ -1,17 +1,16 @@
-# phiOS — colour tokens, dark variant (master plan §6.2).
+# phiOS — colour tokens, dark variant.
 #
 # Read design/tokens.common.sh first for the format contract and the naming
-# rule. Both variants are permanent and neither derives from the other (R6);
-# every token defined here is defined in tokens.light.sh too.
+# rule. Both variants are permanent and independent; every token defined here
+# is defined in tokens.light.sh too.
 #
 # Colours are #rrggbb. The one exception is PHI_OVERLAY_SCRIM, which is
 # #rrggbbaa because a scrim without alpha is not a scrim.
 #
 # ---------------------------------------------------------------------------
-# PROVENANCE — S-50, the real derivation §6.2 requires ("si deriva
-# algoritmicamente... in OKLCH"), executed and checked against `phi theme
-# check` (zero violations, both variants — see phi/internal/theme/check.go).
-# Every value below is one of:
+# PROVENANCE — colours are derived algorithmically in OKLCH and checked
+# against `phi theme check` (see phi/internal/theme/check.go for the WCAG
+# contrast validation). Every value below is one of:
 #
 #   [carried]   unchanged since the value that renders on zotac and razer
 #               today. Changing one of these changes what the machines
@@ -72,7 +71,7 @@
 # to declare a light/dark preference rather than a colour reads this.
 PHI_VARIANT='dark'
 
-# --- Tier 0: structure (§6.2) ----------------------------------------------
+# --- Tier 0: structure -----------------------------------------------
 # bg-N rises toward the viewer: bg-0 is the deepest surface, bg-3 the most
 # elevated. fg-N recedes: fg-0 is primary text, fg-3 the faintest mark.
 PHI_BG_0='#1a1918'            # [carried] PHI_BG
@@ -88,27 +87,20 @@ PHI_FG_3='#635e55'            # [derived] same H/C as fg-2, ramp point 3 of 4
 PHI_BORDER='#242320'          # [carried] kitty inactive_border_color
 PHI_BORDER_STRONG='#3e3d3a'   # [filled]  same hue at L=0.360
 PHI_OVERLAY_SCRIM='#00000099' # [filled]  black at 60%
-# Requested: "the dim from screenshot, overview (alt+tab)
-# and warning/alert ... should cover [the bar] ... have the 2 types of dim
-# have different intensity as well (the one that overlays should be
-# stronger)." Same hue as PHI_OVERLAY_SCRIM, a harder alpha step — for the
-# small set of full-attention blocking surfaces (screenshot selection,
-# Alt-Tab/overview, battery/timer alerts, a destructive confirmation),
-# never the everyday panel scrims (notifications, chat, settings, …),
-# which keep PHI_OVERLAY_SCRIM unchanged.
+# Stronger variant: for full-attention blocking surfaces (screenshot
+# selection, Alt-Tab/overview, battery/timer alerts, destructive
+# confirmations), not everyday panel scrims (notifications, chat, settings).
 PHI_OVERLAY_SCRIM_STRONG='#000000cc' # [filled]  black at 80%
 
-# --- Tier 1: accent (§6.2) --------------------------------------------------
-# One role and one only: active state, focus, primary interactivity. The
-# settings panel will make it configurable, which is the reason it is a single
-# token and not a family.
+# --- Tier 1: accent -----------------------------------------------
+# One role and one only: active state, focus, primary interactivity. Kept as
+# a single token (not a family) to allow per-user configuration.
 PHI_ACCENT='#d3a0ac'          # [carried] PHI_ACCENT
 PHI_ACCENT_FG='#1a1918'       # [carried] kitty cursor_text_color, btop selected_fg
 
-# --- Tier 2: semantic (§6.2) ------------------------------------------------
-# On threshold or state only, never as decoration. The direction is oxide,
-# ochre, moss, slate, all desaturated; the values are a hue direction, not a
-# decision, and §6.2 says so explicitly.
+# --- Tier 2: semantic -----------------------------------------------
+# On threshold or state only, never as decoration. Hue directions: oxide
+# (red), ochre (yellow), moss (green), slate (blue), all desaturated.
 PHI_ERROR='#b57b73'           # [carried] PHI_ERROR
 PHI_ERROR_FG='#1a1918'        # [carried] yazi count_cut foreground
 PHI_WARN='#c0a874'            # [carried] PHI_WARN
@@ -118,19 +110,14 @@ PHI_SUCCESS_FG='#1a1918'      # [carried] yazi count_copied foreground
 PHI_INFO='#7f95ab'            # [carried] PHI_INFO
 PHI_INFO_FG='#1a1918'         # [carried] same pairing
 
-# --- Tier 3: syntax (§6.2) --------------------------------------------------
-# For disambiguating categories that appear at the same time: code, logs,
-# diffs. S-50 derives each one on the same hue direction as the Tier 1/2
-# role it disambiguates against, but at its OWN lightness — solved for a
-# single shared syntax-legibility target (5.6:1 against bg-0, dark) instead
-# of inheriting that role's own individual contrast. This is why every value
-# below differs from its Tier 1/2 counterpart even though the hue is shared:
-# a keyword no longer renders as the literal same hex as the accent used for
-# focus rings, and all six syntax roles read as one consistent weight of ink
-# rather than five different UI-element weights borrowed wholesale. Solved
-# with the gamut-safety check documented above; syntax-2's chroma was backed
-# off from success's own 0.0639 to 0.0579 — full chroma at this lightness
-# fell outside sRGB.
+# --- Tier 3: syntax -----------------------------------------------
+# For disambiguating categories in code, logs, diffs that appear at the same
+# time. Each shares a hue direction with its Tier 1/2 counterpart but is
+# solved for its own lightness — a consistent syntax-legibility target
+# (5.6:1 against bg-0) instead of inheriting each role's individual contrast.
+# Every value differs from its Tier 1/2 counterpart in lightness: keywords
+# render distinct from accent focus rings, and all six syntax roles read as
+# one consistent ink weight rather than five different UI weights.
 PHI_SYNTAX_1='#b68490'        # keyword          -> accent hue,  H=3.06°   C=0.0624
 PHI_SYNTAX_2='#829873'        # string           -> success hue, H=132.59° C=0.0579
 PHI_SYNTAX_3='#a68f5b'        # number, constant -> warn hue,    H=85.85°  C=0.0745
@@ -138,32 +125,17 @@ PHI_SYNTAX_4='#7e94a9'        # function         -> info hue,    H=248.45° C=0.
 PHI_SYNTAX_5='#bd837b'        # type             -> error hue,   H=27.99°  C=0.0741
 PHI_SYNTAX_6='#878279'        # operator, punct. -> fg-2 (same token, no separate hue: muted ink, not a category)
 
-# --- Selection and terminal cursor (§6.2) -----------------------------------
+# --- Selection and terminal cursor -----------------------------------------
 PHI_SELECTION_BG='#242320'    # [carried] kitty selection_background
 PHI_SELECTION_FG='#d6d1c9'    # [carried] kitty selection_foreground
 PHI_CURSOR_TERM='#d3a0ac'     # [carried] kitty cursor — separate from the GUI cursor
 
-# --- ANSI 16 (§6.2, ADR 053) ------------------------------------------------
-# This is the base16-style surface ADR 053 asks for: the sixteen slots every
-# terminal tool assumes for errors, warnings, diffs and file types. It is not
-# a second palette — every chromatic slot is one of the tokens above, or a
-# derivation on the same anchor.
-#
-# S-50 fixes the two defects §6.2 flagged:
-#   - Cyan (slot 6/14) collided with blue (slot 4/12) because nothing in
-#     Tier 1/2/3 owns a cyan hue — info/slate sits at H=248° (blue-violet),
-#     success/moss at H=132° (green). A genuinely new anchor, H=195°
-#     (a teal-cyan, consistent with the retro/CAD chroma level of the other
-#     anchors), sits between them and is used ONLY here — no other tier
-#     references it, so it costs nothing to the four-hue Tier 2 direction.
-#   - Bright was identical to normal for all six chromatic pairs. Fixed by
-#     solving each bright slot on its normal slot's own hue at a HIGHER
-#     chroma (roughly ×1.35, gamut-safety-checked the same way as Tier 3)
-#     and a higher contrast target — more vivid AND more prominent, not
-#     just relabelled.
-# Achromatic slots (0/7/8/15) were not flagged and are untouched, still
-# [carried]/[derived from fg-2] exactly as before (fg-2's own fix propagates
-# into slot 8 automatically, since it is the same token).
+# --- ANSI 16 ---------------------------------------------------------------
+# The sixteen slots every terminal tool assumes for errors, warnings, diffs,
+# and file types. Not a second palette: every chromatic slot is derived from
+# Tier 1/2/3 anchors (except cyan, which has its own teal-cyan anchor to avoid
+# collision with blue). Bright slots are the same hues at higher chroma and
+# contrast than normal slots. Achromatic slots (0/7/8/15) are carried unchanged.
 PHI_ANSI_0='#242320'          # black          -> bg-1
 PHI_ANSI_1='#b57b73'          # red            -> error
 PHI_ANSI_2='#8fa77e'          # green          -> success

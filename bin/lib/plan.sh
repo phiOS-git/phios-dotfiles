@@ -4,7 +4,7 @@
 # rendered files the declared profiles ask for, each compared against what is
 # on the machine. --dry-run prints it, --check exits non-zero when it is not
 # already satisfied, and the default mode applies it. Computing once and acting
-# three ways is what makes the preview honest (R2).
+# three ways is what makes the preview honest.
 #
 # Parallel arrays rather than one record array, because bash has no structs and
 # the indices are the only join key needed:

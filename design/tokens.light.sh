@@ -1,89 +1,54 @@
-# phiOS — colour tokens, light variant (master plan §6.2).
+# phiOS — colour tokens, light variant.
 #
 # Read design/tokens.common.sh first for the format contract and the naming
 # rule, and tokens.dark.sh for the provenance of the values this variant is
-# built from. Both variants are permanent and neither derives from the other
-# at runtime (R6): this file is a complete palette, not a transform applied to
-# the dark one.
+# built from. Both variants are permanent and independent: this file is a
+# complete palette, not a transform applied to the dark one.
 #
 # ---------------------------------------------------------------------------
-# PROVENANCE — S-50, the real derivation §6.2 requires, checked against
-# `phi theme check` (zero violations — see phi/internal/theme/check.go).
-# Nothing in this file has ever rendered on a machine; there is no light
-# variant running today, so nothing here is [carried] the way some of
-# tokens.dark.sh is. Every value is [derived]:
+# PROVENANCE — colours are derived algorithmically in OKLCH and checked
+# against `phi theme check` (see phi/internal/theme/check.go for WCAG validation).
+# Nothing here is carried from live systems; every value is derived:
 #
-#   Structure (bg-*, fg-0). One affine map on OKLab lightness, unchanged
-#   since S-02: L_light = -1.18776 * L_dark + 1.22436, applied to each dark
-#   token with its a and b untouched. Fixed points: dark bg-0 -> light bg-0
-#   at L=0.970, dark fg-0 -> light fg-0 at L=0.200. Hue and chroma survive, so
-#   the light variant is the same warm neutral, not a different palette that
-#   happens to be pale.
+#   Structure (bg-*, fg-0). An affine map on OKLab lightness:
+#   L_light = -1.18776 * L_dark + 1.22436, applied to each dark token with
+#   its a and b untouched. Fixed points: dark bg-0 -> light bg-0 at L=0.970,
+#   dark fg-0 -> light fg-0 at L=0.200. Hue and chroma survive.
 #
-#   fg-1/fg-2/fg-3 — S-50 re-solves these instead of continuing the affine
-#   map, for the same reason tokens.dark.sh does: a uniform 4-point ramp
-#   needs its individual steps checked, not just its endpoints. fg-0 is the
-#   affine-mapped anchor above; fg-2 is solved at fg-2's own (H=82.39°,
-#   C=0.0150) for 4.6:1 against light bg-0 (the same target used in the dark
-#   variant, for one documented algorithm instead of two); fg-1 and fg-3 are
-#   the remaining two points of the uniform ramp through fg-0 and that solved
-#   fg-2. (The prior affine-mapped fg-2, at 4.58:1, already cleared 4.5:1 —
-#   this re-solve is for a shared, provable margin, not a fix to a failure.)
+#   fg-1/fg-2/fg-3. Solved individually (not by affine map) for a uniform
+#   4-point ramp. fg-0 is the affine-mapped anchor; fg-2 is solved at
+#   (H=82.39°, C=0.0150) for 4.6:1 against light bg-0; fg-1 and fg-3 are
+#   the remaining two points.
 #
-#   Accent and Tier 2 semantics. NOT the affine map — it drives them to
-#   L~0.33, far darker than they need to be, and #4e2631 does not read as the
-#   same rose. Instead each keeps its dark hue and chroma and gets a
-#   lightness solved for a real target against light bg-0: 4.8:1 for accent
-#   (unchanged since S-02), 4.9:1 for the four Tier 2 roles (nudged up from
-#   S-02's ~4.78-4.83 for a uniform, documented margin instead of four
-#   different near-floor values). That is the "second lightness" §6.2
-#   requires:
-#
-#     "l'accento attuale #d3a0ac è ~9,4:1 su nero e ~2,2:1 su bianco. La
-#      variante chiara richiede una seconda lightness dell'accento. Non è
-#      opzionale: senza, la variante chiara è inaccessibile."
-#
-#   The measurement behind that: #d3a0ac is 2.24:1 on #ffffff. Reusing it in
-#   this variant would put the accent at half the 4.5:1 floor. It is not
-#   reused.
+#   Accent and Tier 2 semantics. Not affine-mapped (would place them too
+#   dark). Each keeps dark hue/chroma and gets lightness solved for a target
+#   against light bg-0: 4.8:1 for accent, 4.9:1 for Tier 2 roles.
 #
 #   Tier 3 syntax. Same method as tokens.dark.sh: each role's dark hue/chroma,
-#   lightness solved for a shared syntax-legibility target rather than
-#   inheriting its Tier 1/2 counterpart's own contrast. The light-variant
-#   target is 4.7:1, deliberately NOT the 4.9:1 used for Tier 2 above — at
-#   the same hue/chroma, solving both tiers for the same ratio converges on
-#   the identical lightness, so warn/error/info/type/number/function would
-#   have collided pixel-for-pixel with their Tier 2 counterpart (found while
-#   deriving this file, fixed before committing rather than shipped). 4.7:1
-#   still clears the 4.5:1 floor with a real margin and lands each syntax
-#   role at a visibly different lightness than its Tier 1/2 counterpart.
+#   lightness solved for a shared syntax-legibility target (4.7:1, distinct
+#   from Tier 2's 4.9:1 to prevent collisions).
 #
-#   ANSI 16. Same fixes as tokens.dark.sh: a new H=195° cyan anchor distinct
-#   from info/blue (H=248°) and success/moss (H=132°), and bright variants at
-#   higher chroma and a higher contrast target than their normal counterpart.
+#   ANSI 16. Same approach as tokens.dark.sh: new H=195° cyan anchor and
+#   bright variants at higher chroma/contrast.
 #
-# CONTRAST, measured against this variant's bg-0 (#f6f5f3) with `phi theme
-# check`'s own WCAG formula:
+# CONTRAST, measured against this variant's bg-0 (#f6f5f3):
 #   fg-0 16.67:1   fg-1 9.58:1   fg-2 4.59:1   fg-3 2.33:1
 #   accent 4.82:1  error 4.92:1  warn 4.92:1  success 4.88:1  info 4.90:1
-# Every checked pair (fg-0/1/2, accent, error, warn, success, info) clears
-# 4.5:1. fg-3 is non-text by construction and excluded, same as the dark
-# variant. `phi theme check` on this file reports zero violations.
+# Every text pair (fg-0/1/2, accent, error, warn, success, info) clears 4.5:1.
 # ---------------------------------------------------------------------------
 
-# --- Variant identity ------------------------------------------------------
+# --- Variant identity -----------------------------------------------
 # Which of the two permanent variants this file is. Not a colour, but it
 # belongs here rather than in tokens.common.sh precisely because it is the
 # one thing the two palettes disagree about by definition. A target that has
 # to declare a light/dark preference rather than a colour reads this.
 PHI_VARIANT='light'
 
-# --- Tier 0: structure (§6.2) ----------------------------------------------
-# The indices mean what they mean in the dark variant, which is the point of
-# abstract names: bg-N still rises toward the viewer, so in this variant it
-# gets darker rather than lighter, and fg-N still recedes from primary text.
-# A template written against bg-0/fg-0 is correct in both without knowing which
-# it is rendering.
+# --- Tier 0: structure -----------------------------------------------
+# The indices mean what they do in the dark variant: bg-N rises toward the
+# viewer (gets darker in light variant), fg-N recedes from primary text. A
+# template written against bg-0/fg-0 is correct in both without knowing which
+# variant it is.
 PHI_BG_0='#f6f5f3'
 PHI_BG_1='#e6e4e0'
 PHI_BG_2='#d6d5d1'
@@ -133,20 +98,13 @@ PHI_SELECTION_BG='#e6e4e0'
 PHI_SELECTION_FG='#191510'
 PHI_CURSOR_TERM='#8e5f6b'
 
-# --- ANSI 16 (§6.2, ADR 053) ------------------------------------------------
-# The chromatic slots follow the dark variant's mapping (same hue anchors),
-# so a tool themed for one variant is themed for the other. The four
-# achromatic slots do not mirror it: slot 0 is "black" and slot 7 is "white"
-# to the tools that use them, so they take this variant's darkest and
-# lightest structural tones rather than the same token index the dark
-# variant used. Mirroring the index would make `color0` render pale, and
-# every tool that prints on it would disappear.
-#
-# S-50 fixes the two defects the dark variant's own comment describes: a new
-# H=195° cyan anchor (own value here, own value there, not shared with
-# info/blue or success/moss) and bright variants solved at higher chroma and
-# a higher contrast target than their normal counterpart, so bright is
-# visibly different again, not a relabelling.
+# --- ANSI 16 ---------------------------------------------------------------
+# Chromatic slots follow the dark variant's mapping (same hue anchors), so a
+# tool themed for one variant is themed for the other. Achromatic slots don't
+# mirror indices: slot 0 is "black" and slot 7 is "white" to tools, taking
+# this variant's darkest and lightest structural tones. Mirroring indices
+# would make color0 pale and every tool printing on it would disappear.
+# Bright variants are the same hues at higher chroma/contrast.
 PHI_ANSI_0='#191510'          # black          -> fg-0
 PHI_ANSI_1='#945c55'          # red            -> error
 PHI_ANSI_2='#5b724b'          # green          -> success

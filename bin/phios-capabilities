@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #
-# phios-capabilities — detect what this machine can do, not what it is called
-# (master plan §5.2.4, ADR 074).
+# phios-capabilities — detect what this machine can do, not what it is called.
 #
 # Profiles decide what gets installed; this script decides what the shell may
 # show at runtime. It answers "does a battery device exist", never "is this
@@ -11,10 +10,9 @@
 # profile membership.
 #
 # Output: one KEY=VALUE per line, PHI_CAP_ prefix, sourceable by bash and
-# parsed by anything else with a line splitter — same contract as the design
-# tokens (§6.1).
+# parsed by anything else with a line splitter.
 #
-# Dependency budget (R9): bash and coreutils only. No lspci, no libinput, no
+# Dependency budget: bash and coreutils only. No lspci, no libinput, no
 # udevadm: everything here reads /sys or /proc directly.
 #
 # Exit codes
@@ -78,8 +76,7 @@ phios_cap_backlight() {
 	printf 'false\n'
 }
 
-# There is no fixed driver name yet (S-06 is still open on razer). Matched
-# broadly against the iio device name, which is the field S-06 will confirm.
+# Matched broadly against the iio device name. Driver not fixed.
 phios_cap_als() {
 	local dir name
 	for dir in /sys/bus/iio/devices/iio:device*/; do
@@ -118,8 +115,7 @@ phios_cap_gpu_vendor() {
 	fi
 }
 
-# Matches any Razer USB device, not only the keyboard: on razer this is the
-# built-in Chroma keyboard controller, which S-46 addresses over org.razer.
+# Matches any Razer USB device, not only the keyboard.
 phios_cap_chroma() {
 	local dir
 	for dir in /sys/bus/usb/devices/*/; do
@@ -133,9 +129,8 @@ phios_cap_chroma() {
 }
 
 # /proc/bus/input/devices has no dedicated touchscreen/touchpad class; the
-# device's own reported name is the only presence signal available within the
-# coreutils-only dependency budget (R9). S-06 diagnoses the razer keys with
-# evtest, which is a heavier tool this script deliberately does not require.
+# device's own reported name is the only presence signal available without
+# additional tools.
 phios_cap_input_named() {
 	local pattern=$1
 	[[ -r /proc/bus/input/devices ]] || { printf 'false\n'; return; }
