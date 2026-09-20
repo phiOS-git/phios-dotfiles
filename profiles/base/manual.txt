@@ -9,84 +9,52 @@
 # phios-dotfiles checkout root. Read each source file first (`--system-diff`
 # shows them against what is already on the machine).
 #
-# The yazi git plugin. home/.config/yazi/init.lua does require("git") and
-# yazi.toml registers it as a fetcher, so without the plugin yazi starts with
-# an error and the file list shows no git signs. It is fetched from GitHub into
-# $XDG_CONFIG_HOME/yazi/plugins/, which is why it is not in this repository and
-# why install.sh never handled it (master plan C-10).
+# The yazi git plugin. home/.config/yazi/init.lua requires it; without it,
+# yazi starts with an error. Fetched from GitHub into $XDG_CONFIG_HOME/yazi/plugins/.
 ya pkg add yazi-rs/plugins:git
 
-# Registering the [phi] own-package repository (S-11, master plan §3.1:
-# "registrato in /etc/pacman.conf di ogni macchina"). pacman.conf has no
-# drop-in mechanism for a repository section itself — the same limitation
-# profiles/gaming/manual.txt already documents for multilib — so the two
-# lines below are appended by hand; only the Server line they Include is a
-# real, diffable file (system/etc/pacman.d/phi-mirrorlist in this profile).
-# Fill in that file's <mini-overlay-address> and <port> placeholders first.
-# Guarded with grep so running this twice doesn't duplicate the section —
-# unlike the multilib sed in profiles/gaming/manual.txt, a plain append is
-# not naturally idempotent.
+# Register the [phi] own-package repository in pacman.conf. The [phi] section
+# must be added by hand because pacman.conf has no drop-in mechanism for
+# repository sections. The Server line they Include points to system/etc/pacman.d/
+# phi-mirrorlist in this profile. Fill in the address and port placeholders first.
 grep -q '^\[phi\]' /etc/pacman.conf || sudo sh -c 'printf "\n[phi]\nSigLevel = Required\nInclude = /etc/pacman.d/phi-mirrorlist\n" >> /etc/pacman.conf'
-# Import and locally trust the phi packaging public key (generated once on
-# zotac by hand; the private key never leaves zotac, per phi-packages/CLAUDE.md).
+# Import and locally trust the phi packaging public key.
 sudo pacman-key --add <path-to-phi-packaging-key.asc> && sudo pacman-key --lsign-key <key-id>
 
-# --- Role A: the login / SSH / boot banners (S-53) ---------------------------
-# The TTY login banner. Pure ASCII, safe on the raw console font.
+# --- Login / SSH / boot banners -----------------------------------------------
+# The TTY login banner (pure ASCII, safe on raw console font).
 sudo install -Dm644 profiles/base/system/etc/issue /etc/issue
-# The SSH banner (the Unicode Phi form) and the sshd drop-in that enables it.
-# Confirm sshd_config still has its default `Include /etc/ssh/sshd_config.d/*`
-# line, then reload sshd.
+# The SSH banner (Unicode Phi form) and the sshd drop-in that enables it.
 sudo install -Dm644 profiles/base/system/etc/phi-banner /etc/phi-banner
 sudo install -Dm644 profiles/base/system/etc/ssh/sshd_config.d/10-phi-banner.conf /etc/ssh/sshd_config.d/10-phi-banner.conf && sudo systemctl reload sshd
 
-# --- OOP-29: the design-token console palette --------------------------------
+# --- Design-token console palette -------------------------------------------
 # Repaints the 16 Linux VT colours from PHI_ANSI_* so the login prompt and
 # early console output are in the phiOS palette. Revert with `setvtrgb vga`.
 sudo install -Dm644 profiles/base/system/etc/phi/console.palette /etc/phi/console.palette
 sudo install -Dm644 profiles/base/system/etc/systemd/system/phi-vconsole-theme.service /etc/systemd/system/phi-vconsole-theme.service
 sudo systemctl daemon-reload && sudo systemctl enable --now phi-vconsole-theme.service
 
-# --- S-45: the pacman theme-regen hook --------------------------------------
+# --- Pacman theme-regen hook ------------------------------------------------
 # Re-runs `phi theme set` after an upgrade that could put stale config back
-# (kitty, the GTK/Qt packages, phi, phi-shell). Both files are /etc material.
+# (kitty, GTK/Qt packages, phi, phi-shell).
 sudo install -Dm644 profiles/base/system/etc/pacman.d/hooks/phi-theme-regen.hook /etc/pacman.d/hooks/phi-theme-regen.hook
 sudo install -Dm755 profiles/base/system/usr/local/bin/phi-theme-regen-hook.sh /usr/local/bin/phi-theme-regen-hook.sh
 
-# --- OOP-34: PHI_DOTFILES -----------------------------------------------------
+# --- PHI_DOTFILES --------------------------------------------------------
 # phios-install writes ~/.config/phios/dotfiles-root and
-# ~/.config/environment.d/10-phios.conf pointing `phi` and phi-shell at this
-# checkout (see bin/lib/env.sh). Nothing to run — but if this checkout is NOT
-# at ~/phios-dotfiles and you have not re-run phios-install since OOP-34,
-# either do that or export PHI_DOTFILES yourself. To pick it up in the
-# running session without a re-login:
+# ~/.config/environment.d/10-phios.conf. If this checkout is not at
+# ~/phios-dotfiles, export PHI_DOTFILES yourself. To pick it up in the
+# running session without re-login:
 systemctl --user import-environment PHI_DOTFILES
 
-# --- Out-of-plan: clamav (real-time on-access protection, all three hosts) --
-# Captures the exact hand-tuned state reached on `zotac` on 2026-09-14 — a
-# hardened clamd.conf (heuristics, PUA, format-specific scanners, on-access
-# fanotify watching all of `/`) plus a desktop notification on detection —
-# so it can be reproduced on `razer`/`mini` in one pass instead of by hand
-# again. `clamd.conf` itself is NOT mirrored as a system/ file: pacman
-# marks it a backup file it manages directly (`pacman -Qii clamav`), it is
-# ~30KB of mostly stock commentary, and every change here is a plain
-# uncomment-in-place of an existing default line — a `sed` against the
-# live file, the same treatment profiles/gaming/manual.txt already gives
-# `/etc/pacman.conf`'s `[multilib]` block, fits its actual shape far better
-# than mirroring the whole vendor file would. Safe to run twice (every
-# substitution only matches the commented, not-yet-applied form).
-#
-# `phios_read_list` (bin/lib/common.sh) truncates every line of this file
-# at its first literal "#", with no notion of quoting — same reason
-# profiles/gaming/manual.txt spells its "#" as $'\x23': the line below
-# does the same, for the same reason, so the six real "#"-comment
-# characters the sed script needs never appear literally in this file.
-#
-# Verified by extracting clamav's own pristine clamd.conf from the local
-# package cache and diffing (`tar -xf .../clamav-*.pkg.tar.zst
-# etc/clamav/clamd.conf`) before this was written down — every line the
-# sed touches was confirmed to be exactly the commented stock default
-# first, not guessed at.
+# --- clamav (real-time on-access protection) --------------------------------
+# Hardens clamd.conf: enables heuristics, PUA, format-specific scanners,
+# on-access fanotify watching all of `/`, and desktop notification on virus.
+# clamd.conf itself is not mirrored: pacman manages it as a backup file
+# (~30KB of stock commentary). Every change here is an uncomment-in-place
+# of an existing default line. Safe to run twice (substitutions match only
+# the commented form). phios_read_list truncates at "#", so use $'\x23':
 h=$'\x23'
 sudo sed -i -E \
   -e "s/^${h}(ExtendedDetectionInfo|MaxDirectoryRecursion|DetectPUA|AlertBrokenExecutables|AlertBrokenMedia|AlertEncrypted|AlertOLE2Macros|AlertPartitionIntersection|OnAccessExtraScanning|OnAccessExcludeUname)/\1/" \
@@ -108,24 +76,12 @@ sudo install -Dm755 profiles/base/system/etc/clamav/virus-event.bash /etc/clamav
 sudo install -m 0440 -o root -g root profiles/base/system/etc/sudoers.d/clamav /etc/sudoers.d/clamav
 sudo visudo -cf /etc/sudoers.d/clamav
 
-# freshclam.conf needs nothing — confirmed unmodified from the packaged
-# default (`pacman -Qii clamav`) on the machine this was captured from.
-#
-# Enabling the three units below is the last step (profiles/base/
-# services-system.txt has the same command, this is the one place it is
-# actually meant to be run). On a FRESH host (no /var/lib/clamav/*.c[vl]d
-# yet) clamav-daemon.service's own ConditionPathExistsGlob is unmet and it
-# skips itself — confirmed live on zotac — because clamav-freshclam.service
-# has not finished its first database download yet (a couple of minutes,
-# ~110MB). clamav-clamonacc.service then fails too, waiting on a socket
-# the never-started daemon never creates (its own ExecStartPre polls for
-# up to its default 90s timeout, then gives up). Not a bug in any of these
-# three units or in this repo — just enable them and, if either of the
-# last two report failed/timeout, wait for freshclam to actually finish
-# (`journalctl -u clamav-freshclam.service -f`, or `ls /var/lib/clamav/`
-# for `daily.cvd`/`main.cvd`) and start them again:
+# Enable the three units. On a FRESH host, clamav-freshclam may take a few
+# minutes (~110MB database download); if clamav-daemon.service or
+# clamav-clamonacc.service report failed/timeout, wait for freshclam to finish
+# and restart them:
 sudo systemctl enable --now clamav-daemon.service clamav-freshclam.service clamav-clamonacc.service
-#   sudo systemctl start clamav-daemon.service clamav-clamonacc.service   # retry once the DB exists
+# To retry manually: sudo systemctl start clamav-daemon.service clamav-clamonacc.service
 
 # clamav-clamonacc's own stock unit (/usr/lib/systemd/system/
 # clamav-clamonacc.service, not overridden by this repo) already quarantines
