@@ -14,17 +14,17 @@
 #
 #   [carried]   unchanged since the value that renders on zotac and razer
 #               today. Changing one of these changes what the machines
-#               display, so S-50 only touches the ones with a real reason to.
+#               display.
 #   [derived]   computed this step: fixed OKLCH hue (H) and chroma (C) —
 #               either carried forward from an existing anchor or a new one
 #               for a slot that had none — with lightness (L) solved by
-#               bisection against the *real* WCAG contrast formula
+#               bisection against the real WCAG contrast formula
 #               (phi/internal/tokens/color.go's Contrast, not an OKLab proxy:
-#               §6.2's 4.5:1 is a WCAG AA figure and only means what it says
-#               under WCAG's own math), then converted back to sRGB. The
-#               solver also rejects any (L,C,H) whose linear-sRGB falls
-#               outside [0,1] — no clipped, hue-shifted colour ever ships.
-#   [filled]    a slot §6.2 requires that has no anchor of its own.
+#               4.5:1 is a WCAG AA figure and only means what it says under
+#               WCAG's own math), then converted back to sRGB. The solver also
+#               rejects any (L,C,H) whose linear-sRGB falls outside [0,1] —
+#               no clipped, hue-shifted colour ever ships.
+#   [filled]    a slot that requires a value but has no anchor of its own.
 #               Interpolated in OKLab lightness along the ramp its neighbours
 #               define. Gap-filling, not derivation.
 #
@@ -43,25 +43,19 @@
 #   success    Tier 2, moss              0.6989  0.0639  132.6°   #8fa77e
 #   info       Tier 2, slate             0.6603  0.0413  248.5°   #7f95ab
 #
-# STRUCTURE FIX (fg-1/fg-2/fg-3). §6.2 requires a uniform progression in
-# perceptual luminance across fg-0..fg-3. The prior ramp forced fg-2 through
-# fg-3's own hue/chroma anchor at L=0.574, which measures 4.00:1 against
-# bg-0 — a real failure below the 4.5:1 floor, on today's running machines.
-# Fixed by re-solving the ramp at fg-2's own (H=82.39°, C=0.0148): fg-0 stays
-# the carried anchor (L=0.8624); the solver finds the L that puts fg-2 at
-# 4.6:1 (a small margin above the floor, not the floor itself — the same
-# margin every other checked pair in this file already carries); fg-1 and
-# fg-3 fall out as the two remaining points of a *uniform* 4-point ramp
-# through those same two fixed ends. fg-3 stays outside the 4.5:1 requirement
-# by construction (non-text: dividers, disabled marks) but its ratio rose
-# too, as a side effect of the wider, still-even spacing.
+# STRUCTURE FIX (fg-1/fg-2/fg-3). A uniform progression in perceptual
+# luminance across fg-0..fg-3. The prior ramp forced fg-2 through fg-3's own
+# anchor at L=0.574 (4.00:1 contrast, below 4.5:1 floor). Fixed by re-solving
+# at fg-2's own (H=82.39°, C=0.0148): fg-0 stays the carried anchor (L=0.8624);
+# solver finds L for fg-2 at 4.6:1; fg-1 and fg-3 are the remaining two points
+# of the uniform 4-point ramp. fg-3 stays outside 4.5:1 (non-text) by design.
 #
 # CONTRAST, measured against bg-0 with `phi theme check`'s own formula:
 #   fg-0 11.56:1   fg-1 7.50:1   fg-2 4.60:1   fg-3 2.73:1
 #   accent 7.85:1  error 5.05:1  warn 7.60:1  success 6.69:1  info 5.68:1
-# Every checked pair (fg-0/1/2, accent, error, warn, success, info — fg-3 is
-# non-text by construction and excluded, same as §6.2 intends) now clears
-# 4.5:1. `phi theme check` on this file reports zero violations.
+# Every checked pair (fg-0/1/2, accent, error, warn, success, info — fg-3
+# is non-text by construction and excluded) now clears 4.5:1. `phi theme check`
+# reports zero violations.
 # ---------------------------------------------------------------------------
 
 # --- Variant identity ------------------------------------------------------

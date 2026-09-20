@@ -66,13 +66,12 @@ PHI_OVERLAY_SCRIM='#19151073' # fg-0 at 45% — a light scrim is ink, not black
 # harder alpha step, for the small set of full-attention blocking surfaces.
 PHI_OVERLAY_SCRIM_STRONG='#191510a6' # fg-0 at 65%
 
-# --- Tier 1: accent (§6.2) --------------------------------------------------
+# --- Tier 1: accent -----------------------------------------------
 PHI_ACCENT='#8e5f6b'          # second lightness of #d3a0ac — 4.82:1 on bg-0
 PHI_ACCENT_FG='#f6f5f3'
 
-# --- Tier 2: semantic (§6.2) ------------------------------------------------
-# S-50: same hue/chroma as the dark variant's carried anchors, lightness
-# re-solved for a uniform 4.9:1 target (nudged up from S-02's ~4.78-4.83).
+# --- Tier 2: semantic -----------------------------------------------
+# Same hue/chroma as dark variant, lightness re-solved for uniform 4.9:1 target.
 PHI_ERROR='#945c55'
 PHI_ERROR_FG='#f6f5f3'
 PHI_WARN='#7e6835'
@@ -82,10 +81,9 @@ PHI_SUCCESS_FG='#f6f5f3'
 PHI_INFO='#596d82'
 PHI_INFO_FG='#f6f5f3'
 
-# --- Tier 3: syntax (§6.2) --------------------------------------------------
-# S-50: each role's own hue (same as the dark variant), lightness solved for
-# a shared 4.7:1 syntax-legibility target instead of borrowing its Tier 1/2
-# counterpart's own value — see the file header for why 4.7, not 4.9.
+# --- Tier 3: syntax -----------------------------------------------
+# Each role's own hue (same as dark variant), lightness solved for shared
+# 4.7:1 syntax-legibility target (not 4.9:1 like Tier 2 — see header).
 PHI_SYNTAX_1='#90616d'        # keyword          -> accent hue,  H=2.72°   C=0.0624
 PHI_SYNTAX_2='#5f7450'        # string           -> success hue, H=132.18° C=0.0599
 PHI_SYNTAX_3='#816b38'        # number, constant -> warn hue,    H=85.85°  C=0.0745
@@ -93,7 +91,7 @@ PHI_SYNTAX_4='#5b7085'        # function         -> info hue,    H=248.45° C=0.
 PHI_SYNTAX_5='#956059'        # type             -> error hue,   H=27.99°  C=0.0701
 PHI_SYNTAX_6='#736f66'        # operator, punct. -> fg-2 (same token, no separate hue: muted ink, not a category)
 
-# --- Selection and terminal cursor (§6.2) -----------------------------------
+# --- Selection and terminal cursor ----------------------------------------
 PHI_SELECTION_BG='#e6e4e0'
 PHI_SELECTION_FG='#191510'
 PHI_CURSOR_TERM='#8e5f6b'
