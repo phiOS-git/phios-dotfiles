@@ -54,10 +54,10 @@ usage() {
 	                /home/agent/work — the A2 session's whole world. Refused if
 	                it matches ~/.config/phi-agent/code-blocklist or an always-
 	                denied root. Normally passed by `phi agent code`; the
-	                blocklist here is a guard-rail, not the boundary (§4.1).
+	                blocklist here is a guard-rail, not the boundary.
 
-	A1's per-project read-only folders of interest (phios-agente-delta.md D-02)
-	come from <project>/folders.list, written by `phi agent project`.
+	A1's per-project read-only folders of interest come from
+	<project>/folders.list, written by `phi agent project`.
 
 	Environment (from ~/.config/phi-agent/env, see env.example):
 	  PHI_AGENT_PROJECT          A1 active project name              (default: none)
@@ -91,10 +91,10 @@ done
 [[ -n $instance ]] || { usage >&2; die "no instance (a1|a2)"; }
 ((${#cmd[@]})) || die "no command after --"
 if ((remote)); then
-	[[ $instance == a2 ]] || die "--remote is A2 only (phios-agente.md §10.3)"
+	[[ $instance == a2 ]] || die "--remote is A2 only"
 fi
 if [[ -n $workdir ]]; then
-	[[ $instance == a2 ]] || die "--workdir is A2 only (phios-agente-delta.md §3.3)"
+	[[ $instance == a2 ]] || die "--workdir is A2 only"
 fi
 
 # ---------------------------------------------------------------------------
