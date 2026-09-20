@@ -1,16 +1,9 @@
-# phiOS — the /etc boundary (master plan §5.5, R7, I-09).
-#
-# System material lives in profiles/<name>/system/, mirroring the absolute path
-# it belongs at, and the installer NEVER applies it. --system-diff shows the
-# difference and stops there; applying it is a user action, with sudo, file by
-# file, after reading that difference.
-#
-# The diff is produced with `git diff --no-index`, which is already in the
-# dependency budget and gives the same output the user reads everywhere else.
-#
-# The two reporters at the end of this file are here for the same reason: a
-# systemd unit and a manual step are declared by a profile and performed by the
-# user, never by the installer. Same boundary, different material.
+# phiOS — the /etc boundary.
+# System material lives in profiles/<name>/system/ mirroring absolute paths.
+# The installer NEVER applies it. --system-diff shows the difference and stops;
+# applying it is a user action, with sudo, after reading the diff. Diff uses
+# `git diff --no-index`, giving the same output users read everywhere else.
+# systemd units and manual steps are declared by profiles, performed by users.
 
 # Fills PHIOS_SYSTEM_FILES with "profile<TAB>source<TAB>destination" records.
 phios_system_collect() {
@@ -68,10 +61,10 @@ phios_system_diff() {
 	return 0
 }
 
-# Declared systemd units. The installer prints them and stops: enabling a unit
-# is a user action (R8). It deliberately does not query systemd either, so
-# --check reports no service drift; that gap does not close, at S-05 or ever —
-# querying systemd state is exactly the boundary this installer does not cross.
+# Declared systemd units. The installer prints them and stops: enabling
+# is a user action. It deliberately does not query systemd state, so --check
+# reports no service drift — querying systemd is exactly the boundary this
+# installer does not cross.
 phios_services_report() {
 	local profile scope file unit any=0
 	for scope in user system; do

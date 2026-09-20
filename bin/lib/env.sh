@@ -1,32 +1,19 @@
-# phiOS — the runtime pointer to this checkout (OOP-34; S-12's own flagged
-# gap: "nothing in any planning doc says how a pacman-installed phi finds
-# the phios-dotfiles checkout at runtime").
+# phiOS — the runtime pointer to this checkout.
 #
-# `phi` (phi/internal/tokens/tokens.go Root()) and phi-shell's capability
-# probe (Config/Capabilities.qml) both resolve the repo as $PHI_DOTFILES,
-# else ~/phios-dotfiles. Every install procedure clones to ~/phios-dotfiles,
-# so the default is right on a standard machine — but a checkout kept
-# anywhere else (a dev tree) leaves `phi theme`, `phi doctor`'s dotfiles
-# checks and the capability probe unable to find it, with no obvious error.
+# `phi` and phi-shell resolve the repo as $PHI_DOTFILES, else ~/phios-dotfiles.
+# Default is right on a standard machine, but a checkout elsewhere (dev tree)
+# leaves tools unable to find it without obvious error. The installer always
+# knows where this checkout is ($PHIOS_ROOT) and writes that path where every
+# phiOS process can pick it up:
 #
-# The installer is the one component that always knows where this checkout
-# actually is ($PHIOS_ROOT), so it writes that path where every phiOS
-# process can pick it up:
+#   ~/.config/phios/dotfiles-root          read by ~/.zshenv; TTY login shell,
+#                                          Hyprland, and quickshell get it
+#   ~/.config/environment.d/10-phios.conf  systemd user environment
 #
-#   ~/.config/phios/dotfiles-root          one line — read by
-#                                          profiles/base/home/.zshenv, so
-#                                          the TTY login shell and, through
-#                                          it, Hyprland + quickshell get
-#                                          $PHI_DOTFILES
-#   ~/.config/environment.d/10-phios.conf  systemd user environment, for
-#                                          anything the graphical session
-#                                          starts outside that shell
+# Both are derived machine state, not repository content. Not tracked in the
+# state manifest; `--check` only reports a stale value, never reconciles.
 #
-# Both are DERIVED machine state, not repository content — like
-# $XDG_STATE_HOME/phios/manifest they are not tracked in the state manifest
-# and `--check` only reports a stale value, it does not reconcile them.
-#
-# Dependency budget (R9): bash + coreutils only.
+# Dependency budget: bash + coreutils only.
 
 phios_env_paths() {
 	local cfg=${XDG_CONFIG_HOME:-$HOME/.config}

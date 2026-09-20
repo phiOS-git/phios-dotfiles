@@ -1,9 +1,8 @@
 # phiOS — host identity and profile resolution.
 #
-# hosts/<host>.txt lists the profiles applied to that host, in order. The order
-# is significant: a profile providing a concrete provider must precede one that
-# requires it (master plan §5.3). Resolution therefore preserves file order and
-# never sorts.
+# hosts/<host>.txt lists the profiles applied to that host, in order. Order is
+# significant: a profile providing a concrete implementation must precede one
+# that requires it. Resolution preserves file order and never sorts.
 
 # Explicit --host wins, then $PHIOS_HOST, then the machine's own name. The
 # domain part is dropped: hosts/ is keyed on the short name.
@@ -23,11 +22,8 @@ phios_host_file() {
 }
 
 # Fills PHIOS_PROFILES with the profiles declared for $PHIOS_HOSTNAME.
-#
-# A declared name without a directory under profiles/ is a hard error, so a
-# typo in a host file can never be silently skipped. S-01 and S-02 tolerated an
-# empty profiles/ as the transitional state while modules/ was still the live
-# tree; S-03 filled it, and that tolerance is gone with it.
+# A declared name without a directory under profiles/ is a hard error: typos
+# in a host file can never be silently skipped.
 phios_resolve_profiles() {
 	local host_file declared name
 	host_file=$(phios_host_file "$PHIOS_HOSTNAME")

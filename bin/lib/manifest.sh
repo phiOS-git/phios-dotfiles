@@ -1,9 +1,7 @@
-# phiOS — the state manifest (master plan §5.4, R3).
-#
-# $XDG_STATE_HOME/phios/manifest records every path the installer created on
-# this machine, so a file that disappears from the repository can be removed
-# from the home directory instead of being orphaned there forever. It is
-# machine state, never versioned.
+# phiOS — the state manifest.
+# $XDG_STATE_HOME/phios/manifest records every path the installer created, so
+# files that disappear from the repo can be removed instead of orphaned. Machine
+# state, never versioned.
 #
 # One tab-separated record per line:
 #

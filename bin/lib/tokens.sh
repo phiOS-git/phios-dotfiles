@@ -1,17 +1,11 @@
 # phiOS — template rendering against the design tokens.
-#
 # design/ is the single source of every colour, font, size, radius and motion
-# value (I-05). A template is rendered by sourcing the token files for one
-# variant and substituting only the PHI_* names they export — never the whole
-# environment, so a `$PATH` or `$HOME` inside a configuration file survives
-# untouched.
+# value. A template is rendered by sourcing the token files for one variant and
+# substituting only the PHI_* names they export — never the whole environment,
+# so $PATH or $HOME inside a config file survives untouched.
 #
-# The token files themselves arrive at S-02, and design/adapters.txt will then
-# own destinations and reload commands. Until they exist, a profile that ships
-# a template is a hard error rather than a silent half-render.
-
-# The active variant is runtime state owned by the settings panel (§5.6). The
-# installer only reads it, and falls back to dark, which is the default variant.
+# The active variant is runtime state (owned by settings panel). The installer
+# reads it and falls back to dark (the default variant).
 phios_variant() {
 	local file variant=${PHIOS_VARIANT:-}
 	if [[ -z $variant ]]; then
@@ -39,7 +33,7 @@ phios_tokens_require() {
 	phios_tokens_files "$variant" || status=$?
 	case $status in
 		0) return 0 ;;
-		1) phios_die 'design/tokens.common.sh is missing; templates cannot be rendered (S-02)' ;;
+		1) phios_die 'design/tokens.common.sh is missing; templates cannot be rendered' ;;
 		2) phios_die "design/tokens.$variant.sh is missing; unknown theme variant: $variant" ;;
 	esac
 }

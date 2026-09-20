@@ -1,13 +1,9 @@
 # phiOS — shared helpers for the bootstrap scripts.
-#
 # Sourced by bin/phios-*; never executed on its own.
 #
-# Dependency budget (master plan R9): bash, coreutils, git, gettext. Nothing
-# here may reach for anything else, because these scripts have to run on a
-# freshly installed machine, before `phi` exists.
-#
-# All output is plain text on purpose: an ANSI escape written here would be a
-# colour living outside design/, which I-05 forbids.
+# Dependency budget: bash, coreutils, git, gettext only. These scripts run on
+# freshly installed machines before `phi` exists, so nothing else is available.
+# Output is plain text only: ANSI escapes and colours belong in design/tokens only.
 
 phios_out()  { printf '%s\n' "$*"; }
 phios_warn() { printf 'phios: warning: %s\n' "$*" >&2; }
@@ -61,8 +57,7 @@ phios_state_dir() {
 	printf '%s\n' "${XDG_STATE_HOME:-$HOME/.local/state}/phios"
 }
 
-# Runtime state belongs to `phi`, not to the repository (master plan §5.6).
-# The installer only ever reads it.
+# Runtime state belongs to `phi`, not to the repository. The installer reads only.
 phios_runtime_dir() {
 	printf '%s\n' "${XDG_STATE_HOME:-$HOME/.local/state}/phi"
 }
