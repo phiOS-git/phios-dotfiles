@@ -53,14 +53,6 @@ phios_manifest_digest_of() {
 	printf '%s\n' '-'
 }
 
-phios_manifest_has() {
-	local target=$1 i
-	for i in "${!PHIOS_MF_TARGET[@]}"; do
-		[[ ${PHIOS_MF_TARGET[i]} == "$target" ]] && return 0
-	done
-	return 1
-}
-
 # Manifest entries whose target is no longer in the plan. These are what the
 # reconciliation step removes.
 phios_manifest_orphans() {

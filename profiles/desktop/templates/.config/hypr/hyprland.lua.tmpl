@@ -297,7 +297,6 @@ hl.define_submap("screenshot", function()
     hl.bind("o", fireAndReset(qsIpc("screenshot", "ocr")), { description = "Screenshot: OCR a selected area" })
     hl.bind("q", fireAndReset(qsIpc("screenshot", "qr")),
         { description = "Screenshot: decode a QR code in a selected area" })
-    hl.bind("c", fireAndReset(qsIpc("colorpicker", "pick")), { description = "Screenshot: pick a colour" }) -- S-43
     
     hl.bind("r", hl.dsp.exec_cmd(qsIpc("record", "start")), { description = "Start screen recording" })
     hl.bind("SHIFT + r", fireAndReset(qsIpc("record", "stop")), { description = "Stop screen recording" })
