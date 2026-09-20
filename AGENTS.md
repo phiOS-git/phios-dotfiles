@@ -22,8 +22,8 @@ and is not repeated here.
   since, in which case it is left and reported. Anything it would overwrite
   that it did not write is backed up under
   `$XDG_STATE_HOME/phios/backup/<timestamp>/`.
-- Shared bash under `bin/lib/` (`plan`, `profiles`, `packages`, `manifest`,
-  `system`, `tokens`, `env`, `common`). Bootstrap may depend only on
+- Shared bash under `bin/lib/` (`plan`, `profiles`, `packages`, `external`,
+  `manifest`, `system`, `tokens`, `env`, `common`). Bootstrap may depend only on
   coreutils, bash, git and gettext — it runs on a fresh machine, before `phi`
   exists.
 - It writes `~/.config/phios/dotfiles-root` and
