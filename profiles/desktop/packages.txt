@@ -72,7 +72,7 @@ plymouth
 # deviation anyway rather than have a bespoke theme produced.
 xcursor-themes
 
-# S-70: AI agent subsystem (docs/phios-agente.md, master plan §15.3, M7).
+# AI agent subsystem.
 # zotac and razer only — both carry this `desktop` profile, mini does not
 # (§1.2: "la configurazione di mini ... senza partecipare a questa
 # architettura"). opencode is the engine (ADR 117, closes Q-40/C-12);
@@ -103,7 +103,7 @@ wireguard-tools
 # 49-phi-firewall (NEVER applied by the installer).
 nftables
 
-# rework.md: "a GUI file manager needs to be added: thunar". extra/T0.
+# Requested: "a GUI file manager needs to be added: thunar". extra/T0.
 # thunar-volman + gvfs give it removable-media auto-mount and the trash/
 # network-location backends a GUI file manager is expected to have; tumbler
 # is its thumbnailer. No new template needed for theming: thunar is a GTK3
@@ -114,7 +114,7 @@ thunar-volman
 gvfs
 tumbler
 
-# docs/TODO.md: "the network overlay's Wi-Fi section ... has no actual
+# Requested: "the network overlay's Wi-Fi section ... has no actual
 # speedtest trigger". extra/T0 (confirmed via `pacman -Ss speedtest`, not
 # AUR). Services/SpeedTest.qml (phi-shell) runs `speedtest-cli --simple`
 # on demand, never polled.

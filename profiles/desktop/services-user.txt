@@ -4,7 +4,7 @@ pipewire.service
 pipewire-pulse.service
 wireplumber.service
 
-# S-71: the AI agent credential broker (docs/phios-agente.md §6.2). One
+# S-71: the AI agent credential broker. One
 # instance per opencode instance. a1 is enabled at the end of milestone 0;
 # a2 at S-76, when the current uncontained engine is retired. The units are
 # only ever enabled by hand, after V-01..V-04 and V-08/V-09 pass:
@@ -26,7 +26,7 @@ phi-agent-a2.service
 phi-agent-a2-remote-engine.service
 phi-agent-a2-remote.service
 
-# S-72: A2's egress whitelist (docs/phios-agente.md §5.1). Both are only
+# S-72: A2's egress whitelist. Both are only
 # needed when A2 runs (from S-76). phi-agent-net-bridge pulls in
 # phi-agent-proxy via Requires=.
 #   systemctl --user enable --now phi-agent-proxy.service phi-agent-net-bridge.service

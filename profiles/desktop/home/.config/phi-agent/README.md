@@ -32,7 +32,7 @@ Two opencode instances, separated by capability and by containment:
 | `~/.config/phi-agent/<inst>/provider-key` | **you create this**, `chmod 600`: the raw provider API key | you |
 | `tinyproxy/tinyproxy.conf` | A2 egress whitelist (S-72) | repo |
 
-## The broker (S-71, phios-agente.md §6.2)
+## The broker (S-71.2)
 
 opencode never sees the provider key. Its `phi-broker` provider talks
 **in clear over loopback** to `phi agent broker`, which runs *outside* the
@@ -66,7 +66,7 @@ Consumption is logged as JSONL at
 enforces a local fixed-window request limit (`rate_limit` in
 `broker.json`).
 
-## A2's network (S-72, phios-agente.md §5.1)
+## A2's network (S-72.1)
 
 A2 runs with `--unshare-net`: a fresh namespace, only a down loopback, no
 route anywhere. Two unix sockets in `~/.local/state/phi-agent/net/`,
@@ -117,7 +117,7 @@ outside the containment (§4.7).
   seed personalities, no projects). Managed with `phi agent project` and
   `phi agent personality`, or from the shell's agent panel.
 
-## The data model and the engine (S-73, revised by phios-agente-delta.md)
+## The data model and the engine
 
 ```
 phi agent init                       # seed personalita/general/ + technical/ (migrates the old flat *.md)

@@ -49,7 +49,7 @@ fastfetch
 # /usr/bin/resolvconf — pacman resolves it at install time.
 openresolv
 
-# docs/TODO.md: `phi fan` (real hwmon PWM control, internal/fan) needs the
+# Requested: `phi fan` (real hwmon PWM control, internal/fan) needs the
 # in-kernel hwmon driver modules this package's udev/modprobe hooks help
 # autoload, and its own `sensors`/`sensors-detect` tools are the standard
 # way to inspect what a host exposes. extra/T0. All three hosts, same

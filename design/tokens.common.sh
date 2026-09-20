@@ -53,7 +53,7 @@
 #   PHI_CURSOR_*               S-54. Theme name is closed (whiteglass); size
 #                              (24) is a plain, common default, not measured
 #                              against any real HiDPI screen.
-#   PHI_TERM_PADDING           16, docs/TODO.md: "terminal panels should have
+#   PHI_TERM_PADDING           16: "terminal panels should have
 #                              larger padding" (references/panel-reference-
 #                              1.JPG, -2.JPG) — a comfortably generous inset
 #                              chosen by eye against those two references,
@@ -179,14 +179,14 @@ PHI_BORDER_WIDTH_STRONG='1px'
 # font's cell width). Exact value is a judgment call — flagged.
 PHI_PANEL_PADDING='8px'
 
-# term-padding — docs/TODO.md: "terminal panels should have larger padding",
+# term-padding — Requested: "terminal panels should have larger padding",
 # references/panel-reference-1.JPG and -2.JPG. Its own token rather than
 # reusing panel-padding above: a distinct role (kitty's own window chrome,
 # not a phi-shell Panel.qml inset) that may diverge from it later, same
 # reasoning as border-width-strong staying separate from border-width. No
 # unit suffix — see the PLACEHOLDERS note at the top of this file for why.
-# rework.md s2 ("terminal windows should have a padding of 20px") raised
-# this from 16 to the exact figure that entry names; rework-issues.md
+# Requested: "terminal windows should have a padding of 20px", which
+# raised this from 16 to that exact figure;
 # "New requests" item 16 ("increase the padding of the terminal windows
 # to 40px") raises it again, to 40 — this is only the DEFAULT now, since
 # that same entry also asks to make it user-customisable: phi's own

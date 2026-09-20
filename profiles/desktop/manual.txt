@@ -49,7 +49,7 @@ sudo systemctl enable nftables.service
 # whenever the firewall is enabled — that is expected, it means "the
 # firewall is on", not "config drift".
 
-# --- hwmon PWM fan control for `phi fan` (docs/TODO.md) ---------------------
+# --- hwmon PWM fan control for `phi fan` ---------------------
 # The sudoers drop-in lets the desktop user write PWM duty cycles/enable
 # modes under /sys/class/hwmon without a password (`phi fan set` and the
 # Stats overlay's fan-profile buttons). Read the file first — it documents

@@ -1,7 +1,7 @@
 [mgr]
 cwd     = { fg = "${PHI_ACCENT}" }
 
-# docs/TODO.md: "it shouldn't use accent for common elements like the
+# Requested: "it shouldn't use accent for common elements like the
 # selection highlight, as accent is for the details" — `hovered` is the
 # row under the cursor, repainted constantly as you move through a
 # directory, not a deliberate/occasional state the way `marker_selected`
@@ -36,7 +36,7 @@ rules = [
   { url = "*/", fg = "${PHI_ACCENT}", bold = true },
 ]
 
-# docs/TODO.md: "replace the Development icon with one that is not VSC
+# Requested: "replace the Development icon with one that is not VSC
 # and the 'Games' folder with a non default one ... reconsider the
 # coloring ... it uses [a colour that] makes no sense, ... for folders
 # like Documents/Videos/Pictures/Downloads/Development, etc." — yazi's
@@ -80,7 +80,7 @@ prepend_dirs = [
   { name = "Videos",      text = "", fg = "${PHI_FG_2}" },
 ]
 
-# docs/TODO.md: "apply a different color for folders and subdirectories
+# Requested: "apply a different color for folders and subdirectories
 # that are not part of $HOME." yazi's icon `globs` match a rule's `url`
 # against the item's FULL path, not just its basename (confirmed against
 # yazi-config/src/pattern.rs) — but that same source confirms `Pattern`
@@ -92,7 +92,7 @@ prepend_dirs = [
 # here; it would need a real, hardcoded, per-user absolute path, which
 # this profile (shared across razer/zotac/mini, base/, not per-host) does
 # not have available. Scoped instead to the actual non-home storage this
-# project documents (PROGRESS.md §1): zotac's second disk at /mnt/bulk,
+# project documents: zotac's second disk at /mnt/bulk,
 # mini's /srv volume. Both the mount point itself and everything under it
 # (** crosses "/", confirmed against pattern.rs's own test suite) are
 # listed explicitly rather than relying on a single pattern to cover both
