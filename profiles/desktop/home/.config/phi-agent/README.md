@@ -1,8 +1,7 @@
 # ~/.config/phi-agent/
 
-Configuration for the phiOS AI agent subsystem (`docs/phios-agente.md` +
-`docs/phios-agente-delta.md`). `zotac` and `razer` only — `mini` does not
-carry the `desktop` profile.
+Configuration for the phiOS AI agent subsystem. `zotac` and `razer` only —
+`mini` does not carry the `desktop` profile.
 
 Two opencode instances, separated by capability and by containment:
 
