@@ -1,11 +1,10 @@
 #!/bin/sh
-# phiOS — pacman hook helper (S-45). /etc-material, never applied by
-# phios-install — install to /usr/local/bin/, chmod +x, after reading it.
-# Called by phi-theme-regen.hook as root, PostTransaction. Its whole job:
-# find the logged-in graphical user (a hook has no session of its own —
-# root has no meaningful $HOME, $XDG_STATE_HOME, or phios-dotfiles
-# checkout) and re-run `phi theme set` AS that user, so the regenerated
-# files land in their home with their own environment, not root's.
+# phiOS pacman hook helper. /etc material, never applied by phios-install —
+# install to /usr/local/bin/ and chmod +x after reading. Called by
+# phi-theme-regen.hook as root after transaction. Finds the logged-in
+# graphical user (hooks have no session; root has no meaningful $HOME,
+# $XDG_STATE_HOME, or phios-dotfiles checkout) and re-runs `phi theme set`
+# AS that user so regenerated files land in their home, not root's.
 #
 # `loginctl list-sessions` + `loginctl show-session ... -p Type -p Name`
 # real, documented systemd-logind commands — filters for a "seat0" session
