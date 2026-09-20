@@ -1,13 +1,10 @@
-# phiOS — GTK4 settings (S-41). Same reasoning as gtk-3.0/settings.ini.tmpl
-# in the sibling directory: the static fallback for an app that reads this
-# file directly rather than the portal preference (phi theme set writes
-# both). gtk-decoration-layout empty is GTK4's CSD-button suppression —
-# same Q-N05 decision, same libadwaita-hardcoded-HeaderBar caveat.
+# phiOS — GTK4 settings. Same reasoning as gtk-3.0/settings.ini.tmpl:
+# static fallback for apps that read this file instead of portal preference.
+# gtk-decoration-layout empty suppresses CSD buttons (same caveat with
+# libadwaita hardcoded HeaderBar as gtk-3.0). gtk-cursor-theme-name/-size
+# redundant with env vars but kept as fallback (see gtk-3.0/settings.ini.tmpl).
 #
-# Class C, same reasoning as gtk.css.tmpl in this same directory.
-#
-# gtk-cursor-theme-name/-size (S-54): see gtk-3.0/settings.ini.tmpl's
-# identical note in the sibling directory.
+# Class C (no runtime reload).
 
 [Settings]
 gtk-application-prefer-dark-theme=${PHI_VARIANT_IS_DARK}

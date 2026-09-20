@@ -1,22 +1,17 @@
-# phiOS — GTK3 settings (S-41). gtk-application-prefer-dark-theme is the
-# fallback for a GTK3 app that reads this file directly instead of the
-# portal's org.gnome.desktop.interface color-scheme (phi theme set writes
-# both, in internal/theme/set.go's setPortalPreference — this file is the
-# static, restart-required half; the portal write is the live half).
-# gtk-decoration-layout empty suppresses the header-bar's own min/max/close
-# buttons (Q-N05: CSD suppressed — decided this session). This alone does
-# NOT remove client-side decoration for a libadwaita/GTK4 app that hardcodes
-# its own HeaderBar as content — see profiles/desktop/templates/.config/
-# hypr/hyprland.lua.tmpl's GTK_CSD=0 (hl.env(), ENVIRONMENT section, a
-# template since S-54) and its own note on that limit.
+# phiOS — GTK3 settings.
 #
-# Class C, same reasoning as gtk.css.tmpl in this same directory.
+# gtk-application-prefer-dark-theme: fallback for GTK3 apps that read this
+# file directly instead of org.gnome.desktop.interface color-scheme portal.
 #
-# gtk-cursor-theme-name/-size (S-54): a real, long-standing GtkSettings
-# property. Redundant with the XCURSOR_THEME/XCURSOR_SIZE env vars
-# hyprland.lua.tmpl sets process-wide (S-54's own note there) — kept
-# anyway in case a GTK app resolves its cursor theme before that env var
-# is visible to it.
+# gtk-decoration-layout: empty suppresses header-bar's min/max/close buttons.
+# Does NOT remove client-side decoration in libadwaita/GTK4 apps that
+# hardcode HeaderBar — see hyprland.lua.tmpl's GTK_CSD=0 environment setting.
+#
+# gtk-cursor-theme-name/-size: redundant with XCURSOR_THEME/XCURSOR_SIZE
+# env vars (set in hyprland.lua.tmpl), but kept in case GTK app resolves
+# its cursor theme before those env vars are visible.
+#
+# Class C (no runtime reload, requires restart).
 
 [Settings]
 gtk-application-prefer-dark-theme=${PHI_VARIANT_IS_DARK}

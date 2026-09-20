@@ -1,16 +1,11 @@
-/* phiOS — GTK4/libadwaita named-colour override (S-41, master plan §6.7
- * target group 2). GTK4 dropped most of GTK3's @define-color names but
- * libadwaita's own stylesheet still defines and reads a documented public
- * set (accent_color, accent_bg_color, accent_fg_color, window_bg_color,
- * window_fg_color, view_bg_color, view_fg_color, headerbar_bg_color,
- * headerbar_fg_color) — this repaints Adwaita itself, not a replacement
- * theme (I-01). $XDG_CONFIG_HOME/gtk-4.0/gtk.css is loaded the same way
- * GTK3's own personal-override file is.
+/* phiOS — GTK4/libadwaita named-colour override. GTK4 dropped most GTK3
+ * @define-color names, but libadwaita's stylesheet defines and reads a
+ * documented public set (accent_color, window_bg_color, view_bg_color,
+ * headerbar_bg_color, etc.) — this repaints Adwaita itself, not a
+ * replacement theme. $XDG_CONFIG_HOME/gtk-4.0/gtk.css is loaded like GTK3's.
  *
- * Unverified against a real render (no GTK4 app available off-machine) —
- * flagged for cheap veto if a screenshot shows a name libadwaita ignores.
- *
- * Class C, same reasoning as the GTK3 file in the sibling directory.
+ * Class C: GTK4 reads this file at startup only — running apps need a
+ * restart to pick up changes.
  */
 
 @define-color accent_color ${PHI_ACCENT};
