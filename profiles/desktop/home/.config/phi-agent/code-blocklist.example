@@ -1,5 +1,5 @@
 # phi-agent — directories the coding agent (A2) and the A1 folder-of-interest
-# picker must refuse (phios-agente-delta.md §3.4).
+# picker must refuse.
 #
 # Copy to ~/.config/phi-agent/code-blocklist and edit. One glob per line;
 # '#' starts a comment; '~' expands to $HOME. A path that equals or is inside
@@ -23,7 +23,7 @@
 ~/phi-shell
 ~/phi-packages
 
-# The synced cloud root (ADR 045) — notes and documents, not code.
+# Cloud storage — notes and documents, not code.
 ~/cloud
 
 # System configuration you keep under version control elsewhere.

@@ -1,4 +1,4 @@
-# phiOS — A2 egress whitelist proxy (docs/phios-agente.md §5.1).
+# phiOS — A2 egress whitelist proxy.
 # Declared in services-user.txt, NEVER enabled by the installer.
 #
 #   systemctl --user enable --now phi-agent-proxy.service

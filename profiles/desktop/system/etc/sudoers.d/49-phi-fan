@@ -1,4 +1,4 @@
-# phiOS — hwmon PWM fan control for `phi fan` (docs/TODO.md).
+# phiOS — hwmon PWM fan control for `phi fan`.
 #
 # NEVER APPLIED BY THE INSTALLER. This is /etc material shown by
 # `phios-install --system-diff`; installing it is a deliberate user action:

@@ -1,4 +1,4 @@
-# phiOS — A2 egress whitelist (docs/phios-agente.md §5.1).
+# phiOS — A2 egress whitelist.
 #
 # One POSIX extended regex per line, matched against the destination host
 # (FilterExtended On, FilterCaseSensitive Off). tinyproxy default-denies
@@ -36,7 +36,7 @@
 #^raw\.githubusercontent\.com$
 
 # --- opencode's own runtime needs (if it fetches @ai-sdk/* at first run) ---
-# See PROGRESS.md S-71 held item. Uncomment only if a first contained run
+# Uncomment only if a first contained run
 # shows opencode trying to reach one of these.
 #^registry\.npmjs\.org$
 #^opencode\.ai$

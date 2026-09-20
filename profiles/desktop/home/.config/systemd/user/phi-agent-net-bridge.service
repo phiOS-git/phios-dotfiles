@@ -1,5 +1,5 @@
-# phiOS — A2 network bridge: unix socket -> tinyproxy (docs/phios-agente.md
-# §5.1). Declared in services-user.txt, NEVER enabled by the installer.
+# phiOS — A2 network bridge: unix socket -> tinyproxy.
+# Declared in services-user.txt, NEVER enabled by the installer.
 #
 #   systemctl --user enable --now phi-agent-net-bridge.service
 #

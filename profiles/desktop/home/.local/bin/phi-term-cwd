@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # phi-term-cwd — open a new terminal in the working directory of the
-# focused window (docs/TODO.md: "new terminal windows should start at the
-# same directory as the last focused one"). Super+Return is bound to this in
+# focused window. New terminal windows start at the same directory as the
+# last focused one. Super+Return is bound to this in
 # hyprland.lua.tmpl, so a new terminal joins the project you are actually
 # in instead of wherever the session spawned.
 #
@@ -20,7 +20,7 @@
 # uses the focused pid's cwd directly. Unreadable, missing or zero pid, or
 # any resolution failure, falls back to $HOME.
 #
-# Dependency budget: bash + coreutils. hyprctl ships with Hyprland (S-01), so
+# Dependency budget: bash + coreutils. hyprctl ships with Hyprland, so
 # it is present wherever this runs. JSON is parsed with sed, not jq.
 
 set -euo pipefail

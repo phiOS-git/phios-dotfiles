@@ -1,6 +1,6 @@
 [Plymouth Theme]
 Name=phi
-Description=phiOS boot splash -- Role A (static mark), master plan Sec6.6/Sec9.1
+Description=phiOS boot splash -- Role A (static mark)
 ModuleName=script
 
 [script]

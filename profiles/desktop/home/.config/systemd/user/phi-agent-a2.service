@@ -1,4 +1,4 @@
-# phiOS — A2 worker engine, LOCAL (docs/phios-agente.md §3.1, §4.4).
+# phiOS — A2 worker engine, LOCAL.
 # Declared in services-user.txt, NEVER enabled by the installer.
 #
 #   systemctl --user enable --now phi-agent-a2.service
@@ -10,9 +10,9 @@
 # interactive coding is `phi-code` (profiles/desktop .../zsh/agent.zsh),
 # which runs the opencode TUI in the container directly. The remote surface
 # is a SEPARATE pair of units (phi-agent-a2-remote*.service), started only
-# for a declared-remote session (§10.3).
+# for a declared-remote session.
 #
-# Since phios-agente-delta.md D-03 there is no code root: this server has NO
+# No code root: this server has NO
 # working directory mounted (only A2's own XDG trees are writable). To serve
 # a real project, set PHI_AGENT_A2_WORKDIR in ~/.config/phi-agent/env — the
 # ExecStart passes it through as --workdir when set.
@@ -33,7 +33,7 @@ Type=simple
 EnvironmentFile=-%h/.config/phi-agent/env
 Environment=PHI_AGENT_A2_PORT=4299
 # ${PHI_AGENT_A2_WORKDIR:+...} adds --workdir only when the var is non-empty,
-# so an unset var yields a server with no project directory (delta D-03).
+# so an unset var yields a server with no project directory.
 ExecStart=/usr/bin/sh -c 'exec "%h/.local/bin/phi-agent-contain" a2 ${PHI_AGENT_A2_WORKDIR:+--workdir "$PHI_AGENT_A2_WORKDIR"} -- opencode serve --hostname 127.0.0.1 --port "$PHI_AGENT_A2_PORT"'
 Restart=on-failure
 RestartSec=3

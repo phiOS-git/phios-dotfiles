@@ -157,7 +157,7 @@ never shows in the panel list and never reaches memory. It needs
 `phi-agent-a1.service` up; it never starts an engine.
 
 ```
-phi agent ask "what does ADR 094 say?"
+phi agent ask "explain container isolation"
 phi agent ask --personality technical "explain this bwrap flag: --unshare-cgroup"
 ```
 

@@ -12,7 +12,7 @@
 # and `phi vpn up/down` work non-interactively (`sudo -n`). `wg show` is
 # also allowed so `phi vpn status` can read the handshake age and byte
 # counters — `phi` deliberately never reads or prints the endpoint or the
-# allowed-IPs from that output (ADR 067 analog).
+# allowed-IPs from that output.
 #
 # Scope notes / accepted risk on a single-user personal machine:
 #   - the `*` after `up`/`down` is a path/name argument; wg-quick itself

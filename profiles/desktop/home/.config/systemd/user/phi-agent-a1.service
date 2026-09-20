@@ -1,12 +1,11 @@
-# phiOS — A1 assistant engine (docs/phios-agente.md §10.1, §4.3).
+# phiOS — A1 assistant engine.
 # Declared in services-user.txt, NEVER enabled by the installer.
 #
 #   systemctl --user enable --now phi-agent-a1.service
 #
 # `opencode serve` inside the containment, on host loopback. `phi agent
-# project use <name>` restarts this unit so the containment is rebuilt for
-# the new project (§4.3 "il cambio di progetto ricostruisce il contenimento
-# e riavvia il servizio").
+# project use <name>` restarts this unit to rebuild the containment for
+# the new project.
 #
 # NO degraded mode: ExecStart is phi-agent-contain, which exits non-zero if
 # bubblewrap is unavailable, and there is no fallback ExecStart — the unit

@@ -1,4 +1,4 @@
-# phiOS — A2 remote surface: the overlay listener (§10.3, §5.3).
+# phiOS — A2 remote surface: the overlay listener.
 # Declared in services-user.txt, NEVER enabled by the installer.
 #
 #   # for the duration of a remote session only:
@@ -8,14 +8,14 @@
 #
 # This is the ONLY thing that ever binds the overlay address, and it binds
 # ONLY that address — never 0.0.0.0, never another interface (V-17). The
-# address is machine data (ADR 067 / CLAUDE.md rule 5): it is NOT in the
+# address is machine data (CLAUDE.md rule 5): it is NOT in the
 # repository. Set PHI_AGENT_REMOTE_ADDR in ~/.config/phi-agent/env; the
 # unit refuses to start without it.
 #
 # Reachability inside the overlay is the overlay's own access policy
 # (default-deny, explicit allow to the user's own devices toward this
 # port) — not configured here. No second encryption layer: the overlay
-# already encrypts (§5.3).
+# already encrypts.
 #
 # UNVERIFIED: written from socat(1) / systemd.exec(5); not run.
 
