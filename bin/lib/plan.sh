@@ -9,9 +9,10 @@
 # Parallel arrays rather than one record array, because bash has no structs and
 # the indices are the only join key needed:
 #
-#   PHIOS_PLAN_KIND     link | render
+#   PHIOS_PLAN_KIND     link | render | generate
 #   PHIOS_PLAN_TARGET   path relative to $HOME
-#   PHIOS_PLAN_SOURCE   path relative to the repository root
+#   PHIOS_PLAN_SOURCE   path relative to the repository root (link, render), or
+#                       profiles/<profile>/external.txt#<name> (generate)
 #   PHIOS_PLAN_PROFILE  the profile that declared it
 #   PHIOS_PLAN_DIGEST   sha256 of the rendered content, filled by the state pass
 #   PHIOS_PLAN_STATE    ok | create | update | replace
@@ -59,9 +60,21 @@ phios_plan_add() {
 }
 
 # home/ is linked as-is; templates/ is rendered with the .tmpl suffix stripped.
-# Both trees mirror the layout under $HOME.
+# Both trees mirror the layout under $HOME. A third pass, after both, adds one
+# generated .desktop entry per T4 declaration (bin/lib/external.sh) so a
+# declared, monitored AppImage is actually launchable.
+#
+# That generation happens here rather than in `phi` (the Go CLI) because
+# phios_manifest_write (below) rebuilds the manifest from PHIOS_PLAN_* alone
+# and moves it over the old file: a record written by any other program is
+# erased on the next run. Once the record is gone, phios_manifest_orphans
+# never yields it and phios_plan_reconcile never removes the file it names, so
+# a generated entry written by a second program would leak into
+# ~/.local/share/applications permanently. The installer has to be the only
+# writer for the same reason it is the only writer of a symlink or a rendered
+# template.
 phios_plan_build() {
-	local profile dir src rel
+	local profile dir src rel i name
 	phios_plan_reset
 	for profile in "${PHIOS_PROFILES[@]+"${PHIOS_PROFILES[@]}"}"; do
 		dir=$PHIOS_ROOT/profiles/$profile/home
@@ -80,6 +93,20 @@ phios_plan_build() {
 			done < <(find "$dir" -type f -name '*.tmpl' -print0 | sort -z)
 		fi
 	done
+
+	# Unconditional: this plan is built purely from repository content today
+	# (profiles + declarations), never from machine state, which is what makes
+	# --dry-run honest. Whether the AppImage a T4 entry names is actually
+	# present is not checked here; a missing artifact is a `missing` finding
+	# for `phi pkg audit`, not this installer's concern.
+	for i in "${!PHIOS_EXT_NAME[@]}"; do
+		[[ ${PHIOS_EXT_TIER[i]} == T4 ]] || continue
+		name=${PHIOS_EXT_NAME[i]}
+		phios_plan_add generate \
+			".local/share/applications/phios-external-$name.desktop" \
+			"profiles/${PHIOS_EXT_PROFILE[i]}/external.txt#$name" \
+			"${PHIOS_EXT_PROFILE[i]}"
+	done
 	return 0
 }
 
@@ -95,9 +122,10 @@ phios_plan_rendered_path() {
 	printf '%s\n' "$PHIOS_TMPDIR/render/$1"
 }
 
-# Fills PHIOS_PLAN_STATE and, for rendered files, PHIOS_PLAN_DIGEST.
+# Fills PHIOS_PLAN_STATE and, for rendered and generated files, PHIOS_PLAN_DIGEST.
 phios_plan_state() {
 	local i kind target source abs want have rendered digest recorded
+	local ext_name ext_i
 	for i in "${!PHIOS_PLAN_TARGET[@]}"; do
 		kind=${PHIOS_PLAN_KIND[i]}
 		target=${PHIOS_PLAN_TARGET[i]}
@@ -123,7 +151,16 @@ phios_plan_state() {
 
 		rendered=$(phios_plan_rendered_path "$i")
 		mkdir -p -- "$(dirname -- "$rendered")"
-		phios_render_template "$PHIOS_VARIANT" "$PHIOS_ROOT/$source" "$rendered"
+		if [[ $kind == generate ]]; then
+			# source is profiles/<profile>/external.txt#<name>; the content
+			# comes from the generator function, not from a template on disk.
+			ext_name=${source##*#}
+			ext_i=$(phios_external_index_of "$ext_name") ||
+				phios_die "no external declaration for $ext_name (plan and state disagree)"
+			phios_external_desktop_entry "$ext_name" "${PHIOS_EXT_REASON[ext_i]}" > "$rendered"
+		else
+			phios_render_template "$PHIOS_VARIANT" "$PHIOS_ROOT/$source" "$rendered"
+		fi
 		digest=$(phios_sha256 "$rendered")
 		PHIOS_PLAN_DIGEST[i]=$digest
 
@@ -177,6 +214,14 @@ phios_plan_apply_one() {
 	if [[ $kind == link ]]; then
 		want=$(phios_plan_link_value "$target" "$source")
 		ln -sfn -- "$want" "$abs"
+	elif [[ $kind == generate ]]; then
+		# Unlike render, source here is a declaration line, not a file on
+		# disk (profiles/<profile>/external.txt#<name>) — chmod --reference
+		# would dereference something that does not exist, so a generated
+		# file gets a fixed, ordinary permission instead.
+		rendered=$(phios_plan_rendered_path "$i")
+		cat -- "$rendered" > "$abs"
+		chmod 644 -- "$abs"
 	else
 		rendered=$(phios_plan_rendered_path "$i")
 		cat -- "$rendered" > "$abs"

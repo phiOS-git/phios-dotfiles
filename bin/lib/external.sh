@@ -237,3 +237,24 @@ phios_external_report() {
 	fi
 	return 0
 }
+
+# The .desktop entry generated for one T4 declaration, so a monitored,
+# correctly-installed AppImage is actually launchable — a bare file in
+# ~/Applications ships no metadata, and the launcher's scan never sees it
+# without one.
+#
+# Exec is fixed by convention: a T4 entry named NAME runs the AppImage this
+# repository expects at $HOME/Applications/NAME.AppImage. The desktop entry
+# spec does not expand $HOME, so the absolute path is written out in full.
+# The six-field external.txt format has no exec column of its own; inventing
+# a seventh for zero current entries would be speculative. If a real T4
+# target ever needs a different path, that column is the extension point.
+phios_external_desktop_entry() {
+	local name=$1 reason=$2
+	printf '[Desktop Entry]\n'
+	printf 'Type=Application\n'
+	printf 'Name=%s\n' "$name"
+	printf 'Exec=%s\n' "$HOME/Applications/$name.AppImage"
+	printf 'Comment=%s\n' "$reason"
+	printf 'Terminal=false\n'
+}
