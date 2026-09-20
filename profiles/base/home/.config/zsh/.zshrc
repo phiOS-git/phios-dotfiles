@@ -41,8 +41,8 @@ function y() {
 export NNN_BMS="d:$HOME;D:$HOME/.config"
 source "$ZDOTDIR/theme.zsh"
 
-# phiOS AI agent shell helpers — shipped by the desktop profile only
-# (absent on mini, S-76). Defines `phi-code` for a contained A2 session.
+# phiOS AI agent shell helpers, desktop profile only. Defines `phi-code` for
+# a contained A2 session.
 [ -r "$ZDOTDIR/agent.zsh" ] && source "$ZDOTDIR/agent.zsh"
 
 

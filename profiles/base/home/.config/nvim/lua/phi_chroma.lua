@@ -5,10 +5,10 @@
 -- to phi-shell's `chroma` IPC handler; Services/Chroma.qml maps that letter
 -- to a design-token colour and tints the keyboard.
 --
--- No colour lives here — only the mode letter crosses the boundary, so this
--- file carries no literal (I-05). Plain Lua, no plugin manager (the nvim
--- config is deliberately minimal). Non-blocking: vim.system / jobstart
--- spawn and never wait, so nothing here can stall the editor.
+-- No colour lives here — only the mode letter crosses the boundary. Plain
+-- Lua, no plugin manager (the nvim config is deliberately minimal).
+-- Non-blocking: vim.system / jobstart spawn and never wait, so nothing here
+-- can stall the editor.
 --
 -- Safe to require unconditionally: on a host with no Chroma keyboard the
 -- shell's handler is a no-op, and if `qs` is absent this sets up nothing.

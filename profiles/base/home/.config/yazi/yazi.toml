@@ -11,21 +11,11 @@ url = "*/"
 run = "git"
 group = "git"
 
-# docs/TODO.md: opening an image used to flash a terminal window open and
-# immediately closed. yazi's own bundled default opener for image/* is
-# `xdg-open %s1` (yazi-config/preset/yazi-default.toml, sxyazi/yazi) — the
-# same unmanaged mimeapps.list resolution phi's launcher FilesProvider was
-# also found relying on (see phi/internal/query/files.go and the matching
-# VERIFICATION.md entry). Naming a real target explicitly here closes the
-# yazi half the same way.
-#
-# Interface rework (rework.md's custom image window): was `imv -i
-# phios-imv %s1` (its "-i" flag gave the window a fixed class so
-# hyprland.lua.tmpl's "imv-float" rule could float it) — replaced once
-# phi-shell grew its own native floating image surface
-# (Images/ImageWindow.qml), the same `qs ipc call image open <path>`
-# target phi/internal/query/files.go's FilesProvider now also uses, so
-# yazi and the launcher open images through the identical mechanism.
+# Image opening: yazi's bundled default opener for image/* is `xdg-open %s1`
+# (yazi-config/preset/yazi-default.toml). Naming a real target here ensures
+# proper integration. Uses the same phi-shell image surface
+# (Images/ImageWindow.qml, `qs ipc call image open <path>`) that the launcher
+# FilesProvider now also uses, so yazi and launcher open images identically.
 [opener]
 phios-image = [
 { run = 'qs -p ~/.config/quickshell/phi ipc call image open %s1', desc = "Open in phi-shell", for = "linux", orphan = true },
