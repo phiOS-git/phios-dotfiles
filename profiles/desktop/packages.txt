@@ -29,93 +29,59 @@ slurp
 wf-recorder
 zbar
 
-# shell-features (SF-4): the freedesktop sound set, for the notification
-# sound (played via pw-play from Services/Notifications.qml). extra/T0.
-# Approved by explicit user choice — not in master plan §15's registry.
-# Sound is off by default; Services/Notifications.qml also accepts an
-# absolute path, so this only provides the named defaults (message.oga,
-# bell.oga, complete.oga, …).
+# Freedesktop sound set for notifications (played via pw-play from
+# Services/Notifications.qml). Sound is off by default; absolute paths also
+# accepted. Provides named defaults: message.oga, bell.oga, complete.oga.
 sound-theme-freedesktop
 
-# S-41: GTK/Qt native-app theming (master plan §6.7 target group 2). Added
-# by explicit user approval this step — not in master plan §15's registry.
-# qt5ct/qt6ct substitute for §6.7's named "Kvantum": their real
-# [ColorScheme] palette format was confirmed against real upstream source
-# (github.com/trialuser02/qt6ct), Kvantum's non-SVG palette-override format
-# could not be from here.
+# GTK/Qt native-app theming. qt5ct/qt6ct palettes confirmed against real
+# upstream source (github.com/trialuser02/qt6ct).
 qt5ct
 qt6ct
 gsettings-desktop-schemas
 
-# S-42: night shift daemon, pre-approved master plan §15.3 for M4.
+# Night shift daemon.
 hyprsunset
 
-# Pre-approved master plan §15.3 for M4 ("idle, illuminazione statica
-# Chroma"). Added now since it is already registered; NOT configured yet —
-# no S-4x AGENT bullet names an idle-timeout policy (auto-lock, DPMS) to
-# write into hypridle.conf. S-46's Chroma "static colour on idle
-# (hypridle)" behaviour is the first place this step's own backlog actually
-# calls for hypridle to run something; its config is deferred there.
+# Idle timeout policy daemon. Configuration is deferred.
 hypridle
 
-# S-53: boot animation, pre-approved master plan §15.3 for M5. zotac and
-# razer only per master plan §9.1 ("non mini: headless, root non cifrata,
-# timeout 0") — both are in this `desktop` profile, `mini` is not.
+# Boot animation. zotac and razer only (both carry this `desktop` profile;
+# mini does not).
 plymouth
 
-# S-54: cursor theme. NOT in master plan §15 before now — approved by
-# explicit user choice this session, over producing a bespoke one, per
-# this step's own AGENT card ("either find a conforming one or produce
-# it"). ADR 125: "whiteglass" does NOT actually match architettura §8.2.3's
-# "thin, black, white-outlined" (it is white, not black) — a real mistake
-# found and corrected before handoff; the user chose to accept this
-# deviation anyway rather than have a bespoke theme produced.
+# Cursor theme. "whiteglass" chosen; does not perfectly match the design but
+# accepted over producing a bespoke alternative.
 xcursor-themes
 
-# AI agent subsystem.
-# zotac and razer only — both carry this `desktop` profile, mini does not
-# (§1.2: "la configurazione di mini ... senza partecipare a questa
-# architettura"). opencode is the engine (ADR 117, closes Q-40/C-12);
-# bubblewrap is the containment mechanism (ADR 087).
+# AI agent subsystem. zotac and razer only. opencode is the engine;
+# bubblewrap is the containment mechanism.
 bubblewrap
 opencode
 
-# S-72: A2's egress whitelist (§5.1). socat bridges the --unshare-net'd A2
-# container to a host tinyproxy that forwards only to whitelisted hosts.
+# A2's egress whitelist. socat bridges the --unshare-net'd A2 container to
+# a host tinyproxy that forwards only to whitelisted hosts.
 socat
 tinyproxy
 
-# Out-of-plan: settings-overhaul. WireGuard VPN, driven by `phi vpn` and
-# the Connectivity settings section. extra/T0. Tunnel .conf files are the
-# user's own, kept at ~/.config/phi/wireguard/ — never in this repo (they
-# hold a private key and an endpoint address, and the remote is public).
-# up/down go through sudo -n via profiles/desktop/system/etc/sudoers.d/
-# 49-phi-vpn (that drop-in is NEVER applied by the installer).
+# WireGuard VPN, driven by `phi vpn` and the Connectivity settings section.
+# Tunnel .conf files (with private keys and endpoint addresses) are not
+# stored in this repository. up/down go through sudo -n via a sudoers drop-in.
 wireguard-tools
 
-# Out-of-plan: firewall. architettura §6.6 was [TBD] between nftables, ufw
-# and firewalld — the user chose nftables directly. core/T0, provides
-# /usr/bin/nft and nftables.service. NOT in master plan §15 (the doc names
-# it as a candidate "già nel sistema base" but declares no package) —
-# added on the user's instruction; §15.3 needs a matching line. `phi
-# firewall` owns `table inet phi` in /etc/nftables.conf; the control calls
-# go through sudo -n via profiles/desktop/system/etc/sudoers.d/
-# 49-phi-firewall (NEVER applied by the installer).
+# Firewall (nftables). The user chose nftables directly. `phi firewall` owns
+# `table inet phi` in /etc/nftables.conf; control calls go through sudo -n
+# via a sudoers drop-in.
 nftables
 
-# Requested: "a GUI file manager needs to be added: thunar". extra/T0.
-# thunar-volman + gvfs give it removable-media auto-mount and the trash/
-# network-location backends a GUI file manager is expected to have; tumbler
-# is its thumbnailer. No new template needed for theming: thunar is a GTK3
-# app and already inherits profiles/desktop/templates/.config/gtk-3.0/
-# {gtk.css,settings.ini}.tmpl like every other GTK3 app in this profile.
+# GUI file manager. thunar-volman + gvfs provide removable-media auto-mount
+# and trash/network-location backends. tumbler is the thumbnailer.
+# No new template needed: thunar is GTK3 and inherits gtk-3.0 theme.
 thunar
 thunar-volman
 gvfs
 tumbler
 
-# Requested: "the network overlay's Wi-Fi section ... has no actual
-# speedtest trigger". extra/T0 (confirmed via `pacman -Ss speedtest`, not
-# AUR). Services/SpeedTest.qml (phi-shell) runs `speedtest-cli --simple`
-# on demand, never polled.
+# Network overlay's Wi-Fi speedtest trigger. Services/SpeedTest.qml
+# (phi-shell) runs `speedtest-cli --simple` on demand, never polled.
 speedtest-cli
