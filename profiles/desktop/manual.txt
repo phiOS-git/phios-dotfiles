@@ -17,7 +17,7 @@ sudo install -Dm644 profiles/desktop/system/usr/share/plymouth/themes/phi/phi.pn
 sudo plymouth-set-default-theme -R phi
 # Ensure `plymouth` is in the HOOKS line of /etc/mkinitcpio.conf (after
 # `base udev`, before `autodetect`); add it there first if missing.
-grep -q '\bplymouth\b' /etc/mkinitcpio.conf || echo 'ADD plymouth to HOOKS in /etc/mkinitcpio.conf, then re-run: sudo plymouth-set-default-theme -R phi'
+grep -q '\bplymouth\b' /etc/mkinitcpio.conf || echo 'ADD plymouth to HOOKS in /etc/mkinitcpio.conf, then re-run plymouth-set-default-theme -R phi'
 
 # --- WireGuard control for `phi vpn` -------------------------------------
 # Lets the desktop user bring WireGuard tunnels up and down without a
