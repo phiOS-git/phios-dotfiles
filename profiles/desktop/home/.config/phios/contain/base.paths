@@ -1,0 +1,41 @@
+# phios contain — generic read-only base, every profile.
+#
+# Grammar: see the header of ~/.local/bin/phi-contain.
+# Everything here is the minimum a modern userspace binary needs; nothing
+# here carries user data or a profile-specific path. A profile's own
+# <profile>.paths is read after this file, so a bind there can shadow
+# anything declared here.
+
+# The system tree. /bin /sbin /lib /lib64 are symlinks into it on Arch.
+ro   /usr                       /usr
+sym  usr/bin                    /bin
+sym  usr/bin                    /sbin
+sym  usr/lib                    /lib
+sym  usr/lib                    /lib64
+
+# Name resolution and TLS trust.
+#
+# resolv.conf is "?" because on a systemd-resolved host it's a symlink into
+# /run (fresh tmpfs in container). bwrap resolves it on the host side when it
+# can; starting with no DNS is better than refusing to start.
+ro?  /etc/resolv.conf           /etc/resolv.conf
+ro   /etc/hosts                 /etc/hosts
+ro   /etc/nsswitch.conf         /etc/nsswitch.conf
+ro   /etc/ssl                   /etc/ssl
+ro?  /etc/ca-certificates       /etc/ca-certificates
+ro?  /etc/pki                   /etc/pki
+
+# Numeric-id resolution and the local timezone. passwd/group are the real
+# system files, read-only — the container has no shadow, no gshadow.
+ro   /etc/passwd                /etc/passwd
+ro   /etc/group                 /etc/group
+ro?  /etc/localtime             /etc/localtime
+
+# The container home is an empty directory; a profile's own .paths file
+# mounts whatever it needs underneath it.
+dir  @CONTAINER_HOME@
+
+# NEVER here, and there is no line you can add without it being obvious in
+# review: /home outside @CONTAINER_HOME@, the rest of the real $HOME, every
+# session socket ($XDG_RUNTIME_DIR, Wayland, D-Bus session bus, PipeWire,
+# SSH-agent socket), and /etc beyond the whitelist above.

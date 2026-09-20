@@ -11,6 +11,50 @@ generated. Everything else in the file is still ordinary Lua, unrelated to this
 change. `home/.config/kitty/` and `templates/` carry the themed terminal/
 file-manager/media-player configs (design tokens flow through `templates/`).
 
+## Containment (`phi-contain`)
+
+`home/.local/bin/phi-contain` is the generic tier-T3 harness (see the
+workspace `AGENTS.md` package tier ladder): a bubblewrap wrapper with a
+fail-closed preflight, an explicit mount set and no ambient environment,
+usable by anything that needs containment rather than welded to one
+subsystem. It lives here rather than in `base` because `bubblewrap` is
+declared in this profile's `packages.txt` — `mini` has no `bwrap` and, by
+policy, carries no T3 software at all. Configuration lives under
+`~/.config/phios/contain/`:
+
+| Path | What |
+|---|---|
+| `base.paths` | the read-only base every profile gets: `/usr`, the Arch symlinks, name resolution, TLS trust, `passwd`/`group`/`localtime` |
+| `<profile>.paths` | one profile's own mounts, read after `base.paths` so a later bind shadows an earlier one |
+| `deny` | roots `--workdir` is refused inside — a guard-rail on the argument, not the containment boundary, which is the mount set itself |
+
+`.paths` grammar, one directive per line (`#` starts a comment):
+
+```
+ro   SRC DEST     read-only bind; fatal if SRC is missing
+ro?  SRC DEST     read-only bind; skipped silently if SRC is missing
+rw   SRC DEST     writable bind;  fatal if SRC is missing
+rw?  SRC DEST     writable bind;  skipped silently if SRC is missing
+dir  DEST         create an empty directory in the container
+sym  TARGET LINK  create a symlink in the container
+net  host         keep the host network namespace
+net  none         --unshare-net, no network at all (the default)
+net  proxy SOCKET --unshare-net, plus a bind of SOCKET's directory so a
+                  host-side proxy can be reached across the namespace
+```
+
+`@HOME@` `@CONFIG@` `@DATA@` `@STATE@` `@CACHE@` expand to the real user's XDG
+directories; `@CONTAINER_HOME@` and `@CONTAINER_RUNTIME@` are the
+container-side paths; `@WORKDIR@` is the `--workdir` argument, and a line
+naming it is skipped entirely when `--workdir` was not passed. `--dry-run`
+prints the assembled `bwrap` argument vector and exits without running
+anything — the way to inspect a mount set before trusting it.
+
+`~/.config/phi-agent/` and `~/.local/bin/phi-agent-contain` are a separate,
+older harness welded to the AI agent subsystem. It still exists and is
+unaffected by `phi-contain`; it retires when that subsystem is rebuilt on top
+of the generic harness instead of carrying its own copy.
+
 ## Hyprland Lua API compatibility
 
 The Lua configuration API can change between versions. Hyprland was on 0.55

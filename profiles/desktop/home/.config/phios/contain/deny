@@ -1,0 +1,20 @@
+# phios contain — deny list, consulted only for `phi-contain --workdir`.
+#
+# One path or glob per line, '#' starts a comment, '~' expands to the real
+# user's home. --workdir is refused when it resolves inside one of these
+# roots. This is a guard-rail on the argument the caller typed, not the
+# containment boundary — the boundary is the mount set a profile's own
+# .paths file declares, and a root listed here is still reachable if a
+# profile binds it in directly.
+
+~/.ssh
+~/.gnupg
+~/.password-store
+~/.local/share/keyrings
+~/.mozilla
+~/.librewolf
+/etc
+/root
+/proc
+/sys
+/boot

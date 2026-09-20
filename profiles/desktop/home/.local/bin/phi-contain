@@ -1,0 +1,322 @@
+#!/usr/bin/env bash
+#
+# phi-contain — run a command inside a bubblewrap containment built FROM
+# EMPTY, with an explicit per-profile mount set and no ambient environment.
+#
+#   phi-contain PROFILE [--dry-run] [--workdir DIR] -- COMMAND [ARG...]
+#
+# This is the generic tier-T3 harness (the "contained" tier of the package
+# ladder in the workspace AGENTS.md): a path that is not mounted below does
+# not exist for the process, whatever command it runs. It lives in the
+# `desktop` profile rather than `base` because `bubblewrap` itself is
+# declared in profiles/desktop/packages.txt — `mini` has no `bwrap`, and by
+# policy carries no T3 software at all, so a copy of this script there would
+# be dead weight with nothing to run it.
+#
+# Fail-closed: if bubblewrap is missing, unusable, or the kernel refuses the
+# namespaces, this script prints one line to stderr and exits non-zero
+# WITHOUT running COMMAND. There is deliberately no degraded mode.
+#
+# What this script does NOT do, on purpose:
+#   - It never reads the caller's environment into the container: --clearenv
+#     drops everything and only the explicit allowlist below (add_env calls)
+#     is put back. The SSH-agent socket, the session bus, Wayland, and every
+#     *_API_KEY / *_TOKEN are excluded by construction, not by a filter.
+#   - It never wraps or rewrites COMMAND. It runs exactly the argv given
+#     after `--`, unmodified — a target that needs a startup step puts it in
+#     its own command, not in this script.
+#
+# Dependency budget: bash + coreutils + bubblewrap. No jq, no python.
+
+set -euo pipefail
+
+readonly PROG=phi-contain
+
+# Container-side layout. Every profile sees the same shape; only the mounts
+# behind it differ (a profile's own <profile>.paths).
+readonly CONTAINER_HOME=/home/contained
+readonly CONTAINER_RUNTIME=/run/contained
+
+die() { printf '%s: %s\n' "$PROG" "$*" >&2; exit 1; }
+
+usage() {
+	cat <<-USAGE
+	usage: $PROG PROFILE [--dry-run] [--workdir DIR] -- COMMAND [ARG...]
+
+	Starts COMMAND inside the bubblewrap containment built from
+	~/.config/phios/contain/base.paths plus PROFILE.paths in the same
+	directory. --dry-run prints the assembled bwrap argument vector and
+	exits 0 without running anything — use it to inspect exactly what is
+	and is not mounted before trusting it.
+
+	--workdir DIR   made available to PROFILE.paths as @WORKDIR@; a line
+	                naming it is skipped when --workdir is not given.
+	                Refused if DIR resolves inside a root listed in
+	                ~/.config/phios/contain/deny.
+	USAGE
+}
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+
+profile=
+dry_run=0
+workdir=
+cmd=()
+
+while (($#)); do
+	case $1 in
+		--dry-run) dry_run=1; shift ;;
+		--workdir) shift; [[ $# -gt 0 && $1 != -- ]] || die "--workdir needs a directory"; workdir=$1; shift ;;
+		-h|--help) usage; exit 0 ;;
+		--) shift; cmd=("$@"); break ;;
+		-*) die "unexpected argument: $1 (try --help)" ;;
+		*) [[ -z $profile ]] || die "profile given twice"; profile=$1; shift ;;
+	esac
+done
+
+[[ -n $profile ]] || { usage >&2; die "no profile"; }
+((${#cmd[@]})) || die "no command after --"
+
+# ---------------------------------------------------------------------------
+# Fail-closed preflight
+# ---------------------------------------------------------------------------
+
+bwrap=$(command -v bwrap 2>/dev/null) || die "containment unavailable: bwrap not found"
+[[ -x $bwrap ]] || die "containment unavailable: $bwrap is not executable"
+"$bwrap" --version >/dev/null 2>&1 || die "containment unavailable: '$bwrap --version' failed"
+
+# Unprivileged user namespaces must be available unless bwrap is setuid-root.
+# On Arch the package is not setuid (it relies on unprivileged userns), so a
+# kernel with them disabled means no containment — and therefore no startup.
+if [[ ! -u $bwrap ]]; then
+	if [[ -r /proc/sys/kernel/unprivileged_userns_clone ]] \
+		&& [[ $(< /proc/sys/kernel/unprivileged_userns_clone) == 0 ]]; then
+		die "containment unavailable: unprivileged user namespaces disabled (kernel.unprivileged_userns_clone=0)"
+	fi
+	if [[ -r /proc/sys/user/max_user_namespaces ]] \
+		&& [[ $(< /proc/sys/user/max_user_namespaces) == 0 ]]; then
+		die "containment unavailable: user.max_user_namespaces=0"
+	fi
+fi
+
+# ---------------------------------------------------------------------------
+# Configuration roots
+# ---------------------------------------------------------------------------
+
+conf_home=${XDG_CONFIG_HOME:-$HOME/.config}
+data_home=${XDG_DATA_HOME:-$HOME/.local/share}
+state_home=${XDG_STATE_HOME:-$HOME/.local/state}
+cache_home=${XDG_CACHE_HOME:-$HOME/.cache}
+
+contain_dir=$conf_home/phios/contain
+[[ -d $contain_dir ]] || die "containment unavailable: $contain_dir not found"
+
+deny_file=$contain_dir/deny
+
+_resolve() { cd -- "$1" 2>/dev/null && pwd -P || printf '%s' "$1"; }
+
+# Guard-rail on the argument, not the containment boundary: the boundary is
+# the mount set a profile declares below. A root can be listed here and
+# still be reachable if PROFILE.paths binds it in directly.
+path_denied() {
+	local real=$1 home_real line pat pr
+	[[ -r $deny_file ]] || return 1
+	home_real=$(_resolve "$HOME")
+	while IFS= read -r line || [[ -n $line ]]; do
+		line=${line%%#*}
+		line=${line#"${line%%[![:space:]]*}"}; line=${line%"${line##*[![:space:]]}"}
+		[[ -n $line ]] || continue
+		pat=${line/#\~/$home_real}; pat=${pat%/}
+		pr=$(_resolve "$pat")
+		if [[ $real == $pat || $real == "$pat"/* || $real == "$pr" || $real == "$pr"/* ]]; then
+			printf '%s' "$line"
+			return 0
+		fi
+	done < "$deny_file"
+	return 1
+}
+
+# --workdir is resolved to a real path and checked against the deny list
+# right away, before it is ever handed to expand() below — the check runs
+# against the same string that will be bound into the container, not
+# whatever a later symlink or relative-path trick might make it become.
+workdir_real=
+if [[ -n $workdir ]]; then
+	workdir_real=$(cd -- "$workdir" 2>/dev/null && pwd -P) || die "not a directory: $workdir"
+	if reason=$(path_denied "$workdir_real"); then
+		die "refusing to open a denied path ($reason): $workdir_real"
+	fi
+fi
+
+# ---------------------------------------------------------------------------
+# Path-list expansion
+# ---------------------------------------------------------------------------
+#
+# ~/.config/phios/contain/{base,PROFILE}.paths grammar, one directive per
+# line (# starts a comment):
+#
+#   ro   SRC DEST     read-only bind; FATAL if SRC is missing
+#   ro?  SRC DEST     read-only bind; skipped silently if SRC is missing
+#   rw   SRC DEST     writable bind;  FATAL if SRC is missing
+#   rw?  SRC DEST     writable bind;  skipped silently if SRC is missing
+#   dir  DEST         create an empty directory in the container
+#   sym  TARGET LINK  create a symlink in the container
+#   net  host         keep the host network namespace
+#   net  none         --unshare-net, no network at all — the default when no
+#                      `net` directive appears: the safe choice for an
+#                      unknown target is no network, and a profile that
+#                      needs egress has to say so explicitly
+#   net  proxy SOCKET --unshare-net, plus a bind of the directory containing
+#                      SOCKET, so a host-side proxy can be reached across
+#                      the namespace boundary
+#
+# Ordering matters and is intentional: bubblewrap applies binds left to
+# right and a later bind wins; base.paths is read before PROFILE.paths for
+# the same reason, and a later `net` directive overrides an earlier one.
+
+bind_args=()
+net_mode=none
+net_sock=
+
+expand() {
+	local s=$1
+	s=${s//@CONTAINER_HOME@/$CONTAINER_HOME}
+	s=${s//@CONTAINER_RUNTIME@/$CONTAINER_RUNTIME}
+	s=${s//@HOME@/$HOME}
+	s=${s//@CONFIG@/$conf_home}
+	s=${s//@DATA@/$data_home}
+	s=${s//@STATE@/$state_home}
+	s=${s//@CACHE@/$cache_home}
+	s=${s//@WORKDIR@/$workdir_real}
+	printf '%s' "$s"
+}
+
+read_paths() {
+	local file=$1 kind a b line
+	[[ -f $file ]] || die "containment unavailable: $file not found"
+	while IFS= read -r line || [[ -n $line ]]; do
+		line=${line%%#*}
+		line=${line#"${line%%[![:space:]]*}"}
+		line=${line%"${line##*[![:space:]]}"}
+		[[ -n $line ]] || continue
+		# A line referencing @WORKDIR@ is skipped entirely when --workdir
+		# was not given — otherwise it would expand to the empty string and
+		# a bind like "@WORKDIR@/src" would become the bogus absolute path
+		# "/src".
+		[[ $line == *@WORKDIR@* && -z $workdir_real ]] && continue
+		# shellcheck disable=SC2086
+		set -- $line
+		kind=$1; a=$(expand "${2:-}"); b=$(expand "${3:-}")
+		case $kind in
+			ro|rw)
+				# Required: refuse to start if the source is missing.
+				[[ -n $a ]] || die "$file: '$kind' with no source (unset @VAR@?)"
+				[[ -n $b ]] || b=$a
+				[[ -e $a ]] || die "containment unavailable: required mount source missing: $a"
+				[[ $kind == ro ]] && bind_args+=(--ro-bind "$a" "$b") || bind_args+=(--bind "$a" "$b")
+				;;
+			ro\?|rw\?)
+				# Optional: an empty @VAR@ or a missing path is silently
+				# skipped by bubblewrap's own *-try variant.
+				[[ -n $a ]] || continue
+				[[ -n $b ]] || b=$a
+				[[ $kind == ro\? ]] && bind_args+=(--ro-bind-try "$a" "$b") || bind_args+=(--bind-try "$a" "$b")
+				;;
+			dir)  [[ -n $a ]] || die "$file: 'dir' with no path";  bind_args+=(--dir "$a") ;;
+			sym)  [[ -n $a && -n $b ]] || die "$file: 'sym' needs TARGET LINK"; bind_args+=(--symlink "$a" "$b") ;;
+			net)
+				case $a in
+					host) net_mode=host; net_sock= ;;
+					none) net_mode=none; net_sock= ;;
+					proxy)
+						[[ -n $b ]] || die "$file: 'net proxy' needs a socket path"
+						net_mode=proxy; net_sock=$b
+						;;
+					*) die "$file: unknown net mode: $a" ;;
+				esac
+				;;
+			*)    die "$file: unknown directive: $kind" ;;
+		esac
+	done < "$file"
+}
+
+read_paths "$contain_dir/base.paths"
+read_paths "$contain_dir/$profile.paths"
+
+net_args=()
+case $net_mode in
+	host) : ;;
+	none) net_args+=(--unshare-net) ;;
+	proxy)
+		net_args+=(--unshare-net)
+		sock_dir=$(dirname -- "$net_sock")
+		# Writable: connecting to a unix socket needs write access on the
+		# mount, not just read — a read-only bind here leaves the socket
+		# visible but unreachable.
+		bind_args+=(--bind "$sock_dir" "$sock_dir")
+		;;
+esac
+
+# ---------------------------------------------------------------------------
+# Environment allowlist — put back ONLY these, after --clearenv.
+# ---------------------------------------------------------------------------
+
+setenv_args=(--clearenv)
+add_env() { setenv_args+=(--setenv "$1" "$2"); }
+
+add_env HOME "$CONTAINER_HOME"
+add_env PATH /usr/bin
+add_env TERM "${TERM:-xterm-256color}"
+add_env LANG "${LANG:-C.UTF-8}"
+add_env XDG_CONFIG_HOME "$CONTAINER_HOME/.config"
+add_env XDG_DATA_HOME "$CONTAINER_HOME/.local/share"
+add_env XDG_STATE_HOME "$CONTAINER_HOME/.local/state"
+add_env XDG_CACHE_HOME "$CONTAINER_HOME/.cache"
+add_env XDG_RUNTIME_DIR "$CONTAINER_RUNTIME"
+
+# ---------------------------------------------------------------------------
+# Namespaces and process rules
+# ---------------------------------------------------------------------------
+
+ns_args=(
+	--unshare-user-try   # mandatory for the rest to be creatable unprivileged
+	--unshare-pid
+	--unshare-ipc
+	--unshare-uts
+	--unshare-cgroup
+	--new-session        # mitigates TIOCSTI input injection
+	--die-with-parent
+)
+
+pseudo_args=(
+	--proc /proc
+	--dev /dev
+	--tmpfs /tmp
+	--tmpfs /run
+	--dir "$CONTAINER_RUNTIME"
+)
+
+argv=(
+	"${ns_args[@]}"
+	"${net_args[@]}"
+	"${pseudo_args[@]}"
+	"${bind_args[@]}"
+	# Always CONTAINER_HOME: this script has no way to know where a
+	# profile's .paths file chose to mount @WORKDIR@, if anywhere. COMMAND
+	# cds itself if it needs to start somewhere else.
+	--chdir "$CONTAINER_HOME"
+	"${setenv_args[@]}"
+	--
+	"${cmd[@]}"
+)
+
+if ((dry_run)); then
+	printf '%s\n' "$bwrap"
+	printf '  %q' "${argv[@]}"
+	printf '\n'
+	exit 0
+fi
+
+exec "$bwrap" "${argv[@]}"
