@@ -1,9 +1,8 @@
 # phi-agent — paths that must NEVER be reachable from inside either
-# containment (phios-agente.md §4.5). This file is NOT read by
-# phi-agent-contain: it is the checklist for V-01 and V-02, and a
-# review aid. Every entry here should return "No such file or directory"
-# (or, for a socket, "Connection refused" / absent) when tested from
-# inside `phi-agent-contain a1 -- sh` or `... a2 -- sh`.
+# containment. This file is NOT read by phi-agent-contain: it is the
+# checklist for verification and a review aid. Every entry here should return
+# "No such file or directory" (or "Connection refused" for a socket) when
+# tested from inside `phi-agent-contain a1 -- sh` or `... a2 -- sh`.
 #
 # Format: one path or glob per line. $HOME is the real user's home.
 
@@ -40,15 +39,15 @@ $HOME/.gitconfig
 /boot
 /efi
 
-# --- /etc beyond the §4.2 whitelist ---
+# --- /etc beyond the common.paths whitelist ---
 /etc/shadow
 /etc/gshadow
 /etc/sudoers
 /etc/ssh
 
-# --- session sockets (V-02): present as a path OR reachable as a socket
-#     means the boundary leaks. The SSH-agent socket is the important one:
-#     it lets a key be USED without being READ (§4.5). ---
+# --- session sockets: present as a path OR reachable as a socket means the
+#     boundary leaks. The SSH-agent socket is important: it lets a key be USED
+#     without being READ. ---
 $SSH_AUTH_SOCK
 $XDG_RUNTIME_DIR
 $XDG_RUNTIME_DIR/bus

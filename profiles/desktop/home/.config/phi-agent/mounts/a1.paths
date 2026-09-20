@@ -1,42 +1,38 @@
-# phi-agent — A1 (assistant) perimeter (phios-agente.md §4.3, revised by
-# phios-agente-delta.md §3.1).
+# phi-agent — A1 (assistant) perimeter.
 #
-# Recomputed per active project: no other project is visible (§4.3). The
-# active project name comes from PHI_AGENT_PROJECT; when it is unset the
-# @PROJECT@ lines below expand to an empty path and are skipped, so the
-# container still starts for the V-01..V-04 proof without a project selected.
+# Recomputed per active project: no other project is visible. The active
+# project name comes from PHI_AGENT_PROJECT; when unset, @PROJECT@ lines
+# expand to an empty path and are skipped, so the container starts without a
+# project selected.
 #
 # Ordering: the writable XDG bind comes first; every memoria.md is then
-# re-bound read-only over it. memoria.md at ALL THREE levels (system,
-# personality, project — delta D-01) stays read-only: the agent CANNOT write
-# its own memory, and that is enforced by these mounts, not by the interface
-# (§8.4, ADR 094). Only `phi agent memory accept` (the client, outside the
-# containment) promotes a proposte/ file into a memoria.md.
+# re-bound read-only over it. memoria.md at all three levels (system,
+# personality, project) stays read-only: the agent CANNOT write its own
+# memory, enforced by these mounts, not by the interface. Only `phi agent
+# memory accept` (outside the containment) promotes a proposte/ file into
+# memoria.md.
 #
-# Two things are done in phi-agent-contain, not here, because the .paths
-# grammar has no globs or lists: (a) re-binding each personalita/<name>/
-# proposte/ writable, (b) the read-only folders of interest from
-# <project>/folders.list (delta D-02).
+# Re-binding each personalita/<name>/proposte/ writable and the read-only
+# folders of interest from <project>/folders.list are done in phi-agent-contain
+# because the .paths grammar has no globs or lists.
 
-# A1's own XDG trees — writable (§4.3 "albero XDG di A1: scrittura").
-# opencode keeps its sessions, auth and cache here.
+# A1's own XDG trees — writable. opencode keeps its sessions, auth, cache.
 rw   @AGENT_DATA@                @CONTAINER_HOME@/.local/share
 rw   @AGENT_STATE@               @CONTAINER_HOME@/.local/state
 rw   @AGENT_CACHE@               @CONTAINER_HOME@/.cache
 
-# System memory — read-only (delta D-01). Written only by
-# `phi agent memory accept --level system`. "?" so a machine that has never
-# run `phi agent init` still starts for the V-01..V-04 proof.
+# System memory — read-only. Written only by `phi agent memory accept
+# --level system`. "?" so a machine that has never run `phi agent init` still
+# starts.
 ro?  @AGENT_DATA@/memoria.md     @CONTAINER_HOME@/.local/share/memoria.md
 
 # The engine config, read-only. A single file, not the whole .config dir.
 # "?" — you create it from opencode.example.json (it carries the model id).
 ro?  @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/opencode.json
 
-# Personalities — read-only (§4.3). "personalita/ scrive solo l'utente"; the
-# agent never writes here. This re-binds the SAME container path (already
-# exposed writable via @AGENT_DATA@ above) read-only. phi-agent-contain then
-# re-binds each <name>/proposte/ writable underneath.
+# Personalities — read-only. The agent never writes here. This re-binds the
+# SAME container path (already exposed writable via @AGENT_DATA@ above)
+# read-only. phi-agent-contain then re-binds each <name>/proposte/ writable.
 ro?  @AGENT_DATA@/personalita    @CONTAINER_HOME@/.local/share/personalita
 
 # The active project. Everything read-only except the two write areas.

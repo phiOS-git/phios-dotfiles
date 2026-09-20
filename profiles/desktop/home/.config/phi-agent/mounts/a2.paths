@@ -1,21 +1,18 @@
-# phi-agent — A2 (worker) perimeter (phios-agente.md §4.4, revised by
-# phios-agente-delta.md §3.3).
+# phi-agent — A2 (worker) perimeter.
 #
-# A2 has a shell, so the containment IS the boundary (§7.2): the ONE working
-# directory chosen for the session (mounted by phi-agent-contain --workdir at
-# /home/agent/work — there is no fixed code root any more), its own XDG
-# trees, and its own toolchain caches are writable, and nothing else exists.
-# Network is removed here
-# (--unshare-net, set by phi-agent-contain) and reintroduced as a
-# whitelist by S-72; there is no direct route out of this namespace.
+# A2 has a shell; the containment IS the boundary. The ONE working directory
+# chosen for the session (mounted by phi-agent-contain --workdir at
+# /home/agent/work), its own XDG trees, and toolchain caches are writable;
+# nothing else exists. Network is removed (--unshare-net) and reintroduced
+# as a whitelist; there is no direct route out of this namespace.
 #
 # Git identity is passed as GIT_AUTHOR_* / GIT_COMMITTER_* environment
-# variables by phi-agent-contain, never by mounting ~/.gitconfig, which can
-# carry credential helpers and insteadOf URL rewrites (§4.4).
+# variables, never by mounting ~/.gitconfig (which can carry credential
+# helpers and insteadOf URL rewrites).
 #
-# A2 does NOT publish to or fetch from remotes (§4.4, ADR 089): it edits
-# and commits locally; publishing is the user's action. There is no SSH
-# key, no SSH-agent socket, and no network path to a forge from in here.
+# A2 does NOT publish to or fetch from remotes: it edits and commits locally;
+# publishing is the user's action. No SSH key, no SSH-agent socket, and no
+# network path to a forge.
 
 # A2's own XDG trees — writable.
 rw   @AGENT_DATA@                @CONTAINER_HOME@/.local/share
@@ -32,13 +29,11 @@ ro?  @AGENT_CONFIG@/opencode/opencode.json   @CONTAINER_HOME@/.config/opencode/o
 # the only thing under $HOME the session can see. Not listed here because it
 # is chosen per session, not a fixed perimeter path.
 
-# Toolchain caches dedicated to A2 — writable, and separate from the user's
-# own (§4.4). Path from PHI_AGENT_A2_TOOLCHAIN_CACHE, default under the A2
-# cache tree.
+# Toolchain caches dedicated to A2 — writable, separate from the user's own.
+# Path from PHI_AGENT_A2_TOOLCHAIN_CACHE, default under the A2 cache tree.
 rw?  @A2_TOOLCHAIN_CACHE@        @CONTAINER_HOME@/.cache/phi-agent-toolchains
 
 # The network bridge dir (~/.local/state/phi-agent/net -> /run/phi-agent/net)
-# is bound by phi-agent-contain itself, not listed here: it is structural to
-# the --unshare-net design (S-72), not a per-project perimeter choice. It
-# carries the two unix sockets (broker-a2.sock, proxy.sock) that are A2's
-# only route out.
+# is bound by phi-agent-contain itself, not listed here: structural to the
+# --unshare-net design, not a per-project perimeter choice. It carries the two
+# unix sockets (broker-a2.sock, proxy.sock) that are A2's only route out.
