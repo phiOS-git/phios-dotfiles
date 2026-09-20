@@ -7,9 +7,8 @@ templates. It contains no compiled code and no application source — those live
 in the sibling repositories `phi`, `phi-shell`, and `phi-packages`.
 
 This repository is one submodule of the phiOS workspace. `AGENTS.md` here
-carries the rules; the workspace `PROGRESS.md` describes the current state
-of the whole system. The original planning documents are archived under
-`docs/archive/` as historical background only.
+describes this repository; the workspace `AGENTS.md` one level up describes
+the whole system and carries the rules that apply to every repository.
 
 ## Layout
 
@@ -21,7 +20,6 @@ bin/lib/             shared bash functions
 design/              every colour, font, size, radius and motion value
 hosts/<name>.txt     ordered list of profiles for that host
 profiles/<name>/     packages, home tree, templates, /etc material, services
-docs/adr/            decisions local to this repository, if any
 ```
 
 The installer, profiles, design tokens, `/etc` boundary and capability
@@ -110,12 +108,4 @@ install manifest — see `bin/lib/env.sh`.
   does not cross, `/etc` work included.
 - **No fallback palette.** Rendering a template when `design/` is missing or
   the variant is unknown is a hard error, not a half-render against defaults.
-  That is deliberate: it keeps `I-05` enforceable.
-
-## Documentation
-
-`docs/archive/` holds the original planning documents (master plan, agent
-brief, parallel tracks, user runbook) as historical background. They are no
-longer directives — the invariants and closed decisions they contain still
-hold and are summarised in `AGENTS.md`. `docs/adr/` is for decisions that
-concern only the shape of this repository.
+  That is deliberate: it keeps the no-hardcoded-colour rule enforceable.
