@@ -20,8 +20,8 @@ is a profile with nothing at all.
 
 The three list files are all the same contract — the installer states what has
 to happen and performs none of it. `manual.txt` is the catch-all for what is
-neither a package, nor a file, nor a unit; the yazi git plugin is the first
-entry and the reason the file exists (master plan C-10).
+neither a package, nor a file, nor a unit; the yazi git plugin is its first
+entry.
 
 ## The set
 
@@ -35,9 +35,9 @@ entry and the reason the file exists (master plan C-10).
 | `intel-gpu` | `razer` | Mesa Vulkan and its 32-bit library |
 | `razer-hw` | `razer` | `openrazer-daemon` and the headers its DKMS module builds against |
 | `gaming` | `zotac`, `razer` | Steam and the 32-bit Vulkan loader |
-| `study` | `razer` | Reading, bibliography, spaced repetition, office. Empty until M6 |
-| `server` | `mini` | Services, nothing graphical. Empty until M6 |
+| `study` | `razer` | Reading, bibliography, spaced repetition, office. Empty. |
+| `server` | `mini` | Services, nothing graphical. Empty. |
 
 `workstation`, `study` and `server` carry only a `README.md` explaining why
-they are empty. They are declared in the host files from S-03 so the place
-exists before something needs it.
+they are empty. They are declared in the host files so the place exists
+before something needs it.

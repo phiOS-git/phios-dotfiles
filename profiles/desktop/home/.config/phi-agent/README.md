@@ -9,7 +9,7 @@ Two opencode instances, separated by capability and by containment:
 |---|---|---|
 | shell | no | yes |
 | writes | `output/` + `proposte/` of the active project, and `proposte/` of every memory level | the one directory you open it in |
-| network | host namespace, fetch approved interactively | removed, then a whitelist (S-72) |
+| network | host namespace, fetch approved interactively | removed, then a whitelist |
 | memory | proposes at three levels, never writes | none |
 
 ## Files
@@ -20,18 +20,18 @@ Two opencode instances, separated by capability and by containment:
 | `~/.config/phi-agent/env` | **you create this** from the example: git identity, optional A2 toolchain cache and remote address | you |
 | `code-blocklist.example` | template for the A2 / folder-of-interest blocklist | — |
 | `~/.config/phi-agent/code-blocklist` | **you create this** from the example: directories `phi agent code` and the folder picker refuse (a guard-rail, not the boundary) | you (also Settings › AI Agent) |
-| `mounts/common.paths` | read-only base for both instances (§4.2) | repo |
-| `mounts/a1.paths` | A1 perimeter (§4.3) | repo |
-| `mounts/a2.paths` | A2 perimeter (§4.4) | repo |
-| `mounts/never.paths` | the V-01/V-02 checklist of paths that must stay unreachable | repo |
+| `mounts/common.paths` | read-only base for both instances | repo |
+| `mounts/a1.paths` | A1 perimeter | repo |
+| `mounts/a2.paths` | A2 perimeter | repo |
+| `mounts/never.paths` | the checklist of paths that must stay unreachable | repo |
 | `<inst>/opencode/opencode.example.json` | template for the engine config — provider `phi-broker` on loopback, hardening permissions | — |
 | `~/.config/phi-agent/<inst>/opencode/opencode.json` | **you create this** from the example: set the model id (two places) | you |
 | `<inst>/broker.example.json` | template for the broker config | — |
 | `~/.config/phi-agent/<inst>/broker.json` | **you create this**: provider origin + how the key attaches (no key) | you |
 | `~/.config/phi-agent/<inst>/provider-key` | **you create this**, `chmod 600`: the raw provider API key | you |
-| `tinyproxy/tinyproxy.conf` | A2 egress whitelist (S-72) | repo |
+| `tinyproxy/tinyproxy.conf` | A2 egress whitelist | repo |
 
-## The broker (S-71.2)
+## The broker
 
 opencode never sees the provider key. Its `phi-broker` provider talks
 **in clear over loopback** to `phi agent broker`, which runs *outside* the
@@ -65,7 +65,7 @@ Consumption is logged as JSONL at
 enforces a local fixed-window request limit (`rate_limit` in
 `broker.json`).
 
-## A2's network (S-72.1)
+## A2's network
 
 A2 runs with `--unshare-net`: a fresh namespace, only a down loopback, no
 route anywhere. Two unix sockets in `~/.local/state/phi-agent/net/`,
@@ -73,20 +73,20 @@ bind-mounted into the container, are the only way out:
 
 | socket | to | purpose |
 |---|---|---|
-| `broker-a2.sock` | `phi-agent-broker@a2` | the provider call (§6.2); created by the broker unit itself |
+| `broker-a2.sock` | `phi-agent-broker@a2` | the provider call; created by the broker unit itself |
 | `proxy.sock` | `tinyproxy` via `phi-agent-net-bridge` | everything else, filtered by `tinyproxy/whitelist` |
 
 `phi-agent-contain` runs two `socat` forwarders inside the namespace that
 turn those sockets into `127.0.0.1:8790` (broker) and `127.0.0.1:8118`
 (proxy), and sets `HTTP(S)_PROXY` to the latter. A process that unsets the
-proxy variables is left able to reach only the broker — never a free
-network (that is V-03).
+proxy variables is left able to reach only the broker — never the free
+network.
 
 **The whitelist grows only by explicit addition.** `tinyproxy/whitelist`
 ships with loopback allowed and every package registry commented out;
 uncomment exactly the ones a project on this machine actually fetches from.
 
-Enable (only when A2 is in use, from S-76):
+Enable (only when A2 is in use):
 
 ```
 systemctl --user enable --now phi-agent-proxy.service phi-agent-net-bridge.service
@@ -95,26 +95,26 @@ systemctl --user enable --now phi-agent-proxy.service phi-agent-net-bridge.servi
 ### Do this at the provider, not here
 
 - **Set a hard spending cap on the API key.** It is the only measure that
-  limits *damage* rather than probability (§6.3): a compromised agent can
-  spend against the key until you revoke it, but not steal it.
+  limits damage rather than probability: a compromised agent can spend against
+  the key until you revoke it, but not steal it.
 - **Write the revocation procedure down now**, before you need it: the
   provider's key-management URL, and the exact steps to disable this key.
   Keep it somewhere you can reach without this machine.
 
 The launcher is `~/.local/bin/phi-agent-contain`. Everything — the systemd
 units, `phi agent ask` — goes through it; there is no way to start an agent
-outside the containment (§4.7).
+outside the containment.
 
 ## Not managed here
 
 - The provider API key: held by `phi agent broker` outside the containment,
-  read from its own file (S-71).
+  read from its own file.
 - The remote-surface password: a systemd credential from a root-owned file
-  outside the repository (S-74).
-- Personalities and projects: the §8.2 data model under
-  `~/.local/share/phi-agent/a1/`. Bootstrapped by `phi agent init` (two
-  seed personalities, no projects). Managed with `phi agent project` and
-  `phi agent personality`, or from the shell's agent panel.
+  outside the repository.
+- Personalities and projects: data stored under `~/.local/share/phi-agent/a1/`.
+  Bootstrapped by `phi agent init` (two seed personalities, no projects).
+  Managed with `phi agent project` and `phi agent personality`, or from the
+  shell's agent panel.
 
 ## The data model and the engine
 
@@ -129,12 +129,12 @@ phi agent personality new notes --from-file ./notes-personality.md
 A project owns `project.json` (title, description, instructions, default
 personality, folders of interest, pins); `progetto.md` and `folders.list`
 are regenerated from it. Materials are static copies; folders of interest
-are the real directory, mounted **read-only** (delta D-02).
+are the real directory, mounted **read-only**.
 
 Memory has three levels — **system**, **personality**, **project** — each a
 `memoria.md` mounted **read-only** into the containment (the agent cannot
-write its own memory at any level — §8.4 / delta D-01) with its own writable
-`proposte/`. You promote a proposal:
+write its own memory at any level) with its own writable `proposte/`. You
+promote a proposal:
 
 ```
 phi agent memory list  --level system                         # or personality/project
@@ -145,24 +145,23 @@ phi agent memory reject FILE --level system
 
 The `phi` MCP server (`phi agent mcp`, one read-only tool `phi_context`) is
 registered in `a1/opencode/opencode.json` and spawned by opencode inside
-the containment. It is tool 5 and the only place the agent's capabilities
-grow (§7.1).
+the containment. It is the only place the agent's capabilities grow.
 
 A1 runs as `phi-agent-a1.service` on `127.0.0.1:4199`.
 
-## Inline questions and the remote surface (S-74)
+## Inline questions and the remote surface
 
-`phi agent ask "..."` sends one question to the running A1 service and
-prints the reply. It creates an opencode session, uses it, and **deletes
-it** — so it never shows in the panel list and never reaches memory
-(§10.2). It needs `phi-agent-a1.service` up; it never starts an engine.
+`phi agent ask "..."` sends one question to the running A1 service and prints
+the reply. It creates an opencode session, uses it, and **deletes it** — so it
+never shows in the panel list and never reaches memory. It needs
+`phi-agent-a1.service` up; it never starts an engine.
 
 ```
 phi agent ask "what does ADR 094 say?"
 phi agent ask --personality technical "explain this bwrap flag: --unshare-cgroup"
 ```
 
-The **remote surface** is A2 only, and off by default (§10.3). Three units:
+The **remote surface** is A2 only, and off by default. Three units:
 
 | unit | role |
 |---|---|
@@ -187,7 +186,7 @@ Overlay reachability is the overlay's own default-deny policy — allow only
 your own devices toward port 4399. No extra encryption layer (the overlay
 already encrypts).
 
-## Transition from unconfined opencode (S-76)
+## Transition from unconfined opencode
 
 Do this only after V-01…V-04 and V-08/V-09 have passed. It removes the
 agent's access to your SSH keys and its ability to push — A2 commits
@@ -215,7 +214,7 @@ locally, you publish.
    `cat ~/.ssh/id_*` fails, `git push` fails (no route to a forge), and
    `git commit` works. Publish afterward from your normal shell.
    The session is recorded under `~/.local/state/phi-agent/a2/sessions/`
-   for the shell panel's Coding-sessions view (delta D-07).
+   for the shell panel's Coding-sessions view.
 
 3. Once a real session completes cleanly, retire the old config:
    ```

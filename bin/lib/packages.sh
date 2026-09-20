@@ -1,8 +1,8 @@
 # phiOS — package planning.
 #
 # Only `pacman` is used, and only for T0 repositories: AUR and manual builds
-# are out of scope while Q-01 is deferred. Own packages come from the [phi]
-# repository built in M1 and are never installed from here.
+# are out of scope. Own packages come from the [phi] repository and are never
+# installed from here.
 #
 # Reads are unprivileged (`pacman -T`); the single privileged call lives in
 # phios_packages_install and runs only in apply mode.

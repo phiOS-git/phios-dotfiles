@@ -8,13 +8,12 @@ out to be wrong: the kernel already reports **standard, correctly-named** HID
 scancodes for every one of those keys — `KEY_MUTE`, `KEY_VOLUMEUP`,
 `KEY_VOLUMEDOWN`, `KEY_BRIGHTNESSUP`, `KEY_BRIGHTNESSDOWN` — with no
 hwdb-level remapping needed at all. The real gap was one layer up: no
-Hyprland keybinding existed for any of them, which is what was fixed
-(`profiles/desktop/templates/.config/hypr/hyprland.lua.tmpl` since S-54,
-`profiles/desktop/home/.config/hypr/hyprland.lua` before it — same file,
-moved when it became a template — the `XF86Audio*` / `XF86MonBrightness*`
-binds).
+Hyprland keybinding existed for any of them, which was fixed in
+`profiles/desktop/templates/.config/hypr/hyprland.lua.tmpl` (moved from
+`profiles/desktop/home/.config/hypr/hyprland.lua` when it became a template)
+with the `XF86Audio*` / `XF86MonBrightness*` binds.
 
-`Fn+F4` is the one exception S-06 found, and it is not a keycode gap
+`Fn+F4` is the one exception and it is not a keycode gap
 either: the keyboard's own firmware synthesizes the literal Windows
 shortcut Super+P (Right-GUI held + P). No hwdb rule can change what a
 firmware-level HID report already is. What Super+P (or Fn+F4) SHOULD do on

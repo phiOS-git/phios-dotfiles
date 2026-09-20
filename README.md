@@ -86,19 +86,18 @@ install manifest — see `bin/lib/env.sh`.
 - **No `/etc` material, applied or otherwise.** `/etc` changes are a strictly
   `[USER]` action, made with `sudo`, file by file — never something this
   installer runs. `profiles/*/system/` is where that material is kept versioned
-  and diffable; it stays unapplied by design (`I-09`). Populated at S-05 with
-  what is currently applied by hand and known: NVIDIA modprobe options, the
-  `zram` generator and its `sysctl` companion, `crypttab` shape, `smartd`
-  config, the unit-failure notification drop-in, and razer's suspend/hibernate
-  drop-ins. `--system-diff` shows the result against each machine, unprivileged
-  and read-only; applying a file stays a manual, `sudo`, file-by-file action.
+  and diffable; it stays unapplied by design. It includes NVIDIA modprobe
+  options, the `zram` generator and its `sysctl` companion, `crypttab` shape,
+  `smartd` config, the unit-failure notification drop-in, and razer's
+  suspend/hibernate drop-ins. `--system-diff` shows the result against each
+  machine, unprivileged and read-only; applying a file stays a manual, `sudo`,
+  file-by-file action.
 - **No `systemctl`.** This installer places files; it never enables, starts,
   or restarts a service. Which units to enable is left as output for the user
   to act on.
 - **No package installation for phiOS's own software.** `phi`, `phi-shell`,
   and every other in-house package are distributed through the `[phi]` pacman
-  repository built in `M1` (`phi-packages`), not through this repository, and
-  not before `M1` exists.
+  repository (`phi-packages`), not through this repository.
 - **No verification of what it only declares.** Profiles declare systemd units
   in `services-*.txt` and one-off commands in `manual.txt`; the installer prints
   both and never queries systemd, never runs the commands, and never checks

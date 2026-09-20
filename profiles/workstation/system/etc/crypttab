@@ -8,6 +8,7 @@
 # home         UUID=b8ad5c18-f445-495d-9095-c9ec4f9d2f37    /etc/mypassword1
 # data1        /dev/sda3                                    /etc/mypassword2
 # data2        /dev/sda5                                    /etc/cryptfs.key
-# swap         /dev/sdx4                                    /dev/urandom            swap,cipher=aes-cbc-essiv:sha256,size=256
+# swap         /dev/sdx4                                    /dev/urandom
+#              (options: swap,cipher=aes-cbc-essiv:sha256,size=256)
 # vol          /dev/sdb7                                    none
 bulk  UUID=<bulk-partition-uuid>  /etc/cryptsetup-keys.d/bulk.key  luks,discard

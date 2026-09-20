@@ -1,25 +1,22 @@
 # desktop
 
 `zotac` and `razer`. The two machines with a graphical session: `phi-shell`
-plus the Hyprland Lua configuration that starts it (S-20–S-24).
+plus the Hyprland Lua configuration that starts it.
 
-`templates/.config/hypr/hyprland.lua.tmpl` became a template at S-54, for
-one substitution (`XCURSOR_THEME`/`XCURSOR_SIZE`, master plan §6.7 class A —
-"Hyprland" is one of that class's own named targets, `hyprctl reload` is
-its real reload command). It was a plain `home/` file through S-53:
-Hyprland's Lua config had no design-token substitution point in use before
-then, so nothing in it was generated. Everything else in the file is still
-ordinary Lua, unrelated to this change. `home/.config/kitty/` and
-`templates/` carry the themed terminal/file-manager/media-player configs
-(design tokens flow through `templates/`, S-01–S-02).
+`templates/.config/hypr/hyprland.lua.tmpl` is a template with one substitution
+(`XCURSOR_THEME`/`XCURSOR_SIZE` — "Hyprland" is a target that uses `hyprctl
+reload` to pick up changes). It was originally a plain `home/` file; Hyprland's
+Lua config had no design-token substitution point in use, so nothing in it was
+generated. Everything else in the file is still ordinary Lua, unrelated to this
+change. `home/.config/kitty/` and `templates/` carry the themed terminal/
+file-manager/media-player configs (design tokens flow through `templates/`).
 
-## Hyprland Lua API compatibility (S-25, risk C-06)
+## Hyprland Lua API compatibility
 
-Master plan §18 flags the Lua configuration API as "in movimento": Hyprland
-was on 0.55 when `zotac`/`razer`'s procedures were written and `extra`
-already carries 0.56.x. This section is the record risk C-06 asks for —
-which API surfaces `hyprland.lua` depends on, and confirmation that none of
-them is deprecated — kept here so it is updated in place the next time this
+The Lua configuration API can change between versions. Hyprland was on 0.55
+when the procedures were written and `extra` now carries 0.56.x. This section
+documents which API surfaces `hyprland.lua` depends on and confirms that none
+of them are deprecated — kept here so it is updated in place the next time this
 file changes, rather than re-derived from scratch.
 
 **Reviewed against** (2026-09-08, off-machine — see the open item below):
@@ -28,10 +25,10 @@ file changes, rather than re-derived from scratch.
 workspace rules, autostart, and events, fetched directly rather than
 summarized (the wiki's own pages sit behind a JS proof-of-work checkpoint
 this agent cannot solve). Cross-checked at two points: the `v0.56.2` tag
-(the version `extra` carries per master plan §18) and the `main` branch
-tip. The two differ, for `example/hyprland.lua`, by exactly one unrelated
-line (a `dampening` → `damping` typo fix in a spring curve this config
-never uses) — everything this file calls is unchanged between them.
+(the version `extra` carries) and the `main` branch tip. The two differ, for
+`example/hyprland.lua`, by exactly one unrelated line (a `dampening` →
+`damping` typo fix in a spring curve this config never uses) — everything
+this file calls is unchanged between them.
 
 | Symbol | Used at | Confirmed against |
 |---|---|---|
@@ -55,11 +52,9 @@ it cannot; see the comment above `hl.on("hyprland.start", ...)` in
 
 **Not in scope here:** `phi-shell`'s own `Quickshell.Hyprland` usage
 (`Services/HyprlandBridge.qml` — workspace list, active window, read over
-Hyprland's IPC socket rather than the Lua config) is a different
-dependency, already tracked under master plan §18's separate "API di
-quickshell non stabile" risk row — a Quickshell-side instability, not a
-Hyprland Lua one, so re-auditing it here would blur two distinct risks
-together.
+Hyprland's IPC socket rather than the Lua config) is a different dependency
+and a Quickshell-side concern — a Quickshell instability, not a Hyprland Lua
+one, so auditing it here would blur two distinct concerns together.
 
 **Still open, genuinely unverifiable from here:** this review is against
 upstream's own reference sources, not the version actually running on
