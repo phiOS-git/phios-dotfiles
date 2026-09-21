@@ -207,10 +207,13 @@ hl.bind(mainMod .. " + SHIFT + V", hl.dsp.exec_cmd(qsIpc("notifications", "clipb
     { description = "Open the clipboard history" }) -- FIXME: it's still called "notifications", "clipboard" but they are separated now (to fix in phi-shell)
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd(qsIpc("settings", "toggle")), { description = "Toggle settings" })
 hl.bind(qsMod .. " + P", hl.dsp.exec_cmd(qsIpc("agent", "toggle")), { description = "Toggle the phi agent panel" })
-hl.bind(qsMod .. " + G", hl.dsp.exec_cmd(qsIpc("spotlight", "press")),
-    { description = "Show the cursor spotlight (hold)" })
-
-hl.bind("g", hl.dsp.exec_cmd(qsIpc("spotlight", "release")), { release = true, non_consuming = true }) -- FIXME: on release
+-- Cursor spotlight: press Super twice and hold; releasing Super hides it. The
+-- shell times the double press. Both binds pass the key through, so every
+-- Super combination keeps working. Super is still in the modifier mask when its
+-- own key is released, hence SUPER on the release bind.
+hl.bind("SUPER_L", hl.dsp.exec_cmd(qsIpc("spotlight", "superDown")), { non_consuming = true },
+    { description = "Cursor spotlight (double-press Super and hold)" })
+hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd(qsIpc("spotlight", "superUp")), { release = true, non_consuming = true })
 
 hl.bind(qsMod .. " + slash", hl.dsp.exec_cmd(qsIpc("cheatsheet", "toggle")),
     { description = "Toggle the cheat sheet" }) -- Super+? — common "show shortcuts" convention
