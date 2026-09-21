@@ -242,6 +242,21 @@ hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO
     { repeating = true, locked = true }, { description = "Lower volume" })
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ -l 1.0"),
     { repeating = true, locked = true }, { description = "Raise volume" })
+
+-- Both Play and Pause map to the same toggle: keyboards differ in which one
+-- they actually send for a single physical play/pause key. Locked (like
+-- volume/brightness) so transport keeps working from the lock screen.
+hl.bind("XF86AudioPlay", hl.dsp.exec_cmd(qsIpc("media", "playPause")), { locked = true },
+    { description = "Play/pause media" })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd(qsIpc("media", "playPause")), { locked = true },
+    { description = "Play/pause media" })
+hl.bind("XF86AudioNext", hl.dsp.exec_cmd(qsIpc("media", "next")), { locked = true },
+    { description = "Next track" })
+hl.bind("XF86AudioPrev", hl.dsp.exec_cmd(qsIpc("media", "previous")), { locked = true },
+    { description = "Previous track" })
+hl.bind("XF86AudioStop", hl.dsp.exec_cmd(qsIpc("media", "stop")), { locked = true },
+    { description = "Stop media" })
+
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(qsIpc("brightness", "down")), { repeating = true, locked = true },
     { description = "Lower brightness" })
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qsIpc("brightness", "up")), { repeating = true, locked = true },
