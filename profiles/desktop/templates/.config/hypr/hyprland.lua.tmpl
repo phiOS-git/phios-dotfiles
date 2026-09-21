@@ -262,10 +262,10 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(qsIpc("brightness", "down")), {
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qsIpc("brightness", "up")), { repeating = true, locked = true },
     { description = "Raise brightness" })
 
--- FIXME : releasing should select and close
+-- Alt+Tab drives phi-shell's AppSwitcher through its "alttab" IPC target.
 local function enterAltTab(step)
     return function()
-        hl.dispatch(hl.dsp.submap("alttab")) -- FIXME: should change name in Overview
+        hl.dispatch(hl.dsp.submap("alttab"))
         hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", step)))
     end
 end
@@ -276,10 +276,11 @@ local function confirmAndReset()
     hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "confirm")))
     hl.dispatch(hl.dsp.submap("reset"))
 end
-hl.bind("ALT_L", confirmAndReset, { release = true, submap_universal = true })
-hl.bind("ALT_R", confirmAndReset, { release = true, submap_universal = true })
-
 hl.define_submap("alttab", function()
+    -- Releasing Alt confirms. Alt is still in the modifier mask at the moment
+    -- its own key is released, so the bind carries ALT as its modifier.
+    hl.bind("ALT + ALT_L", confirmAndReset, { release = true })
+    hl.bind("ALT + ALT_R", confirmAndReset, { release = true })
     hl.bind("ALT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "next")))
     hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "prev")))
 
