@@ -6,7 +6,7 @@ Assets:
 |---|---|---|
 | `phi-mono.svg` | A — static mark, geometric reference | `PHI_FG_0`, dark variant (`#d6d1c9`) |
 | `phi-accent.svg` | B — agent presence, static reference only | `PHI_ACCENT`, dark variant (`#d3a0ac`) |
-| `phi-ascii.txt` | A — the mark as text (the TTY/login banner and, rasterised, Plymouth) | none (plain text) |
+| `phi-ascii.txt` | A — the mark as text (the TTY/login banner, rasterised Plymouth, and the `fastfetch` logo) | none (plain text) |
 | `../../profiles/desktop/system/usr/share/plymouth/themes/phi/phi.png` | A — `phi-ascii.txt` baked to a raster for Plymouth | `#d6d1c9` on transparent |
 | `render-phi-png.sh` | regenerates `phi.png` from `phi-ascii.txt` (off-machine tool, needs ImageMagick) | — |
 
@@ -16,6 +16,14 @@ verbatim in `/etc/issue`, and rasterised by `render-phi-png.sh` into `phi.png`
 for Plymouth (which cannot render aligned monospace text reliably). The two
 SVGs are kept as the geometric reference the shape descends from, not as a
 shipped asset.
+
+`profiles/base/home/.config/fastfetch/phi-ascii.txt` is a relative symlink
+back to this file, not a second copy: `fastfetch`'s `logo.type: "file"` reads
+it verbatim and colours the whole mark from `logo.color.1`, set to the
+`magenta` ANSI name rather than a hex value — the one use of this mark that
+*does* follow the live theme, because it goes through the terminal's own
+palette (kitty's `color5`, derived from `PHI_ACCENT`) instead of a baked-in
+value.
 
 ## Why the colours are literal, not tokens
 
@@ -54,12 +62,13 @@ hand-drawn second copy to drift.
 
 ## Use is a closed list
 
-Boot splash · TTY/login banner · SSH banner · the "about phiOS" panel, if
-one is ever built · the bar's own agent segment (which renders Φ live, in
-QML text, not from these files — `phi-shell`'s `Bar/modules/PhiAgent.qml`).
-**Never**: wallpaper, repeated watermark, window icon, launcher decoration.
-Reaching for one of these files for a new use is reaching outside a
-closed list — stop and ask first, don't extend it by precedent.
+Boot splash · TTY/login banner · SSH banner · the `fastfetch` logo · the
+"about phiOS" panel, if one is ever built · the bar's own agent segment
+(which renders Φ live, in QML text, not from these files — `phi-shell`'s
+`Bar/modules/PhiAgent.qml`). **Never**: wallpaper, repeated watermark,
+window icon, launcher decoration. Reaching for one of these files for a new
+use is reaching outside a closed list — stop and ask first, don't extend it
+by precedent.
 
 ## Codepoint
 
