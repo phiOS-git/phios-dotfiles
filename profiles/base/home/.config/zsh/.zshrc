@@ -47,15 +47,18 @@ source "$ZDOTDIR/theme.zsh"
 
 
 # GREETING
-# fastfetch only greets in a large window: below either limit its output
-# would wrap or scroll its top rows out of view, so the shell just clears.
-# The limits leave room above config.jsonc's own extent (about 30 rows by
-# 80 columns, more on hosts listing a second disk or GPU).
+# fastfetch's output must fit the window whole, or it wraps and scrolls its
+# top rows out of view. The full config.jsonc needs about 30 rows by 80
+# columns, the undecorated compact.jsonc about 20 by 80 (more on hosts
+# listing a second disk or GPU); each tier asks for a margin on both axes
+# above that, and below the compact limits the shell just clears.
 () {
-    local fastfetch_min_lines=40
-    local fastfetch_min_columns=100
+    local full_min_lines=36 full_min_columns=100
+    local compact_min_lines=28 compact_min_columns=90
     clear
-    if (( LINES >= fastfetch_min_lines && COLUMNS >= fastfetch_min_columns )); then
+    if (( LINES >= full_min_lines && COLUMNS >= full_min_columns )); then
         fastfetch
+    elif (( LINES >= compact_min_lines && COLUMNS >= compact_min_columns )); then
+        fastfetch --config ~/.config/fastfetch/compact.jsonc
     fi
 }
