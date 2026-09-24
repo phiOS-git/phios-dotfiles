@@ -82,6 +82,8 @@ thunar-volman
 gvfs
 tumbler
 
-# Network overlay's Wi-Fi speedtest trigger. Services/SpeedTest.qml
-# (phi-shell) runs `speedtest-cli --simple` on demand, never polled.
-speedtest-cli
+# sqlite3 CLI (core/T0): `phi query` reads LibreWolf's bookmarks, history
+# and recent searches from places.sqlite (opened immutable, read-only) to
+# suggest entries for the runner's web and site tags before anything is
+# typed. Without it those tags only show past picks.
+sqlite
