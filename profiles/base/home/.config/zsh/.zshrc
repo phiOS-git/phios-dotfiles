@@ -47,23 +47,15 @@ source "$ZDOTDIR/theme.zsh"
 
 
 # GREETING
-# fastfetch's info column can be taller than a short terminal window, which
-# scrolls its top rows out of view before the prompt ever draws. Pick by
-# $LINES instead: full config.jsonc when the window is tall enough, the
-# undecorated compact.jsonc when it is not, otherwise just clear. The two
-# thresholds are each config's module-row count (one row per module, a
-# "break" or a custom box line counts as one, "colors" as two) versus the
-# logo's padding.top plus phi-ascii.txt's 19 lines, whichever is taller,
-# plus one row for the prompt and two for hosts where "disk" or "gpu"
-# prints more than one row (zotac's second disk) — update them if either
-# file's modules change.
+# fastfetch only greets in a large window: below either limit its output
+# would wrap or scroll its top rows out of view, so the shell just clears.
+# The limits leave room above config.jsonc's own extent (about 30 rows by
+# 80 columns, more on hosts listing a second disk or GPU).
 () {
-    local fastfetch_full_min_lines=33
-    local fastfetch_compact_min_lines=23
+    local fastfetch_min_lines=40
+    local fastfetch_min_columns=100
     clear
-    if (( LINES >= fastfetch_full_min_lines )); then
+    if (( LINES >= fastfetch_min_lines && COLUMNS >= fastfetch_min_columns )); then
         fastfetch
-    elif (( LINES >= fastfetch_compact_min_lines )); then
-        fastfetch --config ~/.config/fastfetch/compact.jsonc
     fi
 }
