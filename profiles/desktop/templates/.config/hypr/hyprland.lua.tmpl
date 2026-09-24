@@ -27,7 +27,9 @@ hl.monitor({
 
 hl.config({
     input = {
-        follow_mouse   = 0,
+        -- Pointer focus follows the cursor, so hover and scroll reach the
+        -- window under it; keyboard focus still moves only on click.
+        follow_mouse   = 2,
         natural_scroll = true,
     },
 })
@@ -57,9 +59,15 @@ hl.window_rule({
 
 hl.workspace_rule({
     workspace = "special:scratch",
-    animation = "slidevert",
     gaps_out  = 30,
 })
+
+-- A workspace-rule style would override the animation leaf's own style, so
+-- the scratchpad's slide is declared here instead. The direction names the
+-- side an entering workspace comes from, and a leaving one travels the
+-- opposite way, so "Out" names "top" to leave through the bottom.
+hl.animation({ leaf = "specialWorkspaceIn",  enabled = true, speed = 6, bezier = "default", style = "slidevert bottom" })
+hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 6, bezier = "default", style = "slidevert top" })
 
 
 ---------------------
@@ -266,8 +274,10 @@ hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qsIpc("brightness", "up")), { rep
     { description = "Raise brightness" })
 
 -- Alt+Tab drives phi-shell's AppSwitcher through its "alttab" IPC target.
+local altTabActive = false
 local function enterAltTab(step)
     return function()
+        altTabActive = true
         hl.dispatch(hl.dsp.submap("alttab"))
         hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", step)))
     end
@@ -276,28 +286,39 @@ hl.bind("ALT + Tab", enterAltTab("next"), { description = "Cycle to the next win
 hl.bind("ALT + SHIFT + Tab", enterAltTab("prev"), { description = "Cycle to the previous window" })
 
 local function confirmAndReset()
+    altTabActive = false
     hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "confirm")))
     hl.dispatch(hl.dsp.submap("reset"))
 end
+local function cancelAndReset()
+    altTabActive = false
+    hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "cancel")))
+    hl.dispatch(hl.dsp.submap("reset"))
+end
 hl.define_submap("alttab", function()
-    -- Releasing Alt confirms. Alt is still in the modifier mask at the moment
-    -- its own key is released, so the bind carries ALT as its modifier.
-    hl.bind("ALT + ALT_L", confirmAndReset, { release = true })
-    hl.bind("ALT + ALT_R", confirmAndReset, { release = true })
     hl.bind("ALT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "next")))
     hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd(qsIpc("alttab", "prev")))
 
     hl.bind("Return", confirmAndReset)
 
-    hl.bind("Escape", function()
-        hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "cancel")))
-        hl.dispatch(hl.dsp.submap("reset"))
-    end)
-    hl.bind("catchall", function()
-        hl.dispatch(hl.dsp.exec_cmd(qsIpc("alttab", "cancel")))
-        hl.dispatch(hl.dsp.submap("reset"))
-    end)
+    hl.bind("Escape", cancelAndReset)
+    hl.bind("catchall", cancelAndReset)
 end)
+
+-- Hyprland matches a key RELEASE against the submap that was active when that
+-- key was PRESSED, and Alt goes down before Alt+Tab enters the "alttab"
+-- submap — so a release bind for Alt placed inside that submap can never
+-- fire. These binds live outside any submap instead, matched against the
+-- global, press-time state. `ignore_mods` because a release is matched with
+-- the released key's own modifier folded into the mask, so a bare
+-- "ALT_L"/"ALT_R" bind (empty mask) would never match without it.
+-- The `altTabActive` guard is what keeps every other Alt release — there is
+-- no submap left to scope these to — from doing anything.
+local function confirmOnAltRelease()
+    if altTabActive then confirmAndReset() end
+end
+hl.bind("ALT_L", confirmOnAltRelease, { release = true, ignore_mods = true })
+hl.bind("ALT_R", confirmOnAltRelease, { release = true, ignore_mods = true })
 
 -- Screenshot + screen recording
 hl.bind("Print", hl.dsp.submap("screenshot"), { description = "Enter the screenshot/recording mode" })
@@ -350,6 +371,21 @@ pcall(function()
         direction = "right",
         action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev") end,
     }, { description = "Swipe left/right to switch workspaces" })
+
+    -- A gesture matches only its exact modifier set, so switching workspaces
+    -- while Alt is held (the AppSwitcher open via Alt+Tab) needs its own pair.
+    hl.gesture({
+        fingers = 3,
+        direction = "left",
+        mods = "ALT",
+        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace next") end,
+    }, { description = "Swipe left/right to switch workspaces while Alt+Tab is open" })
+    hl.gesture({
+        fingers = 3,
+        direction = "right",
+        mods = "ALT",
+        action = function() hl.exec_cmd("qs -p " .. qsConfigPath .. " ipc call workspace prev") end,
+    }, { description = "Swipe left/right to switch workspaces while Alt+Tab is open" })
 end)
 
 -- hl.gesture({
