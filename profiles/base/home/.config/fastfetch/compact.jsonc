@@ -3,8 +3,8 @@
     // Same logo and info modules as config.jsonc, with the box-drawing
     // decoration and "break" spacers removed and the logo's top padding
     // zeroed, so the whole info column fits in a shorter terminal window.
-    // .zshrc picks this one over config.jsonc when $LINES is too small
-    // for the full config but still tall enough for this one.
+    // .zshrc picks this one over config.jsonc when the window is too small
+    // for the full config but still above this one's row and column limits.
     "logo": {
         "type": "file",
         "source": "~/.config/fastfetch/phi-ascii.txt",
