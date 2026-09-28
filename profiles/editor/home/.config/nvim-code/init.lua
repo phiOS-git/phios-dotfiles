@@ -26,9 +26,10 @@ require("code.format").setup() -- conform, format on save
 require("code.search").setup() -- grug-far
 require("code.multicursor").setup()
 require("code.debug").setup() -- nvim-dap and nvim-dap-view
--- TODO: AI inline completion (minuet-ai.nvim, docs/phios-nvim.md NV-07) and
--- the prompt-on-selection module phi.ai.inline (NV-08), mapped under
--- <Leader>a. Both wait on the phi agent broker.
+-- TODO: AI inline completion (minuet-ai.nvim, docs/phios-nvim.md NV-07),
+-- talking to the phi broker's a1 instance on loopback, and the
+-- prompt-on-selection module phi.ai.inline (NV-08), which calls
+-- `phi agent inline` (pi profile inline), mapped under <Leader>a.
 
 -- Theme last, so it restyles everything loaded above.
 require("theme")

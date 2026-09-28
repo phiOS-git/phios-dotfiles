@@ -19,5 +19,5 @@ return {
   { src = gh("mfussenegger/nvim-dap"), version = "master" },
   { src = gh("igorlfs/nvim-dap-view"), version = range("^1.2") }, -- debugger UI
   -- TODO: minuet-ai.nvim (AI inline completion, docs/phios-nvim.md NV-07),
-  -- once the phi agent broker it talks to is in place.
+  -- talking to the phi broker's a1 instance on loopback.
 }

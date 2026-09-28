@@ -12,7 +12,7 @@ function M.setup()
       prebuilt_binaries = { download = false },
     },
     sources = {
-      -- TODO: minuet source, manual trigger (docs/phios-nvim.md NV-07), once the phi agent broker exists.
+      -- TODO: minuet source, manual trigger (docs/phios-nvim.md NV-07), talking to the phi broker's a1 instance on loopback.
       default = { "lsp", "path", "buffer", "snippets" },
       providers = {
         snippets = {
