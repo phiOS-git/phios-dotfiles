@@ -54,13 +54,17 @@ plymouth
 # accepted over producing a bespoke alternative.
 xcursor-themes
 
-# AI agent subsystem. zotac and razer only. opencode is the engine;
-# bubblewrap is the containment mechanism.
+# AI agent subsystem. zotac and razer only. pi (pi-coding-agent) is the
+# engine; bubblewrap is the containment mechanism. fd and ripgrep are not
+# listed again here — pi's find and grep tools use the system binaries
+# instead of downloading their own, and base/packages.txt already declares
+# both on every host, including this one.
 bubblewrap
-opencode
+pi-coding-agent   # T1: [phi], built from the pinned npm tarball
+nodejs            # T0: pi's runtime
 
-# A2's egress whitelist. socat bridges the --unshare-net'd A2 container to
-# a host tinyproxy that forwards only to whitelisted hosts.
+# Coding profile's egress whitelist. socat bridges its --unshare-net
+# namespace to a host tinyproxy that forwards only to whitelisted hosts.
 socat
 tinyproxy
 
@@ -87,3 +91,8 @@ tumbler
 # suggest entries for the runner's web and site tags before anything is
 # typed. Without it those tags only show past picks.
 sqlite
+
+# Standalone CLI tool, unrelated to the AI agent subsystem above: opencode
+# is not the phiOS agent engine and nothing in ~/.config/phi-agent
+# references it.
+opencode

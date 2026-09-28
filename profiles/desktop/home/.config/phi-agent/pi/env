@@ -1,0 +1,6 @@
+# phi-agent — pi's own process environment. Parsed by phi-agent-contain with
+# a strict grammar (only PI_[A-Z0-9_]+=value lines and '#' comments); nothing
+# secret or profile-specific belongs here.
+PI_OFFLINE=1
+PI_SKIP_VERSION_CHECK=1
+PI_TELEMETRY=0

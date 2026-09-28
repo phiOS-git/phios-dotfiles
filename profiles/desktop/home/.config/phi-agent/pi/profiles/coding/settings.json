@@ -1,0 +1,9 @@
+{
+  "defaultProjectTrust": "never",
+  "enableInstallTelemetry": false,
+  "enableAnalytics": false,
+  "packages": [],
+  "retry": { "provider": { "maxRetries": 0 } },
+  "defaultTools": ["read", "bash", "edit", "write", "grep", "find", "ls"],
+  "quietStartup": true
+}

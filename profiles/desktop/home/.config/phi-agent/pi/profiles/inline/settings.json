@@ -1,0 +1,9 @@
+{
+  "defaultProjectTrust": "never",
+  "enableInstallTelemetry": false,
+  "enableAnalytics": false,
+  "packages": [],
+  "retry": { "provider": { "maxRetries": 0 } },
+  "defaultTools": [],
+  "quietStartup": true
+}

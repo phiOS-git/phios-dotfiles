@@ -1,0 +1,8 @@
+{
+  "providers": {
+    "REPLACE-WITH-PROVIDER": {
+      "baseUrl": "http://127.0.0.1:8790",
+      "apiKey": "broker"
+    }
+  }
+}
