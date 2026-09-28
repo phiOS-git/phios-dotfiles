@@ -4,29 +4,22 @@ pipewire.service
 pipewire-pulse.service
 wireplumber.service
 
-# AI agent credential broker. One instance per opencode instance (a1, a2).
-# Enable by hand after setup, as described in
-# ~/.config/phi-agent/README.md:
+# AI agent credential broker. One instance per profile class: a1 for
+# general/academic/inline, a2 for coding. Enable by hand after setup, as
+# described in ~/.config/phi-agent/README.md:
 #   systemctl --user enable --now phi-agent-broker@a1.service
 phi-agent-broker@a1.service
 phi-agent-broker@a2.service
 
-# A1 assistant engine (contained `opencode serve`). Pulls in
-# phi-agent-broker@a1 via Requires=. `phi agent project use` restarts it.
-#   systemctl --user enable --now phi-agent-a1.service
-phi-agent-a1.service
+# The agent API (`phi agent serve`, contained `pi --mode rpc` per session).
+# Pulls in phi-agent-broker@a1 via Wants=/After=. Serves the shell panel's
+# chat (general, academic); coding never goes through it.
+#   systemctl --user enable --now phi-agent.service
+phi-agent.service
 
-# A2 worker engine (local, contained, loopback). The remote surface is the
-# two units below it: start them ONLY for the duration of a declared-remote
-# session, never `enable`.
-#   systemctl --user enable --now phi-agent-a2.service
-#   systemctl --user start phi-agent-a2-remote.service   # remote session only
-phi-agent-a2.service
-phi-agent-a2-remote-engine.service
-phi-agent-a2-remote.service
-
-# A2's egress whitelist. Both are only needed when A2 runs.
-# phi-agent-net-bridge pulls in phi-agent-proxy via Requires=.
+# Coding's egress whitelist. Both are only needed when the coding profile
+# runs (`phi-code` / `phi agent code`); phi-agent-net-bridge pulls in
+# phi-agent-proxy via Requires=.
 #   systemctl --user enable --now phi-agent-proxy.service phi-agent-net-bridge.service
 phi-agent-proxy.service
 phi-agent-net-bridge.service

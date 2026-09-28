@@ -1,12 +1,17 @@
-# phiOS — provider-credential broker, one instance per template (a1, a2).
+# phiOS — provider-credential broker, one instance per profile class (a1
+# for general/academic/inline, a2 for coding).
 # Declared in services-user.txt, NEVER enabled by the installer.
 #
 #   systemctl --user enable --now phi-agent-broker@a1.service
 #
-# The broker holds the provider key and is the only route opencode has to
-# the provider (its baseURL points at 127.0.0.1). If the broker is down,
-# opencode gets connection-refused and no agent works — which is the
+# The broker holds the provider key and is the only route pi has to the
+# provider (its models.json baseUrl points at 127.0.0.1). If the broker is
+# down, pi gets connection-refused and no agent works — which is the
 # intended fail-closed behaviour, not a bug to paper over.
+#
+# Ordering toward the broker is declared by each consumer (phi-agent.service
+# for a1, phi-agent-contain's coding branch for a2 at launch time), not here:
+# there is no longer a single per-instance engine unit to name generically.
 #
 # UNVERIFIED: the hardening directives below are written from systemd.exec(5)
 # and have not been run. If the unit fails to start, loosen from the bottom
@@ -16,7 +21,6 @@
 [Unit]
 Description=phiOS AI agent credential broker (%i)
 Documentation=https://github.com/phiOS-git/phios-dotfiles
-Before=phi-agent-%i.service
 
 [Service]
 Type=simple

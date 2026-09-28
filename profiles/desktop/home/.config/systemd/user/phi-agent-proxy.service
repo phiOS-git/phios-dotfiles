@@ -1,4 +1,4 @@
-# phiOS — A2 egress whitelist proxy.
+# phiOS — coding profile egress whitelist proxy.
 # Declared in services-user.txt, NEVER enabled by the installer.
 #
 #   systemctl --user enable --now phi-agent-proxy.service
@@ -6,9 +6,9 @@
 # UNVERIFIED: written from systemd.exec(5) / tinyproxy(8), not run.
 
 [Unit]
-Description=phiOS AI agent A2 egress proxy (tinyproxy, whitelist)
+Description=phiOS AI agent coding egress proxy (tinyproxy, whitelist)
 Documentation=https://github.com/phiOS-git/phios-dotfiles
-Before=phi-agent-net-bridge.service phi-agent-a2.service
+Before=phi-agent-net-bridge.service
 
 [Service]
 Type=simple

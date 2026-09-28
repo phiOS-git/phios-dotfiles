@@ -3,20 +3,23 @@
 #
 #   systemctl --user enable --now phi-agent-net-bridge.service
 #
-# A2 has --unshare-net and no TCP path to the host. This socat turns a
-# host-side unix socket (bind-mounted into A2 through the net/ bridge dir)
-# into a connection to the whitelist proxy. The dedicated broker socket
-# (net/broker-a2.sock) is created by phi-agent-broker@a2.service itself and
-# needs no bridge here.
+# Coding sessions run with --unshare-net and have no TCP path to the host.
+# This socat turns a host-side unix socket (bind-mounted into the coding
+# containment through the net/ bridge dir) into a connection to the
+# whitelist proxy. The dedicated broker socket (net/broker-a2.sock) is
+# created by phi-agent-broker@a2.service itself and needs no bridge here.
+#
+# Coding sessions are launched ad hoc through phi-agent-contain, not a
+# persistent enabled unit, so there is no single consumer to order Before=;
+# enable this unit before starting a coding session.
 #
 # UNVERIFIED: written from socat(1) / systemd.exec(5), not run.
 
 [Unit]
-Description=phiOS AI agent A2 proxy bridge (unix socket -> tinyproxy)
+Description=phiOS AI agent coding proxy bridge (unix socket -> tinyproxy)
 Documentation=https://github.com/phiOS-git/phios-dotfiles
 Requires=phi-agent-proxy.service
 After=phi-agent-proxy.service
-Before=phi-agent-a2.service
 
 [Service]
 Type=simple

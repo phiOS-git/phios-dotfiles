@@ -1,0 +1,41 @@
+# phiOS — the AI agent API.
+# Declared in services-user.txt, NEVER enabled by the installer.
+#
+#   systemctl --user enable --now phi-agent.service
+#
+# `phi agent serve` listens on 127.0.0.1:4199 (loopback, no auth) and spawns
+# one contained `pi --mode rpc` child per live general/academic session via
+# phi-agent-contain, itself never running outside the containment. The
+# shell panel's chat, `phi agent tui`, `phi agent ask` and `phi agent
+# inline` reach it or spawn their own contained pi the same way; coding
+# sessions (`phi-code` / `phi agent code`) never go through this unit.
+#
+# PATH carries ~/.local/bin explicitly: `phi` resolves phi-agent-contain
+# with exec.LookPath, and a systemd user unit's default PATH does not
+# include it.
+#
+# UNVERIFIED: written from systemd.exec(5) and the PI-04 contract; not run.
+
+[Unit]
+Description=phiOS AI agent API (phi agent serve)
+Documentation=https://github.com/phiOS-git/phios-dotfiles
+Wants=phi-agent-broker@a1.service
+After=phi-agent-broker@a1.service
+StartLimitIntervalSec=60
+StartLimitBurst=4
+
+[Service]
+Type=simple
+Environment=PATH=%h/.local/bin:/usr/bin
+ExecStart=/usr/bin/phi agent serve
+Restart=on-failure
+RestartSec=3
+
+NoNewPrivileges=true
+# phi agent serve spawns bwrap, which needs user namespaces: ProtectHome=
+# and ProtectSystem= are deliberately NOT set here, as they would block the
+# namespace creation phi-agent-contain's own containment depends on.
+UMask=0077
+
+[Install]
+WantedBy=default.target
