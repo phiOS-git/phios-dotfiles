@@ -34,9 +34,3 @@
 #^codeload\.github\.com$
 #^objects\.githubusercontent\.com$
 #^raw\.githubusercontent\.com$
-
-# --- opencode's own runtime needs (if it fetches @ai-sdk/* at first run) ---
-# Uncomment only if a first contained run
-# shows opencode trying to reach one of these.
-#^registry\.npmjs\.org$
-#^opencode\.ai$

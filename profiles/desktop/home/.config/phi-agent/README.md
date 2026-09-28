@@ -3,39 +3,56 @@
 Configuration for the phiOS AI agent subsystem. `zotac` and `razer` only —
 `mini` does not carry the `desktop` profile.
 
-Two opencode instances, separated by capability and by containment:
+The engine is [pi](https://pi.dev) (`@earendil-works/pi-coding-agent`), run
+`--mode rpc`, in print mode, or as its interactive terminal UI — never
+unconfined. Every launch goes through `~/.local/bin/phi-agent-contain`,
+which builds a bubblewrap containment from empty for one of four profiles:
 
-| | A1 — assistant | A2 — worker |
-|---|---|---|
-| shell | no | yes |
-| writes | `output/` + `proposte/` of the active project, and `proposte/` of every memory level | the one directory you open it in |
-| network | host namespace, fetch approved interactively | removed, then a whitelist |
-| memory | proposes at three levels, never writes | none |
+| Profile | Chat in panel | pi tools | Broker instance / net class | Writable (besides the ephemeral agent-dir tmpfs) |
+|---|---|---|---|---|
+| `general` | yes | read, write, edit, grep, find, ls | a1 — host network, `http://127.0.0.1:8789` | project `output/`, `proposte/` of system, profile and project level, session dir |
+| `academic` | yes | read, write, edit, grep, find, ls | a1 | same as general |
+| `coding` | no (terminal TUI only) | read, bash, edit, write, grep, find, ls | a2 — `--unshare-net`, `http://127.0.0.1:8790` via socat forwarder, egress proxy | the workdir, rw project folders, session dir |
+| `inline` | no | none | a1 | nothing (no session dir) |
+
+Broker instances stay `a1` (serves general, academic, inline) and `a2`
+(serves coding) — the broker code and its config layout are unrelated to
+the four pi profiles above and do not change with them.
 
 ## Files
 
 | Path | What | Who edits |
 |---|---|---|
 | `env.example` | template for the local config | — |
-| `~/.config/phi-agent/env` | **you create this** from the example: git identity, optional A2 toolchain cache and remote address | you |
-| `code-blocklist.example` | template for the A2 / folder-of-interest blocklist | — |
+| `~/.config/phi-agent/env` | **you create this** from the example: git identity and the coding toolchain cache | you |
+| `code-blocklist.example` | template for the coding / folder-of-interest blocklist | — |
 | `~/.config/phi-agent/code-blocklist` | **you create this** from the example: directories `phi agent code` and the folder picker refuse (a guard-rail, not the boundary) | you (also Settings › AI Agent) |
-| `mounts/common.paths` | read-only base for both instances | repo |
-| `mounts/a1.paths` | A1 perimeter | repo |
-| `mounts/a2.paths` | A2 perimeter | repo |
+| `mounts/common.paths` | read-only base for every profile | repo |
+| `mounts/assistant.paths` | perimeter for general, academic, inline | repo |
+| `mounts/coding.paths` | perimeter for coding | repo |
 | `mounts/never.paths` | the checklist of paths that must stay unreachable | repo |
-| `<inst>/opencode/opencode.example.json` | template for the engine config — provider `phi-broker` on loopback, hardening permissions | — |
-| `~/.config/phi-agent/<inst>/opencode/opencode.json` | **you create this** from the example: set the model id (two places) | you |
+| `pi/env` | pi's own process environment (`PI_OFFLINE`, `PI_SKIP_VERSION_CHECK`, `PI_TELEMETRY`) | repo |
+| `pi/profiles/<profile>/settings.json` | pi settings for that profile | repo |
+| `pi/profiles/<profile>/SYSTEM.md` | that profile's system prompt | repo |
+| `pi/profiles/<profile>/models.example.json` | template naming the broker as the provider's endpoint | repo |
+| `~/.config/phi-agent/pi/profiles/<profile>/models.json` | **you create this** from the example: name the real provider | you |
 | `<inst>/broker.example.json` | template for the broker config | — |
 | `~/.config/phi-agent/<inst>/broker.json` | **you create this**: provider origin + how the key attaches (no key) | you |
 | `~/.config/phi-agent/<inst>/provider-key` | **you create this**, `chmod 600`: the raw provider API key | you |
-| `tinyproxy/tinyproxy.conf` | A2 egress whitelist | repo |
+| `tinyproxy/tinyproxy.conf` | coding profile's egress whitelist proxy config | repo |
+| `tinyproxy/whitelist` | the whitelist itself | repo (you uncomment entries) |
 
 ## The broker
 
-opencode never sees the provider key. Its `phi-broker` provider talks
-**in clear over loopback** to `phi agent broker`, which runs *outside* the
-containment, holds the key, and adds it to the outbound request.
+pi never sees the provider key. A profile's `models.json` names a provider
+whose `baseUrl` is `http://127.0.0.1:8789` (a1) or `http://127.0.0.1:8790`
+(coding, a2) with a dummy `apiKey` ("broker") — pi only needs a non-empty
+key to treat the provider as usable; the real one lives with `phi agent
+broker`, which runs *outside* the containment, holds the key, and adds it
+to the outbound request. The broker appends the incoming request path
+unchanged, so `baseUrl` must already carry any path segment the provider's
+own API expects (`/v1` for an OpenAI-compatible endpoint, for example) — a
+`baseUrl` missing that path fails as a silent 404, not a clear error.
 
 Set it up, per instance (a1 first):
 
@@ -44,31 +61,31 @@ cd ~/.config/phi-agent/a1
 cp broker.example.json broker.json
 $EDITOR broker.json          # set upstream (provider ORIGIN, no path) and auth_header/auth_value
 printf '%s' 'sk-...your-key...' > provider-key && chmod 600 provider-key
-cp opencode/opencode.example.json opencode/opencode.json
-$EDITOR opencode/opencode.json   # replace REPLACE-WITH-YOUR-MODEL-ID (two places)
 phi agent broker --instance a1 --check     # must print a summary and exit 0
 systemctl --user enable --now phi-agent-broker@a1.service
 ```
 
-`opencode.json` ships assuming an **OpenAI-compatible** provider
-(`@ai-sdk/openai-compatible`, requests to `/v1/chat/completions`). For a
-provider that only speaks Anthropic's native `/v1/messages`, change
-`provider.phi-broker.npm` to `@ai-sdk/anthropic`, set `options.baseURL` to
-`http://127.0.0.1:8789` (no `/v1`), and in `broker.json` set
-`auth_header` to `x-api-key`, `auth_value` to `{key}`, and add
-`"anthropic-version": "2023-06-01"` to `extra_headers`.
+Then, per profile that uses that instance:
 
-Ports: a1 broker `127.0.0.1:8789`, a2 broker `127.0.0.1:8790`.
+```
+cd ~/.config/phi-agent/pi/profiles/general
+cp models.example.json models.json
+$EDITOR models.json          # replace REPLACE-WITH-PROVIDER with the real provider id
+```
+
+For a provider that only speaks Anthropic's native `/v1/messages`, set
+`auth_header` to `x-api-key` in `broker.json`, `auth_value` to `{key}`, and
+add `"anthropic-version": "2023-06-01"` to `extra_headers`.
 
 Consumption is logged as JSONL at
 `~/.local/state/phi-agent/<inst>/broker-meter.jsonl`. The broker also
 enforces a local fixed-window request limit (`rate_limit` in
 `broker.json`).
 
-## A2's network
+## The coding profile's network
 
-A2 runs with `--unshare-net`: a fresh namespace, only a down loopback, no
-route anywhere. Two unix sockets in `~/.local/state/phi-agent/net/`,
+Coding runs with `--unshare-net`: a fresh namespace, only a down loopback,
+no route anywhere. Two unix sockets in `~/.local/state/phi-agent/net/`,
 bind-mounted into the container, are the only way out:
 
 | socket | to | purpose |
@@ -86,7 +103,7 @@ network.
 ships with loopback allowed and every package registry commented out;
 uncomment exactly the ones a project on this machine actually fetches from.
 
-Enable (only when A2 is in use):
+Enable (only when coding is in use):
 
 ```
 systemctl --user enable --now phi-agent-proxy.service phi-agent-net-bridge.service
@@ -102,129 +119,121 @@ systemctl --user enable --now phi-agent-proxy.service phi-agent-net-bridge.servi
   Keep it somewhere you can reach without this machine.
 
 The launcher is `~/.local/bin/phi-agent-contain`. Everything — the systemd
-units, `phi agent ask` — goes through it; there is no way to start an agent
-outside the containment.
+units, `phi agent ask`, `phi agent code` — goes through it; there is no way
+to start an agent outside the containment.
 
-## Not managed here
-
-- The provider API key: held by `phi agent broker` outside the containment,
-  read from its own file.
-- The remote-surface password: a systemd credential from a root-owned file
-  outside the repository.
-- Personalities and projects: data stored under `~/.local/share/phi-agent/a1/`.
-  Bootstrapped by `phi agent init` (two seed personalities, no projects).
-  Managed with `phi agent project` and `phi agent personality`, or from the
-  shell's agent panel.
-
-## The data model and the engine
+## Data layout
 
 ```
-phi agent init                       # seed personalita/general/ + technical/ (migrates the old flat *.md)
-phi agent project new notes --folder ~/Notes --personality notes   # a project = a folder + metadata
-phi agent project use notes          # set active + restart phi-agent-a1 so the containment is rebuilt for it
-phi agent project folder add notes ~/Reference   # a read-only folder of interest (not copied)
-phi agent personality new notes --from-file ./notes-personality.md
+~/.local/share/phi-agent/                DATA ROOT
+    memoria.md                           system memory level
+    proposte/                            system proposals
+    profiles/<profile>/memoria.md        profile memory level (general, academic, coding)
+    profiles/<profile>/proposte/
+    sessions/                            transcripts of sessions with no project
+    projects/<name>/
+        project.json
+        instructions.md                  generated from project.json by phi, never hand-edited
+        memoria.md
+        proposte/
+        allegati/                        attachments (static copies)
+        sessions/                        transcripts of this project's sessions (any profile)
+        output/
+
+~/.local/state/phi-agent/
+    a1/ a2/                              broker state and meters
+    net/                                 coding's bridge sockets
+    terminal/<id>.json                   records of terminal TUI sessions (`phi agent code`/`tui`)
+~/.cache/phi-agent/<profile>/            per-profile cache, rw in the container at /home/agent/.cache
 ```
 
-A project owns `project.json` (title, description, instructions, default
-personality, folders of interest, pins); `progetto.md` and `folders.list`
-are regenerated from it. Materials are static copies; folders of interest
-are the real directory, mounted **read-only**.
-
-Memory has three levels — **system**, **personality**, **project** — each a
+Memory has three levels — **system**, **profile**, **project** — each a
 `memoria.md` mounted **read-only** into the containment (the agent cannot
-write its own memory at any level) with its own writable `proposte/`. You
-promote a proposal:
+write its own memory at any level) with its own writable `proposte/`, and
+only for general and academic. You promote a proposal:
 
 ```
-phi agent memory list  --level system                         # or personality/project
-phi agent memory show FILE --level personality --personality notes
-phi agent memory accept FILE --level project                  # append to that level's memoria.md
+phi agent memory list-all
+phi agent memory show FILE --level profile --profile general
+phi agent memory accept FILE --level project --project notes   # append to that level's memoria.md
 phi agent memory reject FILE --level system
 ```
 
-The `phi` MCP server (`phi agent mcp`, one read-only tool `phi_context`) is
-registered in `a1/opencode/opencode.json` and spawned by opencode inside
-the containment. It is the only place the agent's capabilities grow.
+Projects have no "active" state any more — a project is a per-session
+parameter, passed with `--project` wherever it applies:
 
-A1 runs as `phi-agent-a1.service` on `127.0.0.1:4199`.
+```
+phi agent project new notes
+phi agent project folder add notes ~/Notes --mode ro           # a read-only folder of interest
+phi agent project show notes
+phi agent code ~/dev/some-project --project notes               # or: phi agent ask --project notes "..."
+```
 
-## Inline questions and the remote surface
+A folder's host path is per-machine (`project.json`'s `folders[].paths`
+maps hostname → path), so the same project can point at different real
+directories on `zotac` and `razer`. `mode` is `ro` or `rw`; `rw` is only
+ever honoured for the coding profile — every other profile mounts a `rw`
+folder read-only regardless.
 
-`phi agent ask "..."` sends one question to the running A1 service and prints
-the reply. It creates an opencode session, uses it, and **deletes it** — so it
-never shows in the panel list and never reaches memory. It needs
-`phi-agent-a1.service` up; it never starts an engine.
+## How sessions start
+
+| Use | Command |
+|---|---|
+| Shell panel chat (general, academic) | `phi-agent.service` runs `phi agent serve`, which spawns a contained `pi --mode rpc` per live session |
+| Interactive terminal, general/academic | `phi agent tui` (alias `phi-chat`) |
+| Coding, interactive terminal | `phi agent code DIR` (alias `phi-code`) |
+| One-off question, general/academic | `phi agent ask "..."` (alias `phi-ask`) |
+| Editor inline rewrite | `phi agent inline`, stdin `{"instruction","text","filetype"}`, stdout the replacement text only |
+
+`phi agent ask` sends one question to a throwaway session and prints the
+reply: it never shows in the panel list and never reaches memory. It needs
+`phi-agent.service` up; it never starts an engine of its own.
 
 ```
 phi agent ask "explain container isolation"
-phi agent ask --personality technical "explain this bwrap flag: --unshare-cgroup"
+phi agent ask --profile academic "summarise this argument"
 ```
 
-The **remote surface** is A2 only, and off by default. Three units:
+`phi-agent.service` runs `phi agent serve`, listening on `127.0.0.1:4199`
+(loopback, no auth — a second, authenticated tailnet listener is designed
+for but **not implemented yet**; there is currently no remote access to
+any profile from another of your devices).
 
-| unit | role |
-|---|---|
-| `phi-agent-a2.service` | local contained A2, loopback, no password |
-| `phi-agent-a2-remote-engine.service` | A2 with the password + an inbound socket — starting it *is* "declaring the session remote" |
-| `phi-agent-a2-remote.service` | the overlay listener; the only thing that binds `PHI_AGENT_REMOTE_ADDR`, and only that address |
+## Verification checklist (PI-04)
 
-For a remote session:
+Run a real coding session and confirm, from inside it:
 
 ```
-# one-time: the address and the password
-echo 'PHI_AGENT_REMOTE_ADDR=<this-machine-overlay-address>' >> ~/.config/phi-agent/env
-printf '%s' '<a strong password>' > ~/.config/phi-agent/a2/remote-password && chmod 600 ~/.config/phi-agent/a2/remote-password
-
-# per session:
-systemctl --user start phi-agent-a2-remote.service    # pulls in the engine
-# ... connect from another of your devices on the overlay, port 4399, user "phi" ...
-systemctl --user stop phi-agent-a2-remote.service phi-agent-a2-remote-engine.service
+cat ~/.ssh/id_*          # fails — no such file
+git push                 # fails — no route to a forge
+git commit               # works — coding may commit locally
+echo x >> ~/.pi/agent/settings.json   # fails — read-only
+echo x > ~/.pi/agent/extensions/x     # fails — the subdirectory is remounted read-only
+echo x > ~/.pi/agent/scratch          # succeeds, but the file is gone on the next launch —
+                                       # the agent-dir root is an ephemeral tmpfs, not persistent storage
 ```
 
-Overlay reachability is the overlay's own default-deny policy — allow only
-your own devices toward port 4399. No extra encryption layer (the overlay
-already encrypts).
+The session is recorded under `~/.local/state/phi-agent/terminal/` for the
+shell panel's coding-sessions view.
 
-## Transition from unconfined opencode
+## Migration from the opencode agent
 
-Do this only after V-01…V-04 and V-08/V-09 have passed. It removes the
-agent's access to your SSH keys and its ability to push — A2 commits
-locally, you publish.
+`phi agent init` migrates legacy data **non-destructively** (copy, never
+delete) from `~/.local/share/phi-agent/a1/` into the new data root.
 
-1. Enable the A2 support services:
+1. Stop and remove the old units, then enable the new one:
    ```
-   systemctl --user enable --now phi-agent-broker@a2.service phi-agent-proxy.service phi-agent-net-bridge.service
+   systemctl --user disable --now phi-agent-a1.service phi-agent-a2.service \
+       phi-agent-a2-remote.service phi-agent-a2-remote-engine.service
+   systemctl --user enable --now phi-agent.service
    ```
-   and set up `~/.config/phi-agent/a2/broker.json` + `provider-key`, copy
-   `a2/opencode/opencode.example.json` to `opencode.json` and set the model
-   id, and uncomment the registries your projects need in
-   `tinyproxy/whitelist`.
-
-2. Use `phi-code` (or `phi agent code DIR`) for coding sessions instead of
-   bare `opencode`. It opens in **any** directory — that directory is the
-   only thing under `$HOME` the session sees, mounted read-write at
-   `/home/agent/work`; `~/.config/phi-agent/code-blocklist` guards the
-   picker.
-   ```
-   cd ~/dev/some-project
-   phi-code                       # == phi agent code "$PWD"
-   ```
-   Run a **real** task and let it finish. Confirm from inside:
-   `cat ~/.ssh/id_*` fails, `git push` fails (no route to a forge), and
-   `git commit` works. Publish afterward from your normal shell.
-   The session is recorded under `~/.local/state/phi-agent/a2/sessions/`
-   for the shell panel's Coding-sessions view.
-
-3. Once a real session completes cleanly, retire the old config:
+2. Run `phi agent init`.
+3. For each profile you use, create its `models.json` from
+   `models.example.json` (see "The broker" above) and set the provider.
+4. Retire the old engine's local configuration once a real session
+   completes cleanly:
    ```
    mv ~/.config/opencode ~/.config/opencode.pre-phios.bak
    ```
-   Keep the backup until you are sure `phi-code` covers everything you
-   used opencode for. The step is done when the unconfined configuration
-   is gone.
-
-`phi-agent-a2.service` (plain loopback serve) is optional — a persistent
-server for tooling that speaks opencode's HTTP API. Reaching its port from
-the host needs a bridge you add yourself; day-to-day interactive use is
-`phi-code`.
+   opencode itself stays installed as an unrelated standalone tool; only its
+   configuration for the old agent setup is retired here.
