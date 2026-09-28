@@ -1,0 +1,16 @@
+# Every external tool the nvim-code and nvim-notes plugins use. None of them
+# is ever downloaded by a plugin: no mason, no prebuilt binaries.
+# qmlls and qmlformat come from qt6-declarative, already a dependency of
+# quickshell (desktop); Arch installs them outside PATH, in /usr/lib/qt6/bin.
+
+# nvim-treesitter (branch main) builds its parsers locally.
+tree-sitter-cli
+gcc
+
+# nvim-code: language servers, linter, formatters.
+lua-language-server
+gopls
+bash-language-server
+shellcheck                   # bash-language-server's diagnostics.
+stylua
+shfmt

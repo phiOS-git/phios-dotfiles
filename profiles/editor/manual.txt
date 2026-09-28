@@ -1,0 +1,12 @@
+# Steps the installer cannot perform. phios-install prints this list and never
+# runs anything in it.
+#
+# Plugins first: start `nvim-code` and `nvim-notes` once each, interactively,
+# and confirm vim.pack's installation prompt — it installs the revisions pinned
+# in each profile's nvim-pack-lock.json. The commands below only work after
+# that, because a headless start cannot answer the prompt.
+#
+# Tree-sitter parsers, built locally by nvim-treesitter (tree-sitter-cli and
+# gcc, from packages.txt). Equivalent to :TSInstall inside each profile; after
+# an nvim-treesitter update, run :TSUpdate in both.
+nvim-code --headless +'lua require("nvim-treesitter").install({ "go", "bash", "qmljs", "json", "yaml", "toml" }):wait(300000)' +qa

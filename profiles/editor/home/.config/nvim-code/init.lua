@@ -19,6 +19,10 @@ require("phi.statusline")
 vim.pack.add(vim.list_extend(vim.list_extend({}, require("phi.plugins.common")), require("code.plugins")))
 
 require("phi.workbench").setup() -- explorer, file tabs, picker, which-key, git
+require("code.treesitter").setup() -- highlighting and folds
+require("code.lsp").setup() -- language servers (lsp/*.lua)
+require("code.completion").setup() -- blink.cmp and snippets
+require("code.format").setup() -- conform, format on save
 
 -- Theme last, so it restyles everything loaded above.
 require("theme")

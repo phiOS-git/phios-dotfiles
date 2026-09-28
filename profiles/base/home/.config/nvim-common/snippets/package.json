@@ -1,0 +1,12 @@
+{
+  "name": "phi-nvim-snippets",
+  "description": "User snippets shared by nvim-code and nvim-notes, read by blink.cmp's snippets source.",
+  "contributes": {
+    "snippets": [
+      {
+        "language": "go",
+        "path": "./go.json"
+      }
+    ]
+  }
+}
