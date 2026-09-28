@@ -53,7 +53,21 @@ if vim.uv.fs_stat(vimfiles) and not vim.tbl_contains(opt.runtimepath:get(), vimf
 end
 
 -- Never offer to download a missing spell file: dictionaries come from pacman.
+-- Neovim 0.12 asks from the core as well as from the spellfile plugin, and
+-- nvim.spellfile has no option to stop asking, only one to download without
+-- asking — so its entry point is replaced with a one-time pointer to pacman.
 vim.g.loaded_spellfile_plugin = true
+local has_spellfile, spellfile = pcall(require, "nvim.spellfile")
+if has_spellfile then
+  local warned = {}
+  spellfile.get = function(lang)
+    if not warned[lang] then
+      warned[lang] = true
+      local msg = ("No spell file for %s: install it with pacman (vim-spell-%s)"):format(lang, lang)
+      vim.notify(msg, vim.log.levels.WARN)
+    end
+  end
+end
 
 -- Make :find / gf / ** usable for file navigation without a plugin
 opt.path:append("**")

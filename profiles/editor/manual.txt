@@ -10,3 +10,4 @@
 # gcc, from packages.txt). Equivalent to :TSInstall inside each profile; after
 # an nvim-treesitter update, run :TSUpdate in both.
 nvim-code --headless +'lua require("nvim-treesitter").install({ "go", "bash", "qmljs", "json", "yaml", "toml" }):wait(300000)' +qa
+nvim-notes --headless +'lua require("nvim-treesitter").install({ "yaml", "html", "latex" }):wait(300000)' +qa

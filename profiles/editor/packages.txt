@@ -17,3 +17,8 @@ shfmt
 
 # nvim-code: the Go debugger behind nvim-dap (`dlv dap`).
 delve
+
+# nvim-notes: the vault's language server and the it/en spell dictionaries.
+markdown-oxide
+vim-spell-it
+vim-spell-en
