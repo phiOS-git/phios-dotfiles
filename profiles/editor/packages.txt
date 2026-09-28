@@ -14,3 +14,6 @@ bash-language-server
 shellcheck                   # bash-language-server's diagnostics.
 stylua
 shfmt
+
+# nvim-code: the Go debugger behind nvim-dap (`dlv dap`).
+delve
