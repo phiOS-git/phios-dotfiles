@@ -1,0 +1,4 @@
+#!/bin/sh
+# nvim-notes — Neovim with the nvim-notes profile: its own config, plugins, state
+# and data under the nvim-notes app name (profiles/editor in phios-dotfiles).
+NVIM_APPNAME=nvim-notes exec nvim "$@"

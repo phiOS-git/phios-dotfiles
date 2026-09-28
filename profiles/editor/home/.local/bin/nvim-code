@@ -1,0 +1,4 @@
+#!/bin/sh
+# nvim-code — Neovim with the nvim-code profile: its own config, plugins, state
+# and data under the nvim-code app name (profiles/editor in phios-dotfiles).
+NVIM_APPNAME=nvim-code exec nvim "$@"

@@ -6,6 +6,7 @@
 # vulkan-driver provider.
 base
 desktop
+editor
 laptop
 intel-gpu
 razer-hw

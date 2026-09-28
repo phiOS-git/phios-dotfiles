@@ -5,6 +5,7 @@
 # interactive vulkan-driver provider prompt.
 base
 desktop
+editor
 workstation
 nvidia
 gaming

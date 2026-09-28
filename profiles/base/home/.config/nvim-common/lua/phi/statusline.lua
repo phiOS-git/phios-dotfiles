@@ -1,4 +1,4 @@
--- ~/.config/nvim/lua/statusline.lua
+-- ~/.config/nvim-common/lua/phi/statusline.lua
 -- Minimal statusline built from built-in statusline items — no plugin.
 --
 -- No colours are defined here: the statusline only uses the standard

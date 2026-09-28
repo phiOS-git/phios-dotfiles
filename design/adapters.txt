@@ -32,7 +32,7 @@
 profiles/base/templates/.config/zsh/theme.zsh.tmpl              | .config/zsh/theme.zsh              | -         | C
 profiles/base/templates/.config/yazi/theme.toml.tmpl            | .config/yazi/theme.toml            | [unknown] | A
 profiles/base/templates/.config/btop/themes/phi.theme.tmpl      | .config/btop/themes/phi.theme      | [unknown] | A
-profiles/base/templates/.config/nvim/lua/theme.lua.tmpl         | .config/nvim/lua/theme.lua         | [unknown] | B
+profiles/base/templates/.config/nvim-common/lua/theme.lua.tmpl  | .config/nvim-common/lua/theme.lua  | [unknown] | B
 
 # --- profile: desktop -------------------------------------------------------
 profiles/desktop/templates/.config/kitty/theme.conf.tmpl        | .config/kitty/theme.conf           | [unknown] | B

@@ -38,12 +38,12 @@ and is not repeated here.
 
 ## Profiles and hosts
 
-Profiles are `base`, `desktop`, `laptop`, `intel-gpu`, `nvidia`, `razer-hw`,
-`gaming`, `workstation`, `study`, `server`, composed per host in
+Profiles are `base`, `desktop`, `editor`, `laptop`, `intel-gpu`, `nvidia`,
+`razer-hw`, `gaming`, `workstation`, `study`, `server`, composed per host in
 `hosts/<host>.txt`:
 
-- `zotac` — base, desktop, workstation, nvidia, gaming
-- `razer` — base, desktop, laptop, intel-gpu, razer-hw, gaming, study
+- `zotac` — base, desktop, editor, workstation, nvidia, gaming
+- `razer` — base, desktop, editor, laptop, intel-gpu, razer-hw, gaming, study
 - `mini` — base, server
 
 **Order is significant.** A profile providing a concrete implementation must

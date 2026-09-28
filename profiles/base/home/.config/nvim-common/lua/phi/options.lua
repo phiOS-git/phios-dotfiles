@@ -1,5 +1,6 @@
--- ~/.config/nvim/lua/options.lua
--- Core editor options. Built-in Neovim behaviour only — no plugins.
+-- ~/.config/nvim-common/lua/phi/options.lua
+-- Core editor options shared by every profile. Built-in Neovim behaviour
+-- only — no plugins.
 
 -- Syntax highlighting and filetype plugins (built-in, not external)
 vim.cmd("syntax enable")
@@ -38,6 +39,21 @@ opt.showmode = false -- the mode is shown by the statusline instead
 opt.laststatus = 2
 opt.wildmenu = true
 opt.wildmode = "longest:full,full"
+
+-- Folds: when a profile turns folding on, files still open unfolded
+opt.foldlevelstart = 99
+
+-- Spell dictionaries from pacman (vim-spell-*) live in /usr/share/vim/vimfiles.
+-- Arch puts that directory on the runtimepath from /etc/xdg/nvim/sysinit.vim,
+-- which only the default `nvim` app name reads, so nvim-code and nvim-notes
+-- would not see the dictionaries without this.
+local vimfiles = "/usr/share/vim/vimfiles"
+if vim.uv.fs_stat(vimfiles) and not vim.tbl_contains(opt.runtimepath:get(), vimfiles) then
+  opt.runtimepath:append(vimfiles)
+end
+
+-- Never offer to download a missing spell file: dictionaries come from pacman.
+vim.g.loaded_spellfile_plugin = true
 
 -- Make :find / gf / ** usable for file navigation without a plugin
 opt.path:append("**")
