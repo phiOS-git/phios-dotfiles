@@ -12,4 +12,5 @@ return {
   { src = gh("nvim-treesitter/nvim-treesitter"), version = "main" },
   { src = gh("MeanderingProgrammer/render-markdown.nvim"), version = range("^8.14") }, -- in-buffer rendering
   { src = gh("HakonHarnes/img-clip.nvim"), version = range("^0.6") }, -- attachments
+  { src = gh("folke/snacks.nvim"), version = range("^2.31") }, -- image and zen modules only
 }

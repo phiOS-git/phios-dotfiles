@@ -29,6 +29,7 @@ require("phi.workbench").setup({ rename = false }) -- notes are renamed only thr
 require("notes.lsp").setup() -- markdown-oxide (lsp/markdown_oxide.lua)
 require("notes.markdown").setup() -- render-markdown
 require("notes.attachments").setup() -- img-clip
+require("notes.media").setup() -- snacks image and zen, reading modes
 
 -- Theme last, so it restyles everything loaded above.
 require("theme")

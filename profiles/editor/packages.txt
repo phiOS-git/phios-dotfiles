@@ -22,3 +22,11 @@ delve
 markdown-oxide
 vim-spell-it
 vim-spell-en
+
+# nvim-notes: snacks.image previews PDFs through ImageMagick (base), which
+# needs ghostscript, and renders LaTeX formulas with pdflatex.
+ghostscript
+texlive-basic
+texlive-latex
+texlive-latexrecommended
+texlive-latexextra

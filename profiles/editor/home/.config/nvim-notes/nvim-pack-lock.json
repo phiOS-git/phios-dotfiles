@@ -30,6 +30,11 @@
       "src": "https://github.com/MeanderingProgrammer/render-markdown.nvim",
       "version": "8.14.0 - 9.0.0"
     },
+    "snacks.nvim": {
+      "rev": "e6fd58c82f2f3fcddd3fe81703d47d6d48fc7b9f",
+      "src": "https://github.com/folke/snacks.nvim",
+      "version": "2.31.0 - 3.0.0"
+    },
     "which-key.nvim": {
       "rev": "fcbf4eea17cb299c02557d576f0d568878e354a4",
       "src": "https://github.com/folke/which-key.nvim",
