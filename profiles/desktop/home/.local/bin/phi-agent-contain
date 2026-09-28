@@ -283,6 +283,11 @@ agent_dir_host=$conf_home/phi-agent/pi/profiles/$profile
 [[ -f $agent_dir_host/settings.json ]] || die "containment unavailable: $agent_dir_host/settings.json not found"
 [[ -f $agent_dir_host/SYSTEM.md ]] || die "containment unavailable: $agent_dir_host/SYSTEM.md not found"
 [[ -f $agent_dir_host/models.json ]] || die "containment unavailable: $agent_dir_host/models.json not found — create it from models.example.json and set the provider"
+# trust.json ({}) is shipped so that it is bound read-only below: pi reads its
+# project-trust decisions from the agent dir, and an entry there overrides
+# defaultProjectTrust "never". Left absent, the writable root would let a
+# session trust its own working directory and load that directory's .pi/.
+[[ -f $agent_dir_host/trust.json ]] || die "containment unavailable: $agent_dir_host/trust.json not found"
 
 container_agent_dir=$CONTAINER_HOME/.pi/agent
 
@@ -318,6 +323,11 @@ for _sub in extensions skills prompts themes; do
 	bind_args+=(--remount-ro "$container_agent_dir/$_sub")
 done
 unset _sub _f _rel _real have_append_system
+
+# pi always trusts the user-level ~/.agents/skills, and HOME is a writable
+# tmpfs: make it an empty, read-only directory so no session can plant a
+# skill there for its own /reload.
+bind_args+=(--tmpfs "$CONTAINER_HOME/.agents" --remount-ro "$CONTAINER_HOME/.agents")
 
 # ---------------------------------------------------------------------------
 # Memory, project, folders, workdir, sessions — the binds that depend on the
@@ -426,6 +436,17 @@ if [[ -n $workdir ]]; then
 		die "refusing to open a blocked path ($reason): $real_workdir"
 	fi
 	bind_args+=(--bind "$real_workdir" "$CONTAINER_HOME/work")
+
+	# A workdir that contains this machine's phiOS checkout would expose the
+	# agent's own boundary read-write: the installer symlinks the launcher
+	# and every file under ~/.config/phi-agent into it. Re-bind each such
+	# target read-only over its place in the workdir.
+	while IFS= read -r -d '' _f; do
+		_real=$(readlink -f -- "$_f") || continue
+		[[ $_real == "$real_workdir"/* ]] || continue
+		bind_args+=(--ro-bind "$_real" "$CONTAINER_HOME/work/${_real#"$real_workdir"/}")
+	done < <({ printf '%s\0' "$0"; find -L "$conf_home/phi-agent" -type f -print0; } 2>/dev/null)
+	unset _f _real
 fi
 
 # Sessions: bound at /home/agent/sessions, created if missing. Not for

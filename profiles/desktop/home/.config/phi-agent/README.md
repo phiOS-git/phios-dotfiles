@@ -34,6 +34,7 @@ the four pi profiles above and do not change with them.
 | `pi/env` | pi's own process environment (`PI_OFFLINE`, `PI_SKIP_VERSION_CHECK`, `PI_TELEMETRY`) | repo |
 | `pi/profiles/<profile>/settings.json` | pi settings for that profile | repo |
 | `pi/profiles/<profile>/SYSTEM.md` | that profile's system prompt | repo |
+| `pi/profiles/<profile>/trust.json` | an empty project-trust store, bound read-only so no session can trust its own working directory (an entry there would override `defaultProjectTrust: "never"`) | repo |
 | `pi/profiles/<profile>/models.example.json` | template naming the broker as the provider's endpoint | repo |
 | `~/.config/phi-agent/pi/profiles/<profile>/models.json` | **you create this** from the example: name the real provider | you |
 | `<inst>/broker.example.json` | template for the broker config | — |
@@ -209,6 +210,8 @@ git push                 # fails — no route to a forge
 git commit               # works — coding may commit locally
 echo x >> ~/.pi/agent/settings.json   # fails — read-only
 echo x > ~/.pi/agent/extensions/x     # fails — the subdirectory is remounted read-only
+echo x > ~/.pi/agent/trust.json       # fails — read-only
+mkdir -p ~/.agents/skills/x           # fails — ~/.agents is an empty read-only mount
 echo x > ~/.pi/agent/scratch          # succeeds, but the file is gone on the next launch —
                                        # the agent-dir root is an ephemeral tmpfs, not persistent storage
 ```
