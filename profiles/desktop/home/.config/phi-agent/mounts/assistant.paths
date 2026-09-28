@@ -1,0 +1,12 @@
+# phi-agent — assistant perimeter (general, academic, inline).
+#
+# Grammar: see the header of ~/.local/bin/phi-agent-contain.
+# Shared by every profile that keeps the host network namespace. Everything
+# that depends on the profile, project, session or folder flags — memory,
+# the project, folders of interest, sessions — is script code in
+# phi-agent-contain, because the .paths grammar has no conditionals; this
+# file holds only the one bind that is the same for every invocation.
+
+# Per-profile cache — writable. pi and its tools keep scratch state here;
+# nothing in it is session content the agent authored.
+rw   @AGENT_CACHE@               @CONTAINER_HOME@/.cache

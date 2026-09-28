@@ -1,8 +1,9 @@
-# phi-agent — paths that must NEVER be reachable from inside either
+# phi-agent — paths that must NEVER be reachable from inside any
 # containment. This file is NOT read by phi-agent-contain: it is the
 # checklist for verification and a review aid. Every entry here should return
 # "No such file or directory" (or "Connection refused" for a socket) when
-# tested from inside `phi-agent-contain a1 -- sh` or `... a2 -- sh`.
+# tested from inside `phi-agent-contain general -- sh` or
+# `phi-agent-contain coding --workdir DIR -- sh`.
 #
 # Format: one path or glob per line. $HOME is the real user's home.
 

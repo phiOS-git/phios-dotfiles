@@ -3,7 +3,7 @@
 
   "listen": "127.0.0.1:8789",
 
-  "//upstream": "The provider API ORIGIN only, no path. The incoming request path from opencode is appended unchanged. Examples: https://api.openai.com  |  https://api.anthropic.com  |  https://openrouter.ai",
+  "//upstream": "The provider API ORIGIN only, no path. The incoming request path is appended unchanged. Examples: https://api.openai.com  |  https://api.anthropic.com  |  https://openrouter.ai",
   "upstream": "https://api.example.com",
 
   "//auth": "How the key is attached. For an OpenAI-compatible provider: auth_header 'authorization', auth_value 'Bearer {key}'. For Anthropic's native API: auth_header 'x-api-key', auth_value '{key}', and add anthropic-version to extra_headers.",

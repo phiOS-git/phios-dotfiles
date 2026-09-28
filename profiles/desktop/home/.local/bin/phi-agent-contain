@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 #
-# phi-agent-contain — start an AI agent instance inside a bubblewrap
-# containment built FROM EMPTY.
+# phi-agent-contain — start pi (the phiOS AI agent engine) inside a
+# bubblewrap containment built FROM EMPTY.
 #
-#   phi-agent-contain a1|a2 [--dry-run] -- COMMAND [ARG...]
+#   phi-agent-contain PROFILE [--project NAME] [--folder MODE:NAME:HOSTPATH]...
+#                     [--workdir DIR] [--sessions HOSTDIR] [--dry-run] -- COMMAND [ARG...]
+#   PROFILE = general | academic | coding | inline
 #
 # A path that is not mounted below does not exist for the process, whatever
-# command it runs. This script is the ONLY way the two opencode
-# instances are ever launched: the systemd user units and `phi agent ask`
-# all go through it. There is no path that starts an agent outside the
-# containment, by design.
+# command it runs. This script is the ONLY way pi is ever launched: the
+# systemd user unit, `phi agent code`, `phi agent tui`, `phi agent ask` and
+# `phi agent inline` all go through it. There is no path that starts an
+# agent outside the containment, by design.
 #
-# Fail-closed (V-04): if bubblewrap is missing, unusable, or the
-# kernel refuses the namespaces, this script prints one line to stderr and
-# exits non-zero WITHOUT running COMMAND. A unit whose ExecStart is this
-# script therefore lands in `failed` with no engine process — which is the
-# whole of V-04. There is deliberately no degraded mode.
+# Fail-closed: if bubblewrap is missing, unusable, or the kernel refuses the
+# namespaces, this script prints one line to stderr and exits non-zero
+# WITHOUT running COMMAND. A unit whose ExecStart is this script therefore
+# lands in `failed` with no engine process. There is deliberately no
+# degraded mode.
 #
 # What this script does NOT do, on purpose:
 #   - It never reads the caller's environment into the container: --clearenv
@@ -25,44 +27,62 @@
 #   - It never enables a systemd unit, installs a package, or writes outside
 #     the agent's own XDG trees.
 #
-# Dependency budget: bash + coreutils + bubblewrap. No jq, no python.
+# Dependency budget: bash + coreutils + bubblewrap. Coding additionally
+# needs socat, for the two outbound forwarders that turn its unix-socket
+# network boundary into loopback TCP ports pi can dial. No jq, no python.
 #
 # UNVERIFIED FROM THE BUILD MACHINE: this whole invocation is written from
-# bwrap(1); it has never run. Verification passes V-01..V-04 are USER
-# operations on zotac / razer.
+# bwrap(1) and pi's own docs; it has never run. Verification is a USER
+# operation on zotac / razer — see ~/.config/phi-agent/README.md.
 
 set -euo pipefail
 
 readonly PROG=phi-agent-contain
 
-# Container-side layout. Both instances see the same shape; only the mounts
-# behind it differ (mounts/a1.paths vs mounts/a2.paths).
+# Container-side layout. Every profile sees the same shape; only the mounts
+# behind it differ (mounts/assistant.paths vs mounts/coding.paths, plus the
+# per-profile pi agent dir and the dynamic binds below).
 readonly CONTAINER_HOME=/home/agent
 readonly CONTAINER_RUNTIME=/run/phi-agent
+readonly NAME_RE='^[a-z0-9][a-z0-9._-]{0,63}$'
 
 die() { printf '%s: %s\n' "$PROG" "$*" >&2; exit 1; }
 
 usage() {
 	cat <<-USAGE
-	usage: $PROG <a1|a2> [--dry-run] [--workdir DIR] [--remote] -- COMMAND [ARG...]
+	usage: $PROG PROFILE [--project NAME] [--folder MODE:NAME:HOSTPATH]...
+	                     [--workdir DIR] [--sessions HOSTDIR] [--dry-run] -- COMMAND [ARG...]
 
-	Starts COMMAND inside the bubblewrap containment for the named instance.
+	PROFILE = general | academic | coding | inline
+
+	Starts COMMAND inside the bubblewrap containment for the named profile.
 	--dry-run prints the assembled bwrap argument vector and exits 0 without
 	running anything — use it to inspect exactly what is and is not mounted.
 
-	--workdir DIR   (a2 only) the single directory mounted read-write at
-	                /home/agent/work — the A2 session's whole world. Refused if
-	                it matches ~/.config/phi-agent/code-blocklist or an always-
-	                denied root. Normally passed by `phi agent code`; the
-	                blocklist here is a guard-rail, not the boundary.
-
-	A1's per-project read-only folders of interest come from
-	<project>/folders.list, written by `phi agent project`.
+	--project NAME    mount ~/.local/share/phi-agent/projects/NAME at
+	                  /home/agent/project. Refused for inline. Refuses to
+	                  start if NAME does not exist or is not a safe name.
+	--folder MODE:NAME:HOSTPATH   (repeatable) an already-resolved project
+	                  folder, mounted at /home/agent/folders/NAME. MODE is
+	                  ro or rw; rw is honoured for coding only and silently
+	                  mounted ro for every other profile. Refused for inline.
+	--workdir DIR     required for coding, refused for every other profile:
+	                  the one read-write directory the session sees, mounted
+	                  at /home/agent/work. Refused if it matches
+	                  ~/.config/phi-agent/code-blocklist or an always-denied
+	                  root — a guard-rail, not the boundary.
+	--sessions HOSTDIR   host directory to bind at /home/agent/sessions
+	                  (created if missing). Refused for inline. Default when
+	                  omitted: the project's sessions/ with --project, else
+	                  the data root's sessions/.
 
 	Environment (from ~/.config/phi-agent/env, see env.example):
-	  PHI_AGENT_PROJECT          A1 active project name              (default: none)
-	  PHI_AGENT_A2_TOOLCHAIN_CACHE  A2-only toolchain cache, writable
-	  GIT_AUTHOR_NAME / GIT_AUTHOR_EMAIL   A2 git identity (never a mounted .gitconfig)
+	  GIT_AUTHOR_NAME / GIT_AUTHOR_EMAIL / GIT_COMMITTER_*   coding's git identity
+	  PHI_AGENT_A2_TOOLCHAIN_CACHE   coding-only toolchain cache, writable
+
+	pi's own process environment (PI_OFFLINE, PI_SKIP_VERSION_CHECK,
+	PI_TELEMETRY, and any other PI_* variable) comes from
+	~/.config/phi-agent/pi/env, not from here — see settings.md in pi's docs.
 	USAGE
 }
 
@@ -70,35 +90,46 @@ usage() {
 # Argument parsing
 # ---------------------------------------------------------------------------
 
-instance=
+profile=
 dry_run=0
-remote=0
+project_name=
 workdir=
+sessions_arg=
+folder_specs=()
 cmd=()
 
 while (($#)); do
 	case $1 in
-		a1|a2) [[ -z $instance ]] || die "instance given twice"; instance=$1; shift ;;
-		--dry-run) dry_run=1; shift ;;
-		--remote) remote=1; shift ;;
+		general|academic|coding|inline)
+			[[ -z $profile ]] || die "profile given twice"; profile=$1; shift ;;
+		--project) shift; [[ $# -gt 0 && $1 != -- ]] || die "--project needs a name"; project_name=$1; shift ;;
+		--folder) shift; [[ $# -gt 0 && $1 != -- ]] || die "--folder needs MODE:NAME:HOSTPATH"; folder_specs+=("$1"); shift ;;
 		--workdir) shift; [[ $# -gt 0 && $1 != -- ]] || die "--workdir needs a directory"; workdir=$1; shift ;;
+		--sessions) shift; [[ $# -gt 0 && $1 != -- ]] || die "--sessions needs a directory"; sessions_arg=$1; shift ;;
+		--dry-run) dry_run=1; shift ;;
 		-h|--help) usage; exit 0 ;;
 		--) shift; cmd=("$@"); break ;;
 		*) die "unexpected argument: $1 (try --help)" ;;
 	esac
 done
 
-[[ -n $instance ]] || { usage >&2; die "no instance (a1|a2)"; }
+[[ -n $profile ]] || { usage >&2; die "no profile (general|academic|coding|inline)"; }
 ((${#cmd[@]})) || die "no command after --"
-if ((remote)); then
-	[[ $instance == a2 ]] || die "--remote is A2 only"
+
+if [[ $profile == coding ]]; then
+	[[ -n $workdir ]] || die "--workdir is required for profile coding"
+else
+	[[ -z $workdir ]] || die "--workdir is refused for profile $profile"
 fi
-if [[ -n $workdir ]]; then
-	[[ $instance == a2 ]] || die "--workdir is A2 only"
+if [[ $profile == inline ]]; then
+	[[ -z $project_name ]] || die "--project is refused for profile inline"
+	[[ ${#folder_specs[@]} -eq 0 ]] || die "--folder is refused for profile inline"
+	[[ -z $sessions_arg ]] || die "--sessions is refused for profile inline"
 fi
+[[ -z $project_name ]] || [[ $project_name =~ $NAME_RE ]] || die "invalid project name: $project_name"
 
 # ---------------------------------------------------------------------------
-# Fail-closed preflight (V-04)
+# Fail-closed preflight
 # ---------------------------------------------------------------------------
 
 bwrap=$(command -v bwrap 2>/dev/null) || die "containment unavailable: bwrap not found"
@@ -128,13 +159,10 @@ data_home=${XDG_DATA_HOME:-$HOME/.local/share}
 state_home=${XDG_STATE_HOME:-$HOME/.local/state}
 cache_home=${XDG_CACHE_HOME:-$HOME/.cache}
 
-# Per-instance XDG trees: separate config, data, state and
-# cache, from which separate credentials and history follow. The two
-# instances never share a path.
-AGENT_CONFIG=$conf_home/phi-agent/$instance
-AGENT_DATA=$data_home/phi-agent/$instance
-AGENT_STATE=$state_home/phi-agent/$instance
-AGENT_CACHE=$cache_home/phi-agent/$instance
+# The data root is shared by every profile; each profile gets its own
+# subtree (memory, cache) inside it, never a separate XDG root of its own.
+DATA_ROOT=$data_home/phi-agent
+AGENT_CACHE=$cache_home/phi-agent/$profile
 
 env_file=$conf_home/phi-agent/env
 if [[ -r $env_file ]]; then
@@ -152,30 +180,22 @@ if [[ -r $env_file ]]; then
 	set -a; . "$env_file"; set +a
 fi
 
-# Active project: the env var wins; otherwise the marker `phi agent project
-# use` writes. Neither set = no project (valid for the V-01..V-04 proof).
-PROJECT_NAME=${PHI_AGENT_PROJECT:-}
-if [[ -z $PROJECT_NAME && -r $AGENT_STATE/active-project ]]; then
-	PROJECT_NAME=$(< "$AGENT_STATE/active-project")
-	PROJECT_NAME=${PROJECT_NAME//[$'\t\r\n ']/}
-fi
-PROJECT_DIR=
-if [[ -n $PROJECT_NAME ]]; then
-	PROJECT_DIR=$AGENT_DATA/projects/$PROJECT_NAME
-fi
+# The toolchain cache dedicated to coding (cargo, go, npm, ...), separate
+# from the user's own. Computed after the env file so an override there
+# takes effect; the variable name is unchanged even though the profile it
+# belongs to is now called "coding" rather than "a2".
 A2_TOOLCHAIN_CACHE=${PHI_AGENT_A2_TOOLCHAIN_CACHE:-$AGENT_CACHE/toolchains}
 
 mounts_dir=$conf_home/phi-agent/mounts
 [[ -d $mounts_dir ]] || die "containment unavailable: $mounts_dir not found"
 
-# The instance's own XDG roots must exist for the writable binds to work.
-# These belong to this instance alone — creating them here is not a
-# perimeter decision, it is making the perimeter's own write areas real on
-# a machine that has never run the agent. The data model
-# (personalita/, projects/) is NOT created here; that is the data init step and
-# `phi agent project`.
-mkdir -p -- "$AGENT_DATA" "$AGENT_STATE" "$AGENT_CACHE"
-[[ $instance == a2 ]] && mkdir -p -- "$A2_TOOLCHAIN_CACHE"
+# The profile's own cache dir must exist for the writable bind to work.
+# Creating it here is not a perimeter decision, it is making the perimeter's
+# own write area real on a machine that has never run the agent. The data
+# model (memoria.md, proposte/, projects/) is NOT created here; that is
+# `phi agent init` and `phi agent project`.
+mkdir -p -- "$AGENT_CACHE"
+[[ $profile == coding ]] && mkdir -p -- "$A2_TOOLCHAIN_CACHE"
 
 # ---------------------------------------------------------------------------
 # Path-list expansion
@@ -191,10 +211,7 @@ mkdir -p -- "$AGENT_DATA" "$AGENT_STATE" "$AGENT_CACHE"
 #   sym  TARGET LINK  create a symlink in the container
 #
 # Ordering matters and is intentional: bubblewrap applies binds left to
-# right and a later bind wins. mounts/a1.paths binds the project read-only
-# first, then re-binds output/ and proposte/ writable underneath it — so
-# memoria.md and materiali/ stay read-only with no explicit rule, and
-# The init step only has to state the guarantee, not create it.
+# right and a later bind wins.
 
 bind_args=()
 
@@ -202,12 +219,8 @@ expand() {
 	local s=$1
 	s=${s//@CONTAINER_HOME@/$CONTAINER_HOME}
 	s=${s//@CONTAINER_RUNTIME@/$CONTAINER_RUNTIME}
-	s=${s//@AGENT_CONFIG@/$AGENT_CONFIG}
-	s=${s//@AGENT_DATA@/$AGENT_DATA}
-	s=${s//@AGENT_STATE@/$AGENT_STATE}
 	s=${s//@AGENT_CACHE@/$AGENT_CACHE}
 	s=${s//@A2_TOOLCHAIN_CACHE@/$A2_TOOLCHAIN_CACHE}
-	s=${s//@PROJECT@/$PROJECT_DIR}
 	printf '%s' "$s"
 }
 
@@ -219,10 +232,6 @@ read_paths() {
 		line=${line#"${line%%[![:space:]]*}"}
 		line=${line%"${line##*[![:space:]]}"}
 		[[ -n $line ]] || continue
-		# A line that references the active project is skipped entirely when
-		# no project is selected — otherwise "@PROJECT@/memoria.md" would
-		# expand to the bogus absolute path "/memoria.md".
-		[[ $line == *@PROJECT@* && -z $PROJECT_DIR ]] && continue
 		# shellcheck disable=SC2086
 		set -- $line
 		kind=$1; a=$(expand "${2:-}"); b=$(expand "${3:-}")
@@ -249,16 +258,103 @@ read_paths() {
 }
 
 read_paths "$mounts_dir/common.paths"
-read_paths "$mounts_dir/$instance.paths"
+if [[ $profile == coding ]]; then
+	read_paths "$mounts_dir/coding.paths"
+else
+	read_paths "$mounts_dir/assistant.paths"
+fi
 
 # ---------------------------------------------------------------------------
-# Dynamic per-instance binds (globs / lists that the .paths grammar cannot
-# express). These come AFTER the static binds so a later --bind wins.
+# The pi agent dir (PI_CODING_AGENT_DIR) — built from empty, in this exact
+# order.
+#
+# The directory ROOT stays a plain, writable tmpfs for the whole run: pi
+# takes a proper-lockfile lock next to settings.json on every startup, and
+# creates auth.json (even a session that only reads credentials touches it).
+# A fully read-only agent dir does not make pi fail loudly — it makes pi
+# silently ignore settings.json, which is worse. Only the four resource
+# SUBDIRECTORIES are remounted read-only once their contents are in place,
+# so pi cannot use a bash tool (or a prompt-injected instruction) to plant a
+# new extension, skill or prompt template for this same run.
 # ---------------------------------------------------------------------------
 
-# Always-denied roots for a mounted directory.
-# The same set is enforced by `phi agent code` in Go; this is defence in
-# depth for a direct `phi-agent-contain --workdir` call.
+agent_dir_host=$conf_home/phi-agent/pi/profiles/$profile
+[[ -d $agent_dir_host ]] || die "containment unavailable: $agent_dir_host not found"
+[[ -f $agent_dir_host/settings.json ]] || die "containment unavailable: $agent_dir_host/settings.json not found"
+[[ -f $agent_dir_host/SYSTEM.md ]] || die "containment unavailable: $agent_dir_host/SYSTEM.md not found"
+[[ -f $agent_dir_host/models.json ]] || die "containment unavailable: $agent_dir_host/models.json not found — create it from models.example.json and set the provider"
+
+container_agent_dir=$CONTAINER_HOME/.pi/agent
+
+# 1. The ephemeral, writable root.
+bind_args+=(--tmpfs "$container_agent_dir")
+
+# 2. A fresh, writable tmpfs for each resource subdirectory.
+for _sub in extensions skills prompts themes; do
+	bind_args+=(--tmpfs "$container_agent_dir/$_sub")
+done
+
+# 3. Every regular file the profile ships, read-only, at its own relative
+# path — including inside the subdirectories just created. models.example.json
+# is a template, never read by pi, and is not bound.
+have_append_system=0
+while IFS= read -r -d '' _f; do
+	_rel=${_f#"$agent_dir_host"/}
+	[[ $_rel == models.example.json ]] && continue
+	[[ $_rel == APPEND_SYSTEM.md ]] && have_append_system=1
+	_real=$(readlink -f -- "$_f")
+	bind_args+=(--ro-bind "$_real" "$container_agent_dir/$_rel")
+done < <(find -L "$agent_dir_host" -type f -print0)
+
+# 4. When the profile ships no APPEND_SYSTEM.md, occupy its path with a
+# read-only empty file. The root tmpfs is otherwise writable (see above), so
+# without this a bash-capable session could create APPEND_SYSTEM.md itself
+# and have `/reload` fold arbitrary text into its own system prompt.
+((have_append_system)) || bind_args+=(--ro-bind /dev/null "$container_agent_dir/APPEND_SYSTEM.md")
+
+# 5. Close the resource subdirectories: their contents are fixed for this
+# run, nothing more can be created inside them.
+for _sub in extensions skills prompts themes; do
+	bind_args+=(--remount-ro "$container_agent_dir/$_sub")
+done
+unset _sub _f _rel _real have_append_system
+
+# ---------------------------------------------------------------------------
+# Memory, project, folders, workdir, sessions — the binds that depend on the
+# profile, the project and the CLI flags. The .paths grammar has no
+# conditionals, so these are script code.
+# ---------------------------------------------------------------------------
+
+# Memory: every profile except inline sees system and profile level
+# memoria.md read-only; general and academic additionally get both levels'
+# proposte/ writable, so a memory proposal can be dropped. "?" throughout:
+# a machine that has never run `phi agent init` still starts.
+if [[ $profile != inline ]]; then
+	bind_args+=(--ro-bind-try "$DATA_ROOT/memoria.md" "$CONTAINER_HOME/memory/system/memoria.md")
+	bind_args+=(--ro-bind-try "$DATA_ROOT/profiles/$profile/memoria.md" "$CONTAINER_HOME/memory/profile/memoria.md")
+	if [[ $profile == general || $profile == academic ]]; then
+		bind_args+=(--bind-try "$DATA_ROOT/proposte" "$CONTAINER_HOME/memory/system/proposte")
+		bind_args+=(--bind-try "$DATA_ROOT/profiles/$profile/proposte" "$CONTAINER_HOME/memory/profile/proposte")
+	fi
+fi
+
+# Project: read-only wholesale bind, with output/ and proposte/ re-bound
+# writable on top for general and academic only — so memoria.md and
+# allegati/ stay read-only underneath with no separate directive.
+project_dir=
+if [[ -n $project_name ]]; then
+	project_dir=$DATA_ROOT/projects/$project_name
+	[[ -d $project_dir ]] || die "no such project: $project_name"
+	bind_args+=(--ro-bind "$project_dir" "$CONTAINER_HOME/project")
+	if [[ $profile == general || $profile == academic ]]; then
+		bind_args+=(--bind-try "$project_dir/output" "$CONTAINER_HOME/project/output")
+		bind_args+=(--bind-try "$project_dir/proposte" "$CONTAINER_HOME/project/proposte")
+	fi
+fi
+
+# Always-denied roots for a mounted directory. The same set is enforced by
+# `phi agent project` / `phi agent code` in Go; this is defence in depth for
+# a direct phi-agent-contain call.
 _resolve() { cd -- "$1" 2>/dev/null && pwd -P || printf '%s' "$1"; }
 
 path_denied() {
@@ -270,10 +366,13 @@ path_denied() {
 		"$home_real/.local/share/phi-agent" "$home_real/.mozilla" \
 		/etc /root /proc /sys /boot; do
 		dr=$(_resolve "$d")
-		[[ $real == "$dr" || $real == "$dr"/* ]] && { printf '%s' "$d"; return 0; }
+		# Denied either way: the wanted path is inside a denied root, or a
+		# denied root is inside the wanted path (mounting an ancestor
+		# exposes it exactly as if it had been named directly).
+		[[ $real == "$dr" || $real == "$dr"/* || $dr == "$real"/* ]] && { printf '%s' "$d"; return 0; }
 	done
-	# A2 read-write only: system roots and $HOME / / themselves.
-	if [[ $instance == a2 ]]; then
+	# Coding read-write only: system roots and $HOME / / themselves.
+	if [[ $profile == coding ]]; then
 		for d in /usr /var /opt /srv /nix; do
 			dr=$(_resolve "$d")
 			[[ $real == "$dr" || $real == "$dr"/* ]] && { printf '%s' "$d"; return 0; }
@@ -295,51 +394,53 @@ path_denied() {
 	return 1
 }
 
-if [[ $instance == a1 ]]; then
-	# Per-personality: the whole personalita/
-	# tree was just re-bound read-only by a1.paths — so every <name>/memoria.md
-	# is read-only (the agent cannot write its own memory at any level,
-	# Re-bind each <name>/proposte/ writable underneath, so a memory
-	# proposal at personality level can still be dropped.
-	if [[ -d $AGENT_DATA/personalita ]]; then
-		for pdir in "$AGENT_DATA"/personalita/*/; do
-			[[ -d $pdir ]] || continue
-			pname=$(basename -- "$pdir")
-			[[ -d $pdir/proposte ]] \
-				&& bind_args+=(--bind "$pdir/proposte" "$CONTAINER_HOME/.local/share/personalita/$pname/proposte")
-		done
+# Folders: already resolved by phi (project.json -> host path for this
+# host). MODE:NAME:HOSTPATH, repeatable, validated here regardless.
+_seen_folders=:
+for _spec in "${folder_specs[@]}"; do
+	_fmode=${_spec%%:*}; _rest=${_spec#*:}; _fname=${_rest%%:*}; _fpath=${_rest#*:}
+	[[ $_fmode == ro || $_fmode == rw ]] || die "--folder: bad mode '$_fmode' (want ro|rw): $_spec"
+	[[ $_fname =~ $NAME_RE ]] || die "--folder: invalid name '$_fname': $_spec"
+	[[ $_seen_folders != *":$_fname:"* ]] || die "--folder: duplicate name '$_fname'"
+	_seen_folders+="$_fname:"
+	[[ -n $_fpath ]] || die "--folder: malformed spec: $_spec"
+	_fpath=${_fpath/#\~/$HOME}
+	[[ -e $_fpath ]] || die "containment unavailable: folder missing: $_fpath"
+	if _reason=$(path_denied "$_fpath"); then
+		die "containment unavailable: folder is blocked ($_reason): $_fpath"
 	fi
-
-	# Folders of interest: real host
-	# directories, READ-ONLY, from <project>/folders.list (written by
-	# `phi agent project`). A blocked or missing path fails the launch.
-	folders_list=$PROJECT_DIR/folders.list
-	if [[ -r $folders_list ]]; then
-		fidx=0
-		while IFS= read -r fline || [[ -n $fline ]]; do
-			fline=${fline%%#*}
-			fline=${fline#"${fline%%[![:space:]]*}"}; fline=${fline%"${fline##*[![:space:]]}"}
-			[[ -n $fline ]] || continue
-			fpath=${fline/#\~/$HOME}
-			[[ -d $fpath ]] || die "containment unavailable: folder of interest missing: $fpath"
-			if reason=$(path_denied "$fpath"); then
-				die "containment unavailable: folder of interest is blocked ($reason): $fpath"
-			fi
-			bind_args+=(--ro-bind "$fpath" "$CONTAINER_HOME/folders/$fidx")
-			fidx=$((fidx + 1))
-		done < "$folders_list"
+	_freal=$(_resolve "$_fpath")
+	if [[ $_fmode == rw && $profile == coding ]]; then
+		bind_args+=(--bind "$_freal" "$CONTAINER_HOME/folders/$_fname")
+	else
+		bind_args+=(--ro-bind "$_freal" "$CONTAINER_HOME/folders/$_fname")
 	fi
-fi
+done
+unset _spec _fmode _rest _fname _fpath _reason _freal _seen_folders
 
-if [[ $instance == a2 && -n $workdir ]]; then
-	# The single read-write working directory for this A2 session
-	# Everything else under $HOME is invisible.
-	real_workdir=$(cd -- "$workdir" 2>/dev/null && pwd -P) \
-		|| die "not a directory: $workdir"
+# Workdir: coding only, the single read-write directory for this session.
+# Everything else under $HOME is invisible.
+if [[ -n $workdir ]]; then
+	real_workdir=$(cd -- "$workdir" 2>/dev/null && pwd -P) || die "not a directory: $workdir"
 	if reason=$(path_denied "$real_workdir"); then
 		die "refusing to open a blocked path ($reason): $real_workdir"
 	fi
 	bind_args+=(--bind "$real_workdir" "$CONTAINER_HOME/work")
+fi
+
+# Sessions: bound at /home/agent/sessions, created if missing. Not for
+# inline (refused above). Default: the project's, else the data root's.
+sessions_dir=
+if [[ $profile != inline ]]; then
+	if [[ -n $sessions_arg ]]; then
+		sessions_dir=$sessions_arg
+	elif [[ -n $project_dir ]]; then
+		sessions_dir=$project_dir/sessions
+	else
+		sessions_dir=$DATA_ROOT/sessions
+	fi
+	mkdir -p -- "$sessions_dir"
+	bind_args+=(--bind "$sessions_dir" "$CONTAINER_HOME/sessions")
 fi
 
 # ---------------------------------------------------------------------------
@@ -358,30 +459,56 @@ add_env XDG_DATA_HOME "$CONTAINER_HOME/.local/share"
 add_env XDG_STATE_HOME "$CONTAINER_HOME/.local/state"
 add_env XDG_CACHE_HOME "$CONTAINER_HOME/.cache"
 add_env XDG_RUNTIME_DIR "$CONTAINER_RUNTIME"
-add_env OPENCODE_CONFIG "$CONTAINER_HOME/.config/opencode/opencode.json"
 add_env NO_PROXY 127.0.0.1,localhost
-add_env PHI_AGENT_INSTANCE "$instance"
+add_env PHI_AGENT_PROFILE "$profile"
+[[ -n $project_name ]] && add_env PHI_AGENT_PROJECT "$project_name"
+
+# ~/.config/phi-agent/pi/env: a strict grammar, NOT a sourced shell
+# fragment. Only `PI_[A-Z0-9_]+=value` lines and whole-line '#' comments are
+# accepted; anything else is fatal, so a stray line can never inject an
+# unrelated variable. Emitted first, so the structural PI_CODING_AGENT_*
+# values below always win, and the three forced values after that always
+# win over everything, including a line in the file that tries to redefine
+# them.
+pi_env_file=$conf_home/phi-agent/pi/env
+if [[ -r $pi_env_file ]]; then
+	while IFS= read -r _line || [[ -n $_line ]]; do
+		_trimmed=${_line#"${_line%%[![:space:]]*}"}
+		_trimmed=${_trimmed%"${_trimmed##*[![:space:]]}"}
+		[[ -n $_trimmed ]] || continue
+		[[ $_trimmed == \#* ]] && continue
+		[[ $_trimmed =~ ^PI_[A-Z0-9_]+=.*$ ]] || die "$pi_env_file: invalid line (only PI_[A-Z0-9_]+=value or a '#' comment): $_line"
+		add_env "${_trimmed%%=*}" "${_trimmed#*=}"
+	done < "$pi_env_file"
+	unset _line _trimmed
+fi
+
+add_env PI_CODING_AGENT_DIR "$container_agent_dir"
+[[ $profile == inline ]] || add_env PI_CODING_AGENT_SESSION_DIR "$CONTAINER_HOME/sessions"
+
+# Forced regardless of the file above.
+add_env PI_OFFLINE 1
+add_env PI_SKIP_VERSION_CHECK 1
+add_env PI_TELEMETRY 0
 
 net_args=()
-case $instance in
-	a1)
-		# A1 keeps the host network namespace: its job is to fetch pages the
-		# search turned up, and control there is interactive approval at the
-		# engine, not a static list. It reaches the brokering service
-		# on host loopback directly.
-		[[ -n $PROJECT_NAME ]] && add_env PHI_AGENT_PROJECT "$PROJECT_NAME"
+case $profile in
+	general|academic|inline)
+		# Host network namespace: these profiles reach the broker on host
+		# loopback directly (http://127.0.0.1:8789), and — general and
+		# academic only, via the panel — fetch pages the model asks for.
 		;;
-	a2)
-		# A2's network boundary IS the namespace, not a variable:
+	coding)
+		# The network boundary IS the namespace, not a variable:
 		# --unshare-net gives it a fresh namespace with only a down
 		# loopback. The ONLY way out is two unix sockets, created on the
 		# host and reachable through the bridge dir bound below:
 		#   net/proxy.sock     -> host tinyproxy (the egress whitelist)
-		#   net/broker-a2.sock -> the A2 credential broker
+		#   net/broker-a2.sock -> the coding credential broker
 		# The in-container command is wrapped further down with two socat
 		# forwarders that turn those sockets into loopback TCP ports. A
 		# process that unsets HTTP(S)_PROXY reaches tinyproxy on nothing
-		# and is left with NO network, not free network — which is V-03.
+		# and is left with NO network, not free network.
 		net_args+=(--unshare-net)
 
 		bridge_dir=$state_home/phi-agent/net
@@ -401,42 +528,19 @@ case $instance in
 		# The two OUTBOUND forwarders, always. socat is /usr/bin/socat (the
 		# /usr bind); the forwarders are children of this shell, which
 		# --die-with-parent reaps with the container. NO_PROXY
-		# (127.0.0.1,localhost, set above for both instances) routes the
+		# (127.0.0.1,localhost, set above for every profile) routes the
 		# broker call straight to the :8790 forwarder (-> broker-a2.sock),
 		# while every other host goes through HTTPS_PROXY -> :8118 ->
 		# proxy.sock -> tinyproxy's whitelist. A process that unsets the
-		# proxy vars can then reach only the broker — which is V-03.
+		# proxy vars can then reach only the broker.
 		wrap='
 			/usr/bin/socat TCP-LISTEN:8118,bind=127.0.0.1,fork,reuseaddr UNIX-CONNECT:/run/phi-agent/net/proxy.sock &
 			/usr/bin/socat TCP-LISTEN:8790,bind=127.0.0.1,fork,reuseaddr UNIX-CONNECT:/run/phi-agent/net/broker-a2.sock &'
 
-		if ((remote)); then
-			# --remote: the ONLY time A2 gets a password and an
-			# INBOUND socket. A default A2 launch has neither, so V-02 run
-			# against it stays clean with nothing to explain. The overlay
-			# address is bound by the HOST unit (phi-agent-a2-remote.service),
-			# never in here and never in the repo — this side only exposes
-			# opencode's loopback port on a unix socket the host reads.
-			#
-			# The password is bind-mounted as a file and read by the wrapper
-			# into the environment INSIDE the container — never passed as a
-			# --setenv value, which would put it in bwrap's argv where any
-			# `ps` could read it.
-			pw_file=${PHI_AGENT_REMOTE_PASSWORD_FILE:-${CREDENTIALS_DIRECTORY:+$CREDENTIALS_DIRECTORY/remote-password}}
-			[[ -n $pw_file && -r $pw_file ]] || die "containment unavailable: --remote needs a readable password file (PHI_AGENT_REMOTE_PASSWORD_FILE or a systemd credential)"
-			bind_args+=(--ro-bind "$pw_file" /run/phi-agent/remote-password)
-			add_env OPENCODE_SERVER_USERNAME "${OPENCODE_SERVER_USERNAME:-phi}"
-			# Assignment context (VAR=$(...)) does not word-split, so a
-			# password with spaces survives; then export by name.
-			wrap+='
-			OPENCODE_SERVER_PASSWORD=$(cat /run/phi-agent/remote-password); export OPENCODE_SERVER_PASSWORD
-			/usr/bin/socat UNIX-LISTEN:/run/phi-agent/net/a2-remote.sock,fork,reuseaddr TCP:127.0.0.1:4299 &'
-		fi
-
 		cmd=(/bin/sh -c "$wrap"'
 			sleep 0.5
 			exec "$@"
-		' phi-agent-a2 "${cmd[@]}")
+		' phi-agent-coding "${cmd[@]}")
 		;;
 esac
 
@@ -450,9 +554,9 @@ ns_args=(
 	--unshare-ipc
 	--unshare-uts
 	--unshare-cgroup
-	--new-session        # mitigates TIOCSTI input injection
+	--new-session         # mitigates TIOCSTI input injection
 	--die-with-parent
-	--hostname "phi-agent-$instance"
+	--hostname "phi-agent-$profile"
 )
 
 pseudo_args=(
@@ -463,8 +567,15 @@ pseudo_args=(
 	--dir "$CONTAINER_RUNTIME"
 )
 
-chdir=$CONTAINER_HOME
-[[ $instance == a2 && -n $workdir ]] && chdir=$CONTAINER_HOME/work
+# coding chdir()s into its workdir; any other profile with a project starts
+# in the project dir; otherwise the container home.
+if [[ $profile == coding ]]; then
+	chdir=$CONTAINER_HOME/work
+elif [[ -n $project_dir ]]; then
+	chdir=$CONTAINER_HOME/project
+else
+	chdir=$CONTAINER_HOME
+fi
 
 argv=(
 	"${ns_args[@]}"
