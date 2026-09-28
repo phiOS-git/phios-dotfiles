@@ -37,11 +37,33 @@ the four pi profiles above and do not change with them.
 | `pi/profiles/<profile>/trust.json` | an empty project-trust store, bound read-only so no session can trust its own working directory (an entry there would override `defaultProjectTrust: "never"`) | repo |
 | `pi/profiles/<profile>/models.example.json` | template naming the broker as the provider's endpoint | repo |
 | `~/.config/phi-agent/pi/profiles/<profile>/models.json` | **you create this** from the example: name the real provider | you |
+| `pi/extensions/phi-workflow.ts` | first-party extension, see "Extensions" below | repo |
 | `<inst>/broker.example.json` | template for the broker config | — |
 | `~/.config/phi-agent/<inst>/broker.json` | **you create this**: provider origin + how the key attaches (no key) | you |
 | `~/.config/phi-agent/<inst>/provider-key` | **you create this**, `chmod 600`: the raw provider API key | you |
 | `tinyproxy/tinyproxy.conf` | coding profile's egress whitelist proxy config | repo |
 | `tinyproxy/whitelist` | the whitelist itself | repo (you uncomment entries) |
+
+## Extensions
+
+`pi/extensions/phi-workflow.ts` is a first-party pi extension: it ships from
+this repository rather than being installed from a package registry, so it
+needs no separate declaration under the tier ladder. It is reached by
+`general`, `academic` and `coding` through a relative symlink in each
+profile's own `pi/profiles/<profile>/extensions/`; `inline` runs with
+`--no-extensions` and never loads it.
+
+It registers three tools that the shell panel's agent view renders with
+dedicated cards:
+
+| Tool | Does |
+|---|---|
+| `plan` | Replaces the session's plan (an ordered checklist with a status per step) and shows it as a widget above the editor. |
+| `subagent` | Runs one task in an isolated, non-interactive child `pi` process and streams its progress back. |
+| `ask_user` | Asks the user a question through pi's own select/input dialogs and returns their answer. |
+
+Every other tool renders generically; nothing in the panel or in pi itself
+requires this extension to be present.
 
 ## The broker
 
