@@ -9,4 +9,14 @@
 -- where it does not; the exact revision is pinned by each profile's
 -- nvim-pack-lock.json either way.
 
-return {}
+local range = vim.version.range
+local function gh(repo)
+  return "https://github.com/" .. repo
+end
+
+return {
+  { src = gh("nvim-tree/nvim-tree.lua"), version = range("^1.18") }, -- explorer
+  { src = gh("ibhagwan/fzf-lua"), version = "main" }, -- picker and palette; no release tags
+  { src = gh("folke/which-key.nvim"), version = range("^3.17") }, -- shortcut discovery
+  { src = gh("lewis6991/gitsigns.nvim"), version = range("^2.1") }, -- git signs and hunks
+}

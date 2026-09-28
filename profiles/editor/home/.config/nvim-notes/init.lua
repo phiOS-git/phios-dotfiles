@@ -18,5 +18,7 @@ require("phi.statusline")
 -- revision; updates are manual (`:lua vim.pack.update()`).
 vim.pack.add(vim.list_extend(vim.list_extend({}, require("phi.plugins.common")), require("notes.plugins")))
 
+require("phi.workbench").setup({ rename = false }) -- notes are renamed only through the LSP
+
 -- Theme last, so it restyles everything loaded above.
 require("theme")

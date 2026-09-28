@@ -18,5 +18,7 @@ require("phi.statusline")
 -- revision; updates are manual (`:lua vim.pack.update()`).
 vim.pack.add(vim.list_extend(vim.list_extend({}, require("phi.plugins.common")), require("code.plugins")))
 
+require("phi.workbench").setup() -- explorer, file tabs, picker, which-key, git
+
 -- Theme last, so it restyles everything loaded above.
 require("theme")
